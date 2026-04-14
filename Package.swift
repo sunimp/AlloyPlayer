@@ -22,8 +22,7 @@ let package = Package(
         ),
         .target(
             name: "AlloyControlView",
-            dependencies: ["AlloyCore"],
-            resources: [.process("Resources")]
+            dependencies: ["AlloyCore"]
         ),
         .target(
             name: "AlloyPlayer",
