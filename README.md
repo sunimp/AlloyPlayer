@@ -5,7 +5,7 @@
 [![License MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![SPM Compatible](https://img.shields.io/badge/SPM-Compatible-brightgreen.svg)](https://swift.org/package-manager/)
 
-一个现代的纯 Swift 视频播放器框架。基于 [ZFPlayer](https://github.com/renzifeng/ZFPlayer) 的进行重写，采用 Swift 6 并发、Combine 事件流和模块化 SPM 架构。
+一个现代的纯 Swift 视频播放器框架。基于 [ZFPlayer](https://github.com/renzifeng/ZFPlayer) 进行重写，采用 Swift 6 并发、Combine 事件流和模块化 SPM 架构。
 
 ## 特性
 
