@@ -6,6 +6,7 @@ let package = Package(
     name: "AlloyPlayer",
     platforms: [
         .iOS(.v15),
+        .macOS(.v12),
     ],
     products: [
         .library(name: "AlloyPlayer", targets: ["AlloyPlayer"]),
