@@ -1,45 +1,45 @@
 ---
-name: Bug Report
-about: Report a bug to help us improve AlloyPlayer
+name: Bug 报告
+about: 报告 Bug 以帮助我们改进 AlloyPlayer
 title: "[Bug] "
 labels: bug
 assignees: ''
 ---
 
-## Description
+## 问题描述
 
-A clear and concise description of the bug.
+清晰简洁地描述该 Bug。
 
-## Steps to Reproduce
+## 复现步骤
 
 1. ...
 2. ...
 3. ...
 
-## Expected Behavior
+## 预期行为
 
-What you expected to happen.
+你期望发生什么。
 
-## Actual Behavior
+## 实际行为
 
-What actually happened.
+实际发生了什么。
 
-## Environment
+## 环境信息
 
-- **AlloyPlayer version**: (e.g., 0.1.0)
-- **iOS version**: (e.g., 17.0)
-- **Xcode version**: (e.g., 16.0)
-- **Swift version**: (e.g., 6.0)
-- **Device**: (e.g., iPhone 15 Pro / Simulator)
+- **AlloyPlayer 版本**：（如 0.1.0）
+- **iOS 版本**：（如 17.0）
+- **Xcode 版本**：（如 16.0）
+- **Swift 版本**：（如 6.0）
+- **设备**：（如 iPhone 15 Pro / 模拟器）
 
-## Reproduction Project
+## 复现项目
 
-If possible, link to a minimal project or gist that reproduces the issue.
+如可能，请提供一个能复现该问题的最小项目或 gist 链接。
 
-## Screenshots / Logs
+## 截图 / 日志
 
-Add any relevant screenshots or console logs.
+添加相关的截图或控制台日志。
 
-## Additional Context
+## 补充说明
 
-Any other context about the problem.
+关于该问题的其他上下文信息。

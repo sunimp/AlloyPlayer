@@ -5,45 +5,45 @@
 [![License MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![SPM Compatible](https://img.shields.io/badge/SPM-Compatible-brightgreen.svg)](https://swift.org/package-manager/)
 
-A modern, pure Swift video player framework. Feature-complete reimplementation of [ZFPlayer](https://github.com/renzifeng/ZFPlayer) with Swift 6 concurrency, Combine event streams, and modular SPM architecture.
+一个现代的纯 Swift 视频播放器框架。基于 [ZFPlayer](https://github.com/renzifeng/ZFPlayer) 的完整功能重写，采用 Swift 6 并发、Combine 事件流和模块化 SPM 架构。
 
-## Features
+## 特性
 
-- Protocol-driven plugin architecture (swap engines/UI freely)
-- Full portrait & landscape fullscreen support
-- ScrollView/TableView/CollectionView list playback
-- Rich gesture support (tap, double-tap, pan, pinch, long-press)
-- Pluggable `PlaybackEngine` protocol (built-in AVPlayer, bring your own)
-- Customizable `ControlOverlay` protocol (built-in `DefaultControlOverlay`)
-- Network reachability monitoring (WiFi / 2G / 3G / 4G / 5G)
-- Floating PiP window for list playback
-- Combine publishers for all events
-- Swift 6 strict concurrency safe
+- 协议驱动的插件架构（可自由替换引擎/UI）
+- 完整的竖屏和横屏全屏支持
+- ScrollView/TableView/CollectionView 列表播放
+- 丰富的手势支持（单击、双击、拖动、捏合、长按）
+- 可插拔的 `PlaybackEngine` 协议（内置 AVPlayer，可自定义）
+- 可自定义的 `ControlOverlay` 协议（内置 `DefaultControlOverlay`）
+- 网络可达性监控（WiFi / 2G / 3G / 4G / 5G）
+- 列表播放的浮动画中画窗口
+- 所有事件均提供 Combine 发布者
+- Swift 6 严格并发安全
 
-## Requirements
+## 系统要求
 
 - iOS 15.0+
 - Swift 6.0+
 - Xcode 16.0+
 
-## Installation
+## 安装
 
 ### Swift Package Manager
 
-**Option 1 — Full framework (recommended):**
+**方式一 — 完整框架（推荐）：**
 
 ```swift
 dependencies: [
     .package(url: "https://github.com/nicklasundell/AlloyPlayer.git", from: "0.1.0")
 ]
 
-// In your target:
+// 在你的 target 中：
 .target(name: "YourApp", dependencies: [
     .product(name: "AlloyPlayer", package: "AlloyPlayer")
 ])
 ```
 
-**Option 2 — Core + AVPlayer engine only (no default UI):**
+**方式二 — Core + AVPlayer 引擎（不含默认 UI）：**
 
 ```swift
 .target(name: "YourApp", dependencies: [
@@ -52,7 +52,7 @@ dependencies: [
 ])
 ```
 
-**Option 3 — Core only (bring your own engine and UI):**
+**方式三 — 仅 Core（自行提供引擎和 UI）：**
 
 ```swift
 .target(name: "YourApp", dependencies: [
@@ -60,7 +60,7 @@ dependencies: [
 ])
 ```
 
-**Option 4 — Individual modules:**
+**方式四 — 单独模块：**
 
 ```swift
 .target(name: "YourApp", dependencies: [
@@ -70,9 +70,9 @@ dependencies: [
 ])
 ```
 
-## Quick Start
+## 快速开始
 
-### Basic Playback
+### 基本播放
 
 ```swift
 import AlloyPlayer
@@ -83,18 +83,18 @@ class PlayerViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // 1. Create a container view
+        // 1. 创建容器视图
         let containerView = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 220))
         view.addSubview(containerView)
 
-        // 2. Create player with AVPlayer engine
+        // 2. 使用 AVPlayer 引擎创建播放器
         let engine = AVPlayerManager()
         player = Player(engine: engine, containerView: containerView)
 
-        // 3. Set the default control overlay
+        // 3. 设置默认控制层
         player.controlOverlay = DefaultControlOverlay()
 
-        // 4. Set the video URL and playback starts automatically
+        // 4. 设置视频 URL，自动开始播放
         player.assetURL = URL(string: "https://example.com/video.mp4")
     }
 
@@ -110,7 +110,7 @@ class PlayerViewController: UIViewController {
 }
 ```
 
-### List Playback (TableView)
+### 列表播放（TableView）
 
 ```swift
 import AlloyPlayer
@@ -123,11 +123,11 @@ class ListPlayerViewController: UIViewController, UITableViewDelegate {
         super.viewDidLoad()
 
         let engine = AVPlayerManager()
-        // Initialize with scrollView and containerView tag
+        // 使用 scrollView 和容器视图 tag 初始化
         player = Player(scrollView: tableView, engine: engine, containerViewTag: 100)
         player.controlOverlay = DefaultControlOverlay()
 
-        // Configure list playback URLs (grouped by section)
+        // 配置列表播放 URL（按 section 分组）
         player.sectionAssetURLs = [
             [
                 URL(string: "https://example.com/video1.mp4")!,
@@ -142,7 +142,7 @@ class ListPlayerViewController: UIViewController, UITableViewDelegate {
 }
 ```
 
-### Custom Control Overlay
+### 自定义控制层
 
 ```swift
 import AlloyCore
@@ -156,16 +156,16 @@ class MinimalOverlay: UIView, ControlOverlay {
     }
 
     func player(_ player: Player, didUpdateTime currentTime: TimeInterval, totalTime: TimeInterval) {
-        // Update your custom time labels
+        // 更新自定义时间标签
     }
 
     func player(_ player: Player, didChangePlaybackState state: PlaybackState) {
-        // Update play/pause button
+        // 更新播放/暂停按钮
     }
 }
 ```
 
-### Custom Playback Engine
+### 自定义播放引擎
 
 ```swift
 import AlloyCore
@@ -175,79 +175,79 @@ class CustomEngine: PlaybackEngine {
     var renderView = RenderView()
     var playbackState: PlaybackState = .unknown
     var loadState: LoadState = .unknown
-    // ... implement all protocol requirements
+    // ... 实现所有协议要求
 
     var statePublisher: AnyPublisher<PlaybackState, Never> { /* ... */ }
-    // ... implement all publishers
+    // ... 实现所有发布者
 
     func prepareToPlay() { /* ... */ }
     func play() { /* ... */ }
     func pause() { /* ... */ }
     func stop() { /* ... */ }
     func seek(to time: TimeInterval) async -> Bool { /* ... */ }
-    // ... implement remaining methods
+    // ... 实现其余方法
 }
 ```
 
-## Architecture
+## 架构
 
 ```
 AlloyPlayer (umbrella)
-├── AlloyCore          ← Protocols, enums, Player controller
-├── AlloyAVPlayer      ← AVPlayer engine implementation
-└── AlloyControlView   ← Default control UI
+├── AlloyCore          ← 协议、枚举、Player 控制器
+├── AlloyAVPlayer      ← AVPlayer 引擎实现
+└── AlloyControlView   ← 默认控制层 UI
 ```
 
-## Modules
+## 模块
 
 ### AlloyCore
 
-The foundation module containing all protocols, enums, and the `Player` controller.
+基础模块，包含所有协议、枚举和 `Player` 控制器。
 
-| Type | Description |
-|------|-------------|
-| `Player` | Main controller coordinating engine, UI, gestures, and orientation |
-| `PlaybackEngine` | Protocol for video playback engines |
-| `ControlOverlay` | Protocol for control UI layers |
-| `GestureManager` | Tap, pan, pinch, and long-press gesture handling |
-| `OrientationManager` | Portrait/landscape fullscreen transitions |
-| `FloatingView` | Floating PiP window for list playback |
-| `ReachabilityMonitor` | Network status monitoring |
-| `RenderView` | Base view for video rendering |
-| `PlaybackState` | Playback state enum (unknown/playing/paused/failed/stopped) |
-| `LoadState` | Buffer loading state (OptionSet) |
-| `ScalingMode` | Video scaling modes (aspectFit/aspectFill/fill) |
-| `FullScreenMode` | Fullscreen mode (automatic/landscape/portrait) |
+| 类型 | 描述 |
+|------|------|
+| `Player` | 主控制器，协调引擎、UI、手势和方向 |
+| `PlaybackEngine` | 视频播放引擎协议 |
+| `ControlOverlay` | 控制层 UI 协议 |
+| `GestureManager` | 单击、拖动、捏合和长按手势处理 |
+| `OrientationManager` | 竖屏/横屏全屏转换 |
+| `FloatingView` | 列表播放的浮动画中画窗口 |
+| `ReachabilityMonitor` | 网络状态监控 |
+| `RenderView` | 视频渲染基础视图 |
+| `PlaybackState` | 播放状态枚举（unknown/playing/paused/failed/stopped） |
+| `LoadState` | 缓冲加载状态（OptionSet） |
+| `ScalingMode` | 视频缩放模式（aspectFit/aspectFill/fill） |
+| `FullScreenMode` | 全屏模式（automatic/landscape/portrait） |
 
 ### AlloyAVPlayer
 
-AVFoundation-based playback engine implementation.
+基于 AVFoundation 的播放引擎实现。
 
-| Type | Description |
-|------|-------------|
-| `AVPlayerManager` | `PlaybackEngine` implementation using AVPlayer |
+| 类型 | 描述 |
+|------|------|
+| `AVPlayerManager` | 使用 AVPlayer 的 `PlaybackEngine` 实现 |
 
 ### AlloyControlView
 
-Default control overlay with portrait and landscape panels.
+默认控制层，包含竖屏和横屏面板。
 
-| Type | Description |
-|------|-------------|
-| `DefaultControlOverlay` | Full-featured `ControlOverlay` implementation |
-| `PortraitControlPanel` | Portrait mode control panel |
-| `LandscapeControlPanel` | Landscape mode control panel |
-| `FloatingControlPanel` | Floating window control panel |
-| `ProgressSlider` | Playback progress slider |
-| `BufferingIndicator` | Buffering state indicator |
-| `LoadingIndicator` | Loading animation |
-| `VolumeAndBrightnessHUD` | Volume/brightness adjustment HUD |
-| `NetworkSpeedMonitor` | Network speed display |
-| `CustomStatusBar` | Custom status bar for fullscreen |
+| 类型 | 描述 |
+|------|------|
+| `DefaultControlOverlay` | 完整功能的 `ControlOverlay` 实现 |
+| `PortraitControlPanel` | 竖屏模式控制面板 |
+| `LandscapeControlPanel` | 横屏模式控制面板 |
+| `FloatingControlPanel` | 浮动窗口控制面板 |
+| `ProgressSlider` | 播放进度滑块 |
+| `BufferingIndicator` | 缓冲状态指示器 |
+| `LoadingIndicator` | 加载动画 |
+| `VolumeAndBrightnessHUD` | 音量/亮度调节 HUD |
+| `NetworkSpeedMonitor` | 网速显示 |
+| `CustomStatusBar` | 全屏自定义状态栏 |
 
 ### AlloyPlayer (umbrella)
 
-Re-exports all three modules for convenient single-import usage.
+重新导出所有三个模块，方便单次导入使用。
 
-## License
+## 许可证
 
-MIT License. See [LICENSE](LICENSE) for details.
+MIT 许可证。详见 [LICENSE](LICENSE)。

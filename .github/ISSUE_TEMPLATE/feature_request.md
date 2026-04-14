@@ -1,27 +1,27 @@
 ---
-name: Feature Request
-about: Suggest a new feature or enhancement for AlloyPlayer
+name: 功能建议
+about: 为 AlloyPlayer 建议新功能或改进
 title: "[Feature] "
 labels: enhancement
 assignees: ''
 ---
 
-## Problem Statement
+## 问题描述
 
-A clear description of the problem or limitation you're facing.
+清晰描述你遇到的问题或限制。
 
-## Proposed Solution
+## 建议方案
 
-Describe the feature or change you'd like to see.
+描述你希望看到的功能或变更。
 
-## Alternatives Considered
+## 已考虑的替代方案
 
-Any alternative solutions or workarounds you've considered.
+你考虑过的替代解决方案或变通方法。
 
-## Use Case
+## 使用场景
 
-Explain the use case and how this feature would benefit users.
+说明使用场景以及该功能如何使用户受益。
 
-## Additional Context
+## 补充说明
 
-Any other context, mockups, or references.
+其他上下文信息、原型或参考资料。
