@@ -50,6 +50,11 @@ final class HomeViewController: UITableViewController {
             subtitle: "实现 ControlOverlay 协议的极简控制层",
             viewControllerFactory: { CustomControlOverlayViewController() }
         ),
+        DemoItem(
+            title: "短视频滑动",
+            subtitle: "类似抖音的竖屏全屏上下滑动播放",
+            viewControllerFactory: { ShortVideoFeedViewController() }
+        ),
     ]
 
     // MARK: - 生命周期
