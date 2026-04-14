@@ -194,6 +194,14 @@
 
         /// 智能进入/退出全屏（根据 fullScreenMode 自动选择横屏或竖屏）
         public func enterFullScreen(_ fullScreen: Bool, animated: Bool) async {
+            // 退出全屏时，根据当前实际全屏状态决定退出方式，而非仅依赖 fullScreenMode 配置。
+            // 修复：通过 enterPortraitFullScreen 直接进入竖屏全屏后，
+            // 返回按钮调用 enterFullScreen(false) 可能因 fullScreenMode 走错分支。
+            if !fullScreen, portraitController != nil {
+                await enterPortraitFullScreen(false, animated: animated)
+                return
+            }
+
             switch fullScreenMode {
             case .landscape:
                 if fullScreen {
