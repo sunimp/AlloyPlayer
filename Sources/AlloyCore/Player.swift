@@ -486,17 +486,21 @@
             guard let containerView else { return }
             let renderView = engine.renderView
 
-            if renderView.superview !== containerView {
-                containerView.addSubview(renderView)
+            // 全屏模式下 renderView 由旋转管理器管理，不移回容器
+            if !isFullScreen {
+                if renderView.superview !== containerView {
+                    containerView.addSubview(renderView)
+                }
+                renderView.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    renderView.topAnchor.constraint(equalTo: containerView.topAnchor),
+                    renderView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                    renderView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                    renderView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+                ])
             }
-            renderView.translatesAutoresizingMaskIntoConstraints = false
-            NSLayoutConstraint.activate([
-                renderView.topAnchor.constraint(equalTo: containerView.topAnchor),
-                renderView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-                renderView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-                renderView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-            ])
 
+            // controlOverlay 始终跟随 renderView
             if let overlay = controlOverlay {
                 if overlay.superview !== renderView {
                     renderView.addSubview(overlay)
@@ -510,7 +514,9 @@
                 ])
             }
 
-            orientationManager.updateViews(renderView: renderView, containerView: containerView)
+            if !isFullScreen {
+                orientationManager.updateViews(renderView: renderView, containerView: containerView)
+            }
         }
     }
 #endif

@@ -138,18 +138,16 @@
             }
 
             let duration = animated ? 0.3 : 0.0
-            controller.view.addSubview(contentView)
-            contentView.translatesAutoresizingMaskIntoConstraints = false
-            NSLayoutConstraint.activate([
-                contentView.topAnchor.constraint(equalTo: controller.view.topAnchor),
-                contentView.leadingAnchor.constraint(equalTo: controller.view.leadingAnchor),
-                contentView.trailingAnchor.constraint(equalTo: controller.view.trailingAnchor),
-                contentView.bottomAnchor.constraint(equalTo: controller.view.bottomAnchor),
-            ])
 
-            controller.view.alpha = 0
+            // 使用 frame-based 布局（跨窗口迁移时比 Auto Layout 更可靠）
+            contentView.translatesAutoresizingMaskIntoConstraints = true
+            contentView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            controller.view.addSubview(contentView)
+            contentView.frame = controller.view.bounds
+
+            window.alpha = 0
             UIView.animate(withDuration: duration, animations: {
-                controller.view.alpha = 1
+                window.alpha = 1
             }, completion: { @Sendable _ in
                 completion()
             })
@@ -178,15 +176,11 @@
             UIView.animate(withDuration: duration, animations: { @Sendable in
                 self.window?.alpha = 0
             }, completion: { @Sendable [weak self] _ in
-                // 将内容视图移回原容器
+                // 将内容视图移回原容器（使用 frame 布局，后续 Player.layoutPlayerSubViews 会恢复约束）
                 containerView.addSubview(contentView)
-                contentView.translatesAutoresizingMaskIntoConstraints = false
-                NSLayoutConstraint.activate([
-                    contentView.topAnchor.constraint(equalTo: containerView.topAnchor),
-                    contentView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-                    contentView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-                    contentView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-                ])
+                contentView.translatesAutoresizingMaskIntoConstraints = true
+                contentView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+                contentView.frame = containerView.bounds
                 self?.cleanupWindow()
                 completion()
             })
