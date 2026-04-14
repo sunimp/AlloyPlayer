@@ -31,18 +31,15 @@
 
         override public init(frame: CGRect) {
             super.init(frame: frame)
-            // 用 stackView 让 loading + speedLabel 整体居中
-            let stack = UIStackView(arrangedSubviews: [loadingView, speedLabel])
-            stack.axis = .vertical
-            stack.alignment = .center
-            stack.spacing = 4
-            stack.translatesAutoresizingMaskIntoConstraints = false
-            addSubview(stack)
+            addSubview(loadingView)
+            addSubview(speedLabel)
             NSLayoutConstraint.activate([
+                loadingView.centerXAnchor.constraint(equalTo: centerXAnchor),
+                loadingView.centerYAnchor.constraint(equalTo: centerYAnchor),
                 loadingView.widthAnchor.constraint(equalToConstant: 44),
                 loadingView.heightAnchor.constraint(equalToConstant: 44),
-                stack.centerXAnchor.constraint(equalTo: centerXAnchor),
-                stack.centerYAnchor.constraint(equalTo: centerYAnchor),
+                speedLabel.topAnchor.constraint(equalTo: loadingView.bottomAnchor, constant: 4),
+                speedLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
             ])
         }
 

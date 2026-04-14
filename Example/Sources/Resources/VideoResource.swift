@@ -66,12 +66,6 @@ enum VideoResource {
             coverColor: UIColor(red: 0.15, green: 0.25, blue: 0.50, alpha: 1)
         ),
         VideoItem(
-            title: "Historic Planet 3D",
-            url: URL(string: "https://devstreaming-cdn.apple.com/videos/streaming/examples/historic_planet_content_2023-10-26-3d-video/main.m3u8")!,
-            description: "Apple 官方 3D 视频测试流 (MV-HEVC/Dolby Vision)",
-            coverColor: UIColor(red: 0.10, green: 0.35, blue: 0.30, alpha: 1)
-        ),
-        VideoItem(
             title: "BipBop (fMP4)",
             url: URL(string: "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8")!,
             description: "Apple 自适应码率 (fragmented MP4 格式)",

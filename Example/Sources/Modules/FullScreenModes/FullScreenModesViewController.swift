@@ -114,7 +114,7 @@ final class FullScreenModesViewController: UIViewController {
         player.addDeviceOrientationObserver()
         self.player = player
 
-        let video = VideoResource.hlsSamples[1]
+        let video = VideoResource.hlsSamples[0]
         controlOverlay.resetControlView()
         controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
         player.assetURL = video.url

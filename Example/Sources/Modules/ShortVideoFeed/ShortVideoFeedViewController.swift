@@ -73,6 +73,9 @@ final class ShortVideoFeedViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: animated)
+        // 隐藏导航栏后恢复侧滑返回手势
+        navigationController?.interactivePopGestureRecognizer?.delegate = nil
+        navigationController?.interactivePopGestureRecognizer?.isEnabled = true
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -155,8 +158,9 @@ final class ShortVideoFeedViewController: UIViewController {
             renderView.bottomAnchor.constraint(equalTo: cell.videoContainerView.bottomAnchor),
         ])
 
-        // 重置进度
+        // 重置进度并隐藏封面
         cell.updateProgress(0)
+        cell.hideCover()
 
         // 播放
         engine?.assetURL = videos[index].url
