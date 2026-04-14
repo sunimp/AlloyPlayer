@@ -18,8 +18,18 @@ final class VideoCollectionViewCell: UICollectionViewCell {
         let v = UIView()
         v.backgroundColor = .black
         v.tag = 200
+        v.clipsToBounds = true
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
+    }()
+
+    /// 封面图
+    private let coverImageView: UIImageView = {
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFill
+        iv.clipsToBounds = true
+        iv.translatesAutoresizingMaskIntoConstraints = false
+        return iv
     }()
 
     private let titleLabel: UILabel = {
@@ -56,6 +66,7 @@ final class VideoCollectionViewCell: UICollectionViewCell {
         contentView.clipsToBounds = true
 
         contentView.addSubview(videoContainerView)
+        videoContainerView.addSubview(coverImageView)
         contentView.addSubview(titleLabel)
         contentView.addSubview(descLabel)
 
@@ -64,6 +75,11 @@ final class VideoCollectionViewCell: UICollectionViewCell {
             videoContainerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             videoContainerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             videoContainerView.heightAnchor.constraint(equalTo: contentView.heightAnchor, multiplier: 0.7),
+
+            coverImageView.topAnchor.constraint(equalTo: videoContainerView.topAnchor),
+            coverImageView.leadingAnchor.constraint(equalTo: videoContainerView.leadingAnchor),
+            coverImageView.trailingAnchor.constraint(equalTo: videoContainerView.trailingAnchor),
+            coverImageView.bottomAnchor.constraint(equalTo: videoContainerView.bottomAnchor),
 
             titleLabel.topAnchor.constraint(equalTo: videoContainerView.bottomAnchor, constant: 8),
             titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
@@ -80,5 +96,6 @@ final class VideoCollectionViewCell: UICollectionViewCell {
     func configure(with video: VideoItem) {
         titleLabel.text = video.title
         descLabel.text = video.description
+        coverImageView.image = video.makeCoverImage()
     }
 }

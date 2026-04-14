@@ -18,8 +18,18 @@ final class VideoTableViewCell: UITableViewCell {
         let v = UIView()
         v.backgroundColor = .black
         v.tag = 100
+        v.clipsToBounds = true
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
+    }()
+
+    /// 封面图
+    let coverImageView: UIImageView = {
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFill
+        iv.clipsToBounds = true
+        iv.translatesAutoresizingMaskIntoConstraints = false
+        return iv
     }()
 
     private let titleLabel: UILabel = {
@@ -52,6 +62,7 @@ final class VideoTableViewCell: UITableViewCell {
 
     private func setupViews() {
         contentView.addSubview(videoContainerView)
+        videoContainerView.addSubview(coverImageView)
         contentView.addSubview(titleLabel)
         contentView.addSubview(descLabel)
 
@@ -60,6 +71,11 @@ final class VideoTableViewCell: UITableViewCell {
             videoContainerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             videoContainerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             videoContainerView.heightAnchor.constraint(equalTo: videoContainerView.widthAnchor, multiplier: 9.0 / 16.0),
+
+            coverImageView.topAnchor.constraint(equalTo: videoContainerView.topAnchor),
+            coverImageView.leadingAnchor.constraint(equalTo: videoContainerView.leadingAnchor),
+            coverImageView.trailingAnchor.constraint(equalTo: videoContainerView.trailingAnchor),
+            coverImageView.bottomAnchor.constraint(equalTo: videoContainerView.bottomAnchor),
 
             titleLabel.topAnchor.constraint(equalTo: videoContainerView.bottomAnchor, constant: 8),
             titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
@@ -77,5 +93,6 @@ final class VideoTableViewCell: UITableViewCell {
     func configure(with video: VideoItem) {
         titleLabel.text = video.title
         descLabel.text = video.description
+        coverImageView.image = video.makeCoverImage()
     }
 }

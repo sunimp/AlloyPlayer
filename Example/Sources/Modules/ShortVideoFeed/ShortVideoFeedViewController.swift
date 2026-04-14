@@ -141,14 +141,22 @@ final class ShortVideoFeedViewController: UIViewController {
         let indexPath = IndexPath(item: index, section: 0)
         guard let cell = collectionView.cellForItem(at: indexPath) as? ShortVideoFeedCell else { return }
 
+        // 确保布局完成
+        cell.layoutIfNeeded()
+
         // 将播放器视图移到当前 cell
-        let renderView = engine?.renderView
-        renderView?.translatesAutoresizingMaskIntoConstraints = true
-        renderView?.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        renderView?.frame = cell.videoContainerView.bounds
-        if let renderView {
-            cell.videoContainerView.addSubview(renderView)
-        }
+        guard let renderView = engine?.renderView else { return }
+        renderView.translatesAutoresizingMaskIntoConstraints = false
+        cell.videoContainerView.addSubview(renderView)
+        NSLayoutConstraint.activate([
+            renderView.topAnchor.constraint(equalTo: cell.videoContainerView.topAnchor),
+            renderView.leadingAnchor.constraint(equalTo: cell.videoContainerView.leadingAnchor),
+            renderView.trailingAnchor.constraint(equalTo: cell.videoContainerView.trailingAnchor),
+            renderView.bottomAnchor.constraint(equalTo: cell.videoContainerView.bottomAnchor),
+        ])
+
+        // 重置进度
+        cell.updateProgress(0)
 
         // 播放
         engine?.assetURL = videos[index].url
