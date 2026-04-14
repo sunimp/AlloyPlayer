@@ -93,9 +93,23 @@ final class VideoCollectionViewCell: UICollectionViewCell {
 
     // MARK: - 配置
 
+    private var currentVideo: VideoItem?
+
     func configure(with video: VideoItem) {
         titleLabel.text = video.title
         descLabel.text = video.description
-        coverImageView.image = video.makeCoverImage()
+        currentVideo = video
+        // 延迟到布局完成后按实际尺寸生成封面
+        coverImageView.image = nil
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if coverImageView.image == nil, let video = currentVideo {
+            let containerSize = videoContainerView.bounds.size
+            if containerSize.width > 0, containerSize.height > 0 {
+                coverImageView.image = video.makeCoverImage(size: containerSize)
+            }
+        }
     }
 }
