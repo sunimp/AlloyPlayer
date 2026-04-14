@@ -159,51 +159,55 @@ final class ShortVideoFeedCell: UICollectionViewCell {
 
         contentView.addSubview(videoContainerView)
         contentView.addSubview(coverView)
-        contentView.addSubview(infoView)
         contentView.addSubview(pauseIcon)
 
-        // 渐变
-        gradientLayer.colors = [UIColor.clear.cgColor, UIColor(white: 0, alpha: 0.5).cgColor]
+        // 右侧按钮（独立于 infoView，在其上方）
+        let buttonStack = UIStackView(arrangedSubviews: [likeButton, commentButton, shareButton])
+        buttonStack.axis = .vertical
+        buttonStack.spacing = 20
+        buttonStack.alignment = .center
+        buttonStack.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(buttonStack)
+
+        // infoView（渐变背景 + 进度条 + 文字）
+        contentView.addSubview(infoView)
+        gradientLayer.colors = [UIColor.clear.cgColor, UIColor(white: 0, alpha: 0.6).cgColor]
         infoView.layer.insertSublayer(gradientLayer, at: 0)
 
-        // 进度条放在 infoView 内部，titleLabel 上方
         infoView.addSubview(progressBar)
         progressBar.addSubview(progressFill)
         infoView.addSubview(titleLabel)
         infoView.addSubview(descLabel)
 
-        // 右侧按钮（间距收紧）
-        let buttonStack = UIStackView(arrangedSubviews: [likeButton, commentButton, shareButton])
-        buttonStack.axis = .vertical
-        buttonStack.spacing = 16
-        buttonStack.alignment = .center
-        buttonStack.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(buttonStack)
-
-        // 进度条填充
         progressFill.translatesAutoresizingMaskIntoConstraints = false
         let fillWidth = progressFill.widthAnchor.constraint(equalToConstant: 0)
         progressFillWidth = fillWidth
 
         NSLayoutConstraint.activate([
+            // 视频容器铺满
             videoContainerView.topAnchor.constraint(equalTo: contentView.topAnchor),
             videoContainerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             videoContainerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             videoContainerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
 
+            // 封面铺满
             coverView.topAnchor.constraint(equalTo: contentView.topAnchor),
             coverView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             coverView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             coverView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
 
-            // infoView 锚定到底部
+            // 右侧按钮：固定宽度，底部锚定到 infoView 顶部上方
+            buttonStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -8),
+            buttonStack.bottomAnchor.constraint(equalTo: infoView.topAnchor, constant: -16),
+            buttonStack.widthAnchor.constraint(equalToConstant: 50),
+
+            // infoView 锚定到 safeArea 底部
             infoView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             infoView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             infoView.bottomAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.bottomAnchor),
-            infoView.heightAnchor.constraint(equalToConstant: 130),
 
-            // 进度条在 infoView 内顶部
-            progressBar.topAnchor.constraint(equalTo: infoView.topAnchor),
+            // 进度条在 infoView 顶部
+            progressBar.topAnchor.constraint(equalTo: infoView.topAnchor, constant: 12),
             progressBar.leadingAnchor.constraint(equalTo: infoView.leadingAnchor, constant: 16),
             progressBar.trailingAnchor.constraint(equalTo: infoView.trailingAnchor, constant: -16),
             progressBar.heightAnchor.constraint(equalToConstant: 2),
@@ -213,20 +217,18 @@ final class ShortVideoFeedCell: UICollectionViewCell {
             progressFill.bottomAnchor.constraint(equalTo: progressBar.bottomAnchor),
             fillWidth,
 
-            // titleLabel 在进度条下方
-            titleLabel.topAnchor.constraint(equalTo: progressBar.bottomAnchor, constant: 12),
+            // 标题
+            titleLabel.topAnchor.constraint(equalTo: progressBar.bottomAnchor, constant: 10),
             titleLabel.leadingAnchor.constraint(equalTo: infoView.leadingAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(equalTo: buttonStack.leadingAnchor, constant: -8),
+            titleLabel.trailingAnchor.constraint(equalTo: infoView.trailingAnchor, constant: -16),
 
-            // descLabel 在 titleLabel 下方
-            descLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
+            // 描述
+            descLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
             descLabel.leadingAnchor.constraint(equalTo: infoView.leadingAnchor, constant: 16),
-            descLabel.trailingAnchor.constraint(equalTo: buttonStack.leadingAnchor, constant: -8),
+            descLabel.trailingAnchor.constraint(equalTo: infoView.trailingAnchor, constant: -16),
+            descLabel.bottomAnchor.constraint(equalTo: infoView.bottomAnchor, constant: -12),
 
-            // 右侧按钮紧贴右边
-            buttonStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -4),
-            buttonStack.bottomAnchor.constraint(equalTo: infoView.bottomAnchor, constant: -8),
-
+            // 暂停图标居中
             pauseIcon.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             pauseIcon.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
         ])
