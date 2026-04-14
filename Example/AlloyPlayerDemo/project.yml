@@ -1,0 +1,29 @@
+name: AlloyPlayerDemo
+options:
+  bundleIdPrefix: com.alloyplayer
+  deploymentTarget:
+    iOS: "15.0"
+  xcodeVersion: "16.0"
+settings:
+  base:
+    IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+packages:
+  AlloyPlayer:
+    path: ../..
+targets:
+  AlloyPlayerDemo:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        INFOPLIST_FILE: Sources/App/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.alloyplayer.demo
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: false
+        CODE_SIGN_STYLE: Automatic
+    dependencies:
+      - package: AlloyPlayer
