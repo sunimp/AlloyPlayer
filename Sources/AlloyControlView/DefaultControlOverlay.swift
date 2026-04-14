@@ -214,7 +214,28 @@
                 self._backButtonTap.send()
             }.store(in: &cancellables)
 
+            // 订阅 slider 拖动/点击结束事件，执行 seek
+            portraitPanel.sliderValueChangedPublisher.sink { [weak self] value in
+                self?.handleSliderSeek(value: value)
+            }.store(in: &cancellables)
+
+            landscapePanel.sliderValueChangedPublisher.sink { [weak self] value in
+                self?.handleSliderSeek(value: value)
+            }.store(in: &cancellables)
+
             failButton.addTarget(self, action: #selector(failButtonTapped), for: .touchUpInside)
+        }
+
+        /// 处理 slider 拖动/点击结束后的 seek
+        private func handleSliderSeek(value: CGFloat) {
+            guard let player, player.totalTime > 0 else { return }
+            let seekTime = player.totalTime * TimeInterval(value)
+            Task {
+                _ = await player.seek(to: seekTime)
+                if shouldSeekToPlay {
+                    player.engine.play()
+                }
+            }
         }
 
         @objc private func failButtonTapped() {

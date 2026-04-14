@@ -188,6 +188,11 @@
             slider.touchEndedPublisher.sink { [weak self] value in
                 self?._sliderValueChanged.send(CGFloat(value))
             }.store(in: &cancellables)
+
+            // 点击跳转
+            slider.tappedPublisher.sink { [weak self] value in
+                self?._sliderValueChanged.send(CGFloat(value))
+            }.store(in: &cancellables)
         }
 
         private func setupActions() {
