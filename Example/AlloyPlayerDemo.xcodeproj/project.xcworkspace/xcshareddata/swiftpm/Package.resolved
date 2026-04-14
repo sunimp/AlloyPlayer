@@ -1,0 +1,24 @@
+{
+  "originHash" : "2661a726f40ce0fc9fa4e0efcb8f153912637ceb02df7228dcb46094883f7684",
+  "pins" : [
+    {
+      "identity" : "lookinside",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/LookInside",
+      "state" : {
+        "revision" : "0e029f00e5e4b52db80537d68ae6d57525b5250c",
+        "version" : "2.2.6"
+      }
+    },
+    {
+      "identity" : "swift-argument-parser",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-argument-parser.git",
+      "state" : {
+        "revision" : "626b5b7b2f45e1b0b1c6f4a309296d1d21d7311b",
+        "version" : "1.7.1"
+      }
+    }
+  ],
+  "version" : 3
+}

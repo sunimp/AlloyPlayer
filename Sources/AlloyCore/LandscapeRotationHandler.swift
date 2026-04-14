@@ -139,9 +139,17 @@
 
             let duration = animated ? 0.3 : 0.0
             controller.view.addSubview(contentView)
+            contentView.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                contentView.topAnchor.constraint(equalTo: controller.view.topAnchor),
+                contentView.leadingAnchor.constraint(equalTo: controller.view.leadingAnchor),
+                contentView.trailingAnchor.constraint(equalTo: controller.view.trailingAnchor),
+                contentView.bottomAnchor.constraint(equalTo: controller.view.bottomAnchor),
+            ])
 
+            controller.view.alpha = 0
             UIView.animate(withDuration: duration, animations: {
-                contentView.frame = controller.view.bounds
+                controller.view.alpha = 1
             }, completion: { @Sendable _ in
                 completion()
             })
@@ -167,11 +175,18 @@
 
             let duration = animated ? 0.3 : 0.0
 
-            UIView.animate(withDuration: duration, animations: {
-                contentView.frame = containerView.bounds
+            UIView.animate(withDuration: duration, animations: { @Sendable in
+                self.window?.alpha = 0
             }, completion: { @Sendable [weak self] _ in
+                // 将内容视图移回原容器
                 containerView.addSubview(contentView)
-                contentView.frame = containerView.bounds
+                contentView.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    contentView.topAnchor.constraint(equalTo: containerView.topAnchor),
+                    contentView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                    contentView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                    contentView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+                ])
                 self?.cleanupWindow()
                 completion()
             })

@@ -18,7 +18,12 @@
     public final class DefaultControlOverlay: UIView, ControlOverlay {
         // MARK: - ControlOverlay
 
-        public weak var player: Player?
+        public weak var player: Player? {
+            didSet {
+                portraitPanel.player = player
+                landscapePanel.player = player
+            }
+        }
 
         // MARK: - 子视图
 
