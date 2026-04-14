@@ -57,6 +57,9 @@
         /// 视频原始尺寸
         public var presentationSize: CGSize = .zero
 
+        /// 布局变化回调（内部使用）
+        var layoutSubviewsCallback: (() -> Void)?
+
         // MARK: - 初始化
 
         override public init(frame: CGRect) {
@@ -67,6 +70,13 @@
         @available(*, unavailable)
         public required init?(coder _: NSCoder) {
             fatalError("init(coder:) has not been implemented")
+        }
+
+        // MARK: - 布局
+
+        override public func layoutSubviews() {
+            super.layoutSubviews()
+            layoutSubviewsCallback?()
         }
     }
 #endif
