@@ -151,7 +151,9 @@
         public init() {}
 
         deinit {
-            stop()
+            MainActor.assumeIsolated {
+                stop()
+            }
         }
 
         // MARK: - PlaybackEngine 方法

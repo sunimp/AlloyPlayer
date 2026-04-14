@@ -97,7 +97,7 @@
 
         private let landscapeHandler = LandscapeRotationHandler()
         private var portraitController: PortraitController?
-        private var deviceOrientationObserver: NSObjectProtocol?
+        private nonisolated(unsafe) var deviceOrientationObserver: NSObjectProtocol?
 
         // MARK: - 初始化
 

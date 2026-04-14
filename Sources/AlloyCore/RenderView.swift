@@ -58,7 +58,7 @@
         public var presentationSize: CGSize = .zero
 
         /// 布局变化回调（内部使用）
-        var layoutSubviewsCallback: (() -> Void)?
+        public var layoutSubviewsCallback: (() -> Void)?
 
         // MARK: - 初始化
 

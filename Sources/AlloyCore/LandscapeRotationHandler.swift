@@ -142,7 +142,7 @@
 
             UIView.animate(withDuration: duration, animations: {
                 contentView.frame = controller.view.bounds
-            }, completion: { _ in
+            }, completion: { @Sendable _ in
                 completion()
             })
         }
@@ -169,7 +169,7 @@
 
             UIView.animate(withDuration: duration, animations: {
                 contentView.frame = containerView.bounds
-            }, completion: { [weak self] _ in
+            }, completion: { @Sendable [weak self] _ in
                 containerView.addSubview(contentView)
                 contentView.frame = containerView.bounds
                 self?.cleanupWindow()

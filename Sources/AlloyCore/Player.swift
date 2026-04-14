@@ -43,7 +43,7 @@
         public private(set) var gestureManager = GestureManager()
 
         /// 系统事件观察者
-        public private(set) var systemEventObserver: SystemEventObserver?
+        public internal(set) var systemEventObserver: SystemEventObserver?
 
         /// 挂载模式
         public private(set) var attachmentMode: AttachmentMode
@@ -325,8 +325,10 @@
         }
 
         deinit {
-            engine.stop()
-            systemEventObserver?.stopObserving()
+            MainActor.assumeIsolated {
+                engine.stop()
+                systemEventObserver?.stopObserving()
+            }
         }
 
         // MARK: - 内部 Setup
