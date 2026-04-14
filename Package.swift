@@ -1,29 +1,44 @@
 // swift-tools-version: 6.3
-// The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(
     name: "AlloyPlayer",
     platforms: [
-        .iOS(.v15)
+        .iOS(.v15),
     ],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
-        .library(
-            name: "AlloyPlayer",
-            targets: ["AlloyPlayer"]
-        ),
+        .library(name: "AlloyPlayer", targets: ["AlloyPlayer"]),
+        .library(name: "AlloyCore", targets: ["AlloyCore"]),
+        .library(name: "AlloyAVPlayer", targets: ["AlloyAVPlayer"]),
+        .library(name: "AlloyControlView", targets: ["AlloyControlView"]),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
+        .target(name: "AlloyCore"),
         .target(
-            name: "AlloyPlayer"
+            name: "AlloyAVPlayer",
+            dependencies: ["AlloyCore"]
+        ),
+        .target(
+            name: "AlloyControlView",
+            dependencies: ["AlloyCore"],
+            resources: [.process("Resources")]
+        ),
+        .target(
+            name: "AlloyPlayer",
+            dependencies: ["AlloyCore", "AlloyAVPlayer", "AlloyControlView"]
         ),
         .testTarget(
-            name: "AlloyPlayerTests",
-            dependencies: ["AlloyPlayer"]
+            name: "AlloyCoreTests",
+            dependencies: ["AlloyCore"]
+        ),
+        .testTarget(
+            name: "AlloyAVPlayerTests",
+            dependencies: ["AlloyAVPlayer"]
+        ),
+        .testTarget(
+            name: "AlloyControlViewTests",
+            dependencies: ["AlloyControlView"]
         ),
     ],
     swiftLanguageModes: [.v6]
