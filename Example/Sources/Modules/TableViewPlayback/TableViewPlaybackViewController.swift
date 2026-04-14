@@ -120,7 +120,7 @@ extension TableViewPlaybackViewController: UITableViewDelegate {
     func tableView(_: UITableView, didSelectRowAt indexPath: IndexPath) {
         let video = videos[indexPath.row]
         controlOverlay.resetControlView()
-        controlOverlay.show(title: video.title, coverImage: nil, fullScreenMode: .automatic)
+        controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
         player?.play(at: indexPath, assetURL: video.url)
     }
 }

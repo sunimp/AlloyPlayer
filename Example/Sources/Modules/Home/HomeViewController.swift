@@ -26,6 +26,11 @@ final class HomeViewController: UITableViewController {
             viewControllerFactory: { BasicPlaybackViewController() }
         ),
         DemoItem(
+            title: "短视频滑动",
+            subtitle: "类似抖音的竖屏全屏上下滑动播放",
+            viewControllerFactory: { ShortVideoFeedViewController() }
+        ),
+        DemoItem(
             title: "播放配置",
             subtitle: "速率、缩放、手势等参数调节",
             viewControllerFactory: { PlaybackSettingsViewController() }
@@ -37,7 +42,7 @@ final class HomeViewController: UITableViewController {
         ),
         DemoItem(
             title: "CollectionView 列表播放",
-            subtitle: "横向滚动短视频推荐流场景",
+            subtitle: "瀑布流布局的列表播放演示",
             viewControllerFactory: { CollectionViewPlaybackViewController() }
         ),
         DemoItem(
@@ -49,11 +54,6 @@ final class HomeViewController: UITableViewController {
             title: "自定义控制层",
             subtitle: "实现 ControlOverlay 协议的极简控制层",
             viewControllerFactory: { CustomControlOverlayViewController() }
-        ),
-        DemoItem(
-            title: "短视频滑动",
-            subtitle: "类似抖音的竖屏全屏上下滑动播放",
-            viewControllerFactory: { ShortVideoFeedViewController() }
         ),
     ]
 

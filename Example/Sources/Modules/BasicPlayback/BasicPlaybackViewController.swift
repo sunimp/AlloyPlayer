@@ -163,7 +163,7 @@ final class BasicPlaybackViewController: UIViewController {
     private func playVideo(at index: Int) {
         let video = videos[index]
         controlOverlay.resetControlView()
-        controlOverlay.show(title: video.title, coverImage: nil, fullScreenMode: .automatic)
+        controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
         player?.assetURL = video.url
     }
 

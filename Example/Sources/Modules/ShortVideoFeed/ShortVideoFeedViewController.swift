@@ -15,7 +15,6 @@ import UIKit
 final class ShortVideoFeedViewController: UIViewController {
     // MARK: - 数据源
 
-    /// 循环 VideoResource.allSamples 到 30 条
     private var videos: [VideoItem] = {
         let samples = VideoResource.allSamples
         return (0 ..< 30).map { samples[$0 % samples.count] }
@@ -23,7 +22,6 @@ final class ShortVideoFeedViewController: UIViewController {
 
     // MARK: - 子视图
 
-    /// 全屏 UICollectionView，垂直分页
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.scrollDirection = .vertical
@@ -40,11 +38,27 @@ final class ShortVideoFeedViewController: UIViewController {
         return cv
     }()
 
+    /// 返回按钮
+    private lazy var backButton: UIButton = {
+        let btn = UIButton(type: .custom)
+        let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
+        btn.setImage(UIImage(systemName: "chevron.left", withConfiguration: config), for: .normal)
+        btn.tintColor = .white
+        btn.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
+        btn.translatesAutoresizingMaskIntoConstraints = false
+        // 加阴影提高可见度
+        btn.layer.shadowColor = UIColor.black.cgColor
+        btn.layer.shadowOpacity = 0.5
+        btn.layer.shadowOffset = .zero
+        btn.layer.shadowRadius = 4
+        return btn
+    }()
+
     // MARK: - 播放器
 
-    private var player: Player?
+    private var engine: AVPlayerManager?
     private var cancellables = Set<AnyCancellable>()
-    private var currentPlayingIndex: Int = 0
+    private var currentPlayingIndex: Int = -1
 
     // MARK: - 生命周期
 
@@ -52,19 +66,27 @@ final class ShortVideoFeedViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .black
         setupCollectionView()
-        setupPlayer()
+        setupBackButton()
+        setupEngine()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: animated)
-        player?.isViewControllerDisappear = false
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // 首次进入播放第一个
+        if currentPlayingIndex < 0 {
+            playVideo(at: 0)
+        }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         navigationController?.setNavigationBarHidden(false, animated: animated)
-        player?.isViewControllerDisappear = true
+        engine?.pause()
     }
 
     override var prefersStatusBarHidden: Bool {
@@ -77,7 +99,7 @@ final class ShortVideoFeedViewController: UIViewController {
 
     deinit {
         MainActor.assumeIsolated {
-            player?.stop()
+            engine?.stop()
         }
     }
 
@@ -94,37 +116,55 @@ final class ShortVideoFeedViewController: UIViewController {
         ])
     }
 
-    private func setupPlayer() {
-        let engine = AVPlayerManager()
-        engine.shouldAutoPlay = true
+    private func setupBackButton() {
+        view.addSubview(backButton)
+        NSLayoutConstraint.activate([
+            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+            backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            backButton.widthAnchor.constraint(equalToConstant: 44),
+            backButton.heightAnchor.constraint(equalToConstant: 44),
+        ])
+    }
 
-        // 使用列表模式，containerViewTag = 300
-        let player = Player(scrollView: collectionView, engine: engine, containerViewTag: 300)
-
-        // 使用极简控制层
-        let overlay = MinimalControlOverlay()
-        player.controlOverlay = overlay
-
-        // 配置
-        player.shouldAutoPlay = true
-        player.stopWhileNotVisible = true
-        player.disappearPercent = 0.5
-
-        self.player = player
-
-        // 首次加载后播放第一个
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-            self?.playVideo(at: 0)
-        }
+    private func setupEngine() {
+        let avEngine = AVPlayerManager()
+        avEngine.shouldAutoPlay = true
+        engine = avEngine
     }
 
     // MARK: - 播放
 
     private func playVideo(at index: Int) {
-        guard index >= 0, index < videos.count else { return }
+        guard index >= 0, index < videos.count, index != currentPlayingIndex else { return }
         currentPlayingIndex = index
+
         let indexPath = IndexPath(item: index, section: 0)
-        player?.play(at: indexPath, assetURL: videos[index].url)
+        guard let cell = collectionView.cellForItem(at: indexPath) as? ShortVideoFeedCell else { return }
+
+        // 将播放器视图移到当前 cell
+        let renderView = engine?.renderView
+        renderView?.translatesAutoresizingMaskIntoConstraints = true
+        renderView?.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        renderView?.frame = cell.videoContainerView.bounds
+        if let renderView {
+            cell.videoContainerView.addSubview(renderView)
+        }
+
+        // 播放
+        engine?.assetURL = videos[index].url
+
+        // 订阅进度更新到当前 cell
+        cancellables.removeAll()
+        engine?.playTimePublisher.sink { [weak cell] time in
+            guard let cell, time.total > 0 else { return }
+            cell.updateProgress(Float(time.current / time.total))
+        }.store(in: &cancellables)
+    }
+
+    // MARK: - 操作
+
+    @objc private func backTapped() {
+        navigationController?.popViewController(animated: true)
     }
 }
 
@@ -144,7 +184,16 @@ extension ShortVideoFeedViewController: UICollectionViewDataSource {
             for: indexPath
         ) as! ShortVideoFeedCell
         let video = videos[indexPath.item]
-        cell.configure(title: video.title, description: video.description)
+        cell.configure(title: video.title, description: video.description, coverColor: video.coverColor)
+        cell.onTap = { [weak self] in
+            guard let self, let engine = self.engine else { return }
+            if engine.isPlaying {
+                engine.pause()
+                cell.showPauseIndicator()
+            } else {
+                engine.play()
+            }
+        }
         return cell
     }
 }
@@ -156,11 +205,8 @@ extension ShortVideoFeedViewController: UICollectionViewDelegateFlowLayout {
         view.bounds.size
     }
 
-    /// 翻页后自动播放
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         let index = Int(round(scrollView.contentOffset.y / scrollView.bounds.height))
-        if index != currentPlayingIndex {
-            playVideo(at: index)
-        }
+        playVideo(at: index)
     }
 }

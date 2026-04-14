@@ -13,9 +13,12 @@ import UIKit
 final class ShortVideoFeedCell: UICollectionViewCell {
     static let reuseIdentifier = "ShortVideoFeedCell"
 
+    /// 点击回调
+    var onTap: (() -> Void)?
+
     // MARK: - 子视图
 
-    /// 视频容器（tag = 300，供 Player 通过 tag 查找）
+    /// 视频容器（tag = 300）
     let videoContainerView: UIView = {
         let v = UIView()
         v.backgroundColor = .black
@@ -24,68 +27,76 @@ final class ShortVideoFeedCell: UICollectionViewCell {
         return v
     }()
 
-    /// 底部信息栏（半透明渐变背景）
-    let infoView: UIView = {
+    /// 封面占位
+    private let coverView: UIView = {
         let v = UIView()
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
     }()
 
-    /// 标题
-    let titleLabel: UILabel = {
+    /// 底部信息栏
+    private let infoView: UIView = {
+        let v = UIView()
+        v.isUserInteractionEnabled = false
+        v.translatesAutoresizingMaskIntoConstraints = false
+        return v
+    }()
+
+    private let titleLabel: UILabel = {
         let l = UILabel()
         l.font = .systemFont(ofSize: 16, weight: .bold)
         l.textColor = .white
-        l.numberOfLines = 1
         l.translatesAutoresizingMaskIntoConstraints = false
         return l
     }()
 
-    /// 描述
-    let descLabel: UILabel = {
+    private let descLabel: UILabel = {
         let l = UILabel()
         l.font = .systemFont(ofSize: 13)
-        l.textColor = .white
+        l.textColor = UIColor(white: 1, alpha: 0.8)
         l.numberOfLines = 2
         l.translatesAutoresizingMaskIntoConstraints = false
         return l
     }()
 
-    /// 点赞按钮
-    let likeButton: UIButton = {
-        let b = UIButton(type: .system)
-        b.setImage(UIImage(systemName: "heart.fill"), for: .normal)
-        b.tintColor = .white
-        b.translatesAutoresizingMaskIntoConstraints = false
-        return b
+    /// 底部进度条（极细）
+    private let progressBar: UIView = {
+        let v = UIView()
+        v.backgroundColor = UIColor(white: 1, alpha: 0.3)
+        v.translatesAutoresizingMaskIntoConstraints = false
+        return v
     }()
 
-    /// 评论按钮
-    let commentButton: UIButton = {
-        let b = UIButton(type: .system)
-        b.setImage(UIImage(systemName: "bubble.right.fill"), for: .normal)
-        b.tintColor = .white
-        b.translatesAutoresizingMaskIntoConstraints = false
-        return b
+    private let progressFill: UIView = {
+        let v = UIView()
+        v.backgroundColor = .white
+        return v
     }()
 
-    /// 分享按钮
-    let shareButton: UIButton = {
-        let b = UIButton(type: .system)
-        b.setImage(UIImage(systemName: "arrowshape.turn.up.right.fill"), for: .normal)
-        b.tintColor = .white
-        b.translatesAutoresizingMaskIntoConstraints = false
-        return b
+    /// 暂停指示器
+    private let pauseIcon: UIImageView = {
+        let config = UIImage.SymbolConfiguration(pointSize: 50, weight: .medium)
+        let iv = UIImageView(image: UIImage(systemName: "play.fill", withConfiguration: config))
+        iv.tintColor = UIColor(white: 1, alpha: 0.8)
+        iv.isHidden = true
+        iv.translatesAutoresizingMaskIntoConstraints = false
+        return iv
     }()
 
-    /// 渐变图层
+    /// 右侧互动按钮
+    private let likeButton = ShortVideoFeedCell.makeButton(systemName: "heart.fill", label: "喜欢")
+    private let commentButton = ShortVideoFeedCell.makeButton(systemName: "bubble.right.fill", label: "评论")
+    private let shareButton = ShortVideoFeedCell.makeButton(systemName: "arrowshape.turn.up.right.fill", label: "分享")
+
     private let gradientLayer = CAGradientLayer()
+    private var progressFillWidth: NSLayoutConstraint?
 
     // MARK: - 初始化
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupViews()
+        setupTapGesture()
     }
 
     @available(*, unavailable)
@@ -93,18 +104,46 @@ final class ShortVideoFeedCell: UICollectionViewCell {
         fatalError("init(coder:) has not been implemented")
     }
 
-    // MARK: - 布局
-
     override func layoutSubviews() {
         super.layoutSubviews()
         gradientLayer.frame = infoView.bounds
     }
 
-    // MARK: - 配置
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        progressFillWidth?.constant = 0
+        pauseIcon.isHidden = true
+        onTap = nil
+    }
 
-    func configure(title: String, description: String) {
-        titleLabel.text = title
+    // MARK: - 公开方法
+
+    func configure(title: String, description: String, coverColor: UIColor) {
+        titleLabel.text = "@\(title)"
         descLabel.text = description
+        coverView.backgroundColor = coverColor
+    }
+
+    /// 更新播放进度（0...1）
+    func updateProgress(_ value: Float) {
+        let width = contentView.bounds.width * CGFloat(max(0, min(value, 1)))
+        progressFillWidth?.constant = width
+    }
+
+    /// 显示暂停指示器（短暂动画）
+    func showPauseIndicator() {
+        pauseIcon.isHidden = false
+        pauseIcon.alpha = 1
+        pauseIcon.transform = CGAffineTransform(scaleX: 0.5, y: 0.5)
+        UIView.animate(withDuration: 0.15, animations: {
+            self.pauseIcon.transform = .identity
+        }, completion: { _ in
+            UIView.animate(withDuration: 0.8, delay: 0.5, options: [], animations: {
+                self.pauseIcon.alpha = 0
+            }, completion: { _ in
+                self.pauseIcon.isHidden = true
+            })
+        })
     }
 
     // MARK: - 私有方法
@@ -112,67 +151,112 @@ final class ShortVideoFeedCell: UICollectionViewCell {
     private func setupViews() {
         contentView.backgroundColor = .black
 
-        // 视频容器铺满
         contentView.addSubview(videoContainerView)
-
-        // 底部信息栏
+        contentView.addSubview(coverView)
         contentView.addSubview(infoView)
-        setupGradient()
+        contentView.addSubview(pauseIcon)
+        contentView.addSubview(progressBar)
+        progressBar.addSubview(progressFill)
+
+        // 渐变
+        gradientLayer.colors = [UIColor.clear.cgColor, UIColor(white: 0, alpha: 0.5).cgColor]
+        infoView.layer.insertSublayer(gradientLayer, at: 0)
+
         infoView.addSubview(titleLabel)
         infoView.addSubview(descLabel)
 
-        // 右侧互动按钮
-        contentView.addSubview(likeButton)
-        contentView.addSubview(commentButton)
-        contentView.addSubview(shareButton)
+        // 右侧按钮
+        let buttonStack = UIStackView(arrangedSubviews: [likeButton, commentButton, shareButton])
+        buttonStack.axis = .vertical
+        buttonStack.spacing = 20
+        buttonStack.alignment = .center
+        buttonStack.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(buttonStack)
+
+        // 进度条填充
+        progressFill.translatesAutoresizingMaskIntoConstraints = false
+        let fillWidth = progressFill.widthAnchor.constraint(equalToConstant: 0)
+        progressFillWidth = fillWidth
 
         NSLayoutConstraint.activate([
-            // 视频容器铺满整个 cell
             videoContainerView.topAnchor.constraint(equalTo: contentView.topAnchor),
             videoContainerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             videoContainerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             videoContainerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
 
-            // 底部信息栏
+            coverView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            coverView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            coverView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            coverView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+
             infoView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             infoView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            infoView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            infoView.bottomAnchor.constraint(equalTo: progressBar.topAnchor),
             infoView.heightAnchor.constraint(equalToConstant: 120),
 
-            // 标题
             titleLabel.leadingAnchor.constraint(equalTo: infoView.leadingAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(equalTo: infoView.trailingAnchor, constant: -60),
+            titleLabel.trailingAnchor.constraint(equalTo: buttonStack.leadingAnchor, constant: -12),
             titleLabel.bottomAnchor.constraint(equalTo: descLabel.topAnchor, constant: -6),
 
-            // 描述
             descLabel.leadingAnchor.constraint(equalTo: infoView.leadingAnchor, constant: 16),
-            descLabel.trailingAnchor.constraint(equalTo: infoView.trailingAnchor, constant: -60),
+            descLabel.trailingAnchor.constraint(equalTo: buttonStack.leadingAnchor, constant: -12),
             descLabel.bottomAnchor.constraint(equalTo: infoView.bottomAnchor, constant: -16),
 
-            // 右侧按钮（垂直排列，距底部 160pt）
-            shareButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
-            shareButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -160),
-            shareButton.widthAnchor.constraint(equalToConstant: 44),
-            shareButton.heightAnchor.constraint(equalToConstant: 44),
+            buttonStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            buttonStack.bottomAnchor.constraint(equalTo: infoView.bottomAnchor, constant: -8),
 
-            commentButton.trailingAnchor.constraint(equalTo: shareButton.trailingAnchor),
-            commentButton.bottomAnchor.constraint(equalTo: shareButton.topAnchor, constant: -16),
-            commentButton.widthAnchor.constraint(equalToConstant: 44),
-            commentButton.heightAnchor.constraint(equalToConstant: 44),
+            pauseIcon.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            pauseIcon.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
 
-            likeButton.trailingAnchor.constraint(equalTo: shareButton.trailingAnchor),
-            likeButton.bottomAnchor.constraint(equalTo: commentButton.topAnchor, constant: -16),
-            likeButton.widthAnchor.constraint(equalToConstant: 44),
-            likeButton.heightAnchor.constraint(equalToConstant: 44),
+            // 底部极细进度条
+            progressBar.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            progressBar.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            progressBar.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            progressBar.heightAnchor.constraint(equalToConstant: 2),
+
+            progressFill.leadingAnchor.constraint(equalTo: progressBar.leadingAnchor),
+            progressFill.topAnchor.constraint(equalTo: progressBar.topAnchor),
+            progressFill.bottomAnchor.constraint(equalTo: progressBar.bottomAnchor),
+            fillWidth,
         ])
     }
 
-    private func setupGradient() {
-        gradientLayer.colors = [
-            UIColor.clear.cgColor,
-            UIColor(white: 0, alpha: 0.6).cgColor,
-        ]
-        gradientLayer.locations = [0, 1]
-        infoView.layer.insertSublayer(gradientLayer, at: 0)
+    private func setupTapGesture() {
+        let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+        contentView.addGestureRecognizer(tap)
+    }
+
+    @objc private func handleTap() {
+        onTap?()
+    }
+
+    private static func makeButton(systemName: String, label: String) -> UIView {
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        let config = UIImage.SymbolConfiguration(pointSize: 28)
+        let btn = UIImageView(image: UIImage(systemName: systemName, withConfiguration: config))
+        btn.tintColor = .white
+        btn.translatesAutoresizingMaskIntoConstraints = false
+
+        let lbl = UILabel()
+        lbl.text = label
+        lbl.font = .systemFont(ofSize: 11)
+        lbl.textColor = .white
+        lbl.translatesAutoresizingMaskIntoConstraints = false
+
+        container.addSubview(btn)
+        container.addSubview(lbl)
+
+        NSLayoutConstraint.activate([
+            btn.topAnchor.constraint(equalTo: container.topAnchor),
+            btn.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            lbl.topAnchor.constraint(equalTo: btn.bottomAnchor, constant: 2),
+            lbl.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            lbl.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            container.widthAnchor.constraint(equalToConstant: 50),
+        ])
+
+        return container
     }
 }

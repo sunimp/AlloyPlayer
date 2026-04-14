@@ -116,7 +116,7 @@ final class FullScreenModesViewController: UIViewController {
 
         let video = VideoResource.hlsSamples[1]
         controlOverlay.resetControlView()
-        controlOverlay.show(title: video.title, coverImage: nil, fullScreenMode: .automatic)
+        controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
         player.assetURL = video.url
 
         // 监听旋转事件
