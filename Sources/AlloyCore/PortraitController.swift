@@ -66,8 +66,6 @@
         override func viewDidLoad() {
             super.viewDidLoad()
             view.backgroundColor = .black
-            modalPresentationStyle = .custom
-            transitioningDelegate = self
         }
     }
 

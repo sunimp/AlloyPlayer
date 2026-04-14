@@ -234,6 +234,7 @@
             controller.isStatusBarHidden = isFullScreenStatusBarHidden
             controller.statusBarStyle = fullScreenStatusBarStyle
             controller.modalPresentationStyle = .custom
+            controller.transitioningDelegate = controller // 必须在 present() 之前设置
             portraitController = controller
 
             guard let presenting = UIApplication.shared.topViewController else {

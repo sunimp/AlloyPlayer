@@ -44,16 +44,19 @@
             container.addSubview(toView)
             toView.frame = container.bounds
 
+            // 切换到 frame-based 布局
+            contentView.translatesAutoresizingMaskIntoConstraints = true
+
             // 记录原始 frame
             let startFrame = containerView.convert(containerView.bounds, to: container)
             contentView.frame = startFrame
-
             container.addSubview(contentView)
 
             UIView.animate(withDuration: duration, animations: {
                 self.contentView.frame = container.bounds
             }, completion: { _ in
                 toView.addSubview(self.contentView)
+                self.contentView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
                 self.contentView.frame = toView.bounds
                 context.completeTransition(!context.transitionWasCancelled)
             })
@@ -63,6 +66,7 @@
             let container = context.containerView
             let targetFrame = containerView.convert(containerView.bounds, to: container)
 
+            contentView.translatesAutoresizingMaskIntoConstraints = true
             container.addSubview(contentView)
             contentView.frame = container.bounds
 
@@ -70,6 +74,7 @@
                 self.contentView.frame = targetFrame
             }, completion: { _ in
                 self.containerView.addSubview(self.contentView)
+                self.contentView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
                 self.contentView.frame = self.containerView.bounds
                 context.completeTransition(!context.transitionWasCancelled)
             })
