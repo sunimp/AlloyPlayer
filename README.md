@@ -5,7 +5,7 @@
 [![License MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![SPM Compatible](https://img.shields.io/badge/SPM-Compatible-brightgreen.svg)](https://swift.org/package-manager/)
 
-一个现代的纯 Swift 视频播放器框架。基于 [ZFPlayer](https://github.com/renzifeng/ZFPlayer) 的完整功能重写，采用 Swift 6 并发、Combine 事件流和模块化 SPM 架构。
+一个现代的纯 Swift 视频播放器框架。基于 [ZFPlayer](https://github.com/renzifeng/ZFPlayer) 的进行重写，采用 Swift 6 并发、Combine 事件流和模块化 SPM 架构。
 
 ## 特性
 
@@ -19,6 +19,16 @@
 - 列表播放的浮动画中画窗口
 - 所有事件均提供 Combine 发布者
 - Swift 6 严格并发安全
+
+## 截图
+
+| 基础播放 | 短视频 | 播放配置 |
+|:---:|:---:|:---:|
+| ![基础播放](Screenshots/basic.png) | ![短视频](Screenshots/shot-video.png) | ![播放配置](Screenshots/play-prameters.png) |
+
+| 横屏全屏 | 竖屏全屏 | 自定义控制层 |
+|:---:|:---:|:---:|
+| ![横屏全屏](Screenshots/landscape-mode.png) | ![竖屏全屏](Screenshots/portrait-mode.png) | ![自定义控制层](Screenshots/custom-control-view.png) |
 
 ## 系统要求
 
