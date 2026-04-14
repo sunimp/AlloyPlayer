@@ -10,34 +10,24 @@ import UIKit
 
 // MARK: - CollectionViewPlaybackViewController
 
-/// CollectionView 列表播放演示
+/// CollectionView 瀑布流列表播放演示
 final class CollectionViewPlaybackViewController: UIViewController {
     // MARK: - 子视图
 
     private lazy var collectionView: UICollectionView = {
-        let layout = UICollectionViewFlowLayout()
-        layout.scrollDirection = .horizontal
-        layout.minimumLineSpacing = 16
-        layout.sectionInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+        let layout = CHTCollectionViewWaterfallLayout()
+        layout.columnCount = 2
+        layout.minimumColumnSpacing = 8
+        layout.minimumInteritemSpacing = 8
+        layout.sectionInset = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
 
         let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
         cv.backgroundColor = .systemBackground
         cv.dataSource = self
         cv.delegate = self
         cv.register(VideoCollectionViewCell.self, forCellWithReuseIdentifier: VideoCollectionViewCell.reuseIdentifier)
-        cv.showsHorizontalScrollIndicator = false
         cv.translatesAutoresizingMaskIntoConstraints = false
         return cv
-    }()
-
-    private let hintLabel: UILabel = {
-        let l = UILabel()
-        l.text = "横向滑动浏览视频，点击播放"
-        l.font = .systemFont(ofSize: 14)
-        l.textColor = .secondaryLabel
-        l.textAlignment = .center
-        l.translatesAutoresizingMaskIntoConstraints = false
-        return l
     }()
 
     // MARK: - 播放器
@@ -47,10 +37,14 @@ final class CollectionViewPlaybackViewController: UIViewController {
 
     private let videos = VideoResource.allSamples
 
+    /// 为瀑布流生成随机高度（模拟不同视频宽高比）
+    private lazy var itemHeights: [CGFloat] = videos.map { _ in CGFloat.random(in: 180 ... 300) }
+
     // MARK: - 生命周期
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        title = "CollectionView 列表播放"
         view.backgroundColor = .systemBackground
         setupUI()
         setupPlayer()
@@ -75,18 +69,13 @@ final class CollectionViewPlaybackViewController: UIViewController {
     // MARK: - 配置
 
     private func setupUI() {
-        view.addSubview(hintLabel)
         view.addSubview(collectionView)
 
         NSLayoutConstraint.activate([
-            hintLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
-            hintLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            hintLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-
-            collectionView.topAnchor.constraint(equalTo: hintLabel.bottomAnchor, constant: 16),
+            collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            collectionView.heightAnchor.constraint(equalToConstant: 260),
+            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
     }
 
@@ -101,9 +90,6 @@ final class CollectionViewPlaybackViewController: UIViewController {
 
         // 配置列表 URL 数据源
         player.sectionAssetURLs = [videos.map(\.url)]
-
-        // 设置横向滚动
-        collectionView.scrollViewDirection = .horizontal
 
         self.player = player
     }
@@ -129,12 +115,20 @@ extension CollectionViewPlaybackViewController: UICollectionViewDataSource {
     }
 }
 
-// MARK: - UICollectionViewDelegateFlowLayout
+// MARK: - CHTCollectionViewDelegateWaterfallLayout
 
-extension CollectionViewPlaybackViewController: UICollectionViewDelegateFlowLayout {
-    func collectionView(_ collectionView: UICollectionView, layout _: UICollectionViewLayout, sizeForItemAt _: IndexPath) -> CGSize {
-        let width = collectionView.bounds.width * 0.8
-        return CGSize(width: width, height: 240)
+extension CollectionViewPlaybackViewController: CHTCollectionViewDelegateWaterfallLayout {
+    func collectionView(
+        _ collectionView: UICollectionView,
+        layout _: UICollectionViewLayout,
+        sizeForItemAt indexPath: IndexPath
+    ) -> CGSize {
+        let columnCount: CGFloat = 2
+        let inset: CGFloat = 8
+        let spacing: CGFloat = 8
+        let totalWidth = collectionView.bounds.width - inset * 2 - spacing * (columnCount - 1)
+        let itemWidth = totalWidth / columnCount
+        return CGSize(width: itemWidth, height: itemHeights[indexPath.item])
     }
 
     func collectionView(_: UICollectionView, didSelectItemAt indexPath: IndexPath) {

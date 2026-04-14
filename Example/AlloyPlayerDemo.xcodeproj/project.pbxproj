@@ -25,6 +25,7 @@
 		A4555BD22F8E4FCE0023C641 /* AlloyControlView in Frameworks */ = {isa = PBXBuildFile; productRef = A4555BD12F8E4FCE0023C641 /* AlloyControlView */; };
 		A4555BD42F8E4FCE0023C641 /* AlloyCore in Frameworks */ = {isa = PBXBuildFile; productRef = A4555BD32F8E4FCE0023C641 /* AlloyCore */; };
 		A4555BD62F8E4FCE0023C641 /* AlloyPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = A4555BD52F8E4FCE0023C641 /* AlloyPlayer */; };
+		A4555BD92F8E5CBB0023C641 /* CHTCollectionViewWaterfallLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4555BD82F8E5CBB0023C641 /* CHTCollectionViewWaterfallLayout.swift */; };
 		AE9431EBDCBA8D07879EC6A6 /* AlloyPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = 526831B0AF8E71E9F9D796AB /* AlloyPlayer */; };
 		AF205196F5BEE8E2E546F5B6 /* MinimalControlOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA66B7998FE7CBE9B58EC163 /* MinimalControlOverlay.swift */; };
 		B4F7673BF47E4F3B95C4FE29 /* FullScreenModesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 339A73F44AA874176CAFE7E3 /* FullScreenModesViewController.swift */; };
@@ -47,11 +48,12 @@
 		8F936FE579F5B25987519651 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		97158D5C9586386143867E11 /* VideoCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCollectionViewCell.swift; sourceTree = "<group>"; };
 		9AE08AF18B115785572E8B03 /* HomeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewController.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* ShortVideoFeedCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortVideoFeedCell.swift; sourceTree = "<group>"; };
+		A4555BD82F8E5CBB0023C641 /* CHTCollectionViewWaterfallLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CHTCollectionViewWaterfallLayout.swift; sourceTree = "<group>"; };
 		A5D39E4BD1348B8DA507E950 /* AlloyPlayerDemo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AlloyPlayerDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1C2D3E4F5A6B7C8D9E0F1A2 /* ShortVideoFeedViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortVideoFeedViewController.swift; sourceTree = "<group>"; };
 		BA66B7998FE7CBE9B58EC163 /* MinimalControlOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinimalControlOverlay.swift; sourceTree = "<group>"; };
 		DE8E4AA58ACF5D20453C0ADD /* VideoResource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoResource.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6A7B8C9D0E1F2 /* ShortVideoFeedCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortVideoFeedCell.swift; sourceTree = "<group>"; };
-		B1C2D3E4F5A6B7C8D9E0F1A2 /* ShortVideoFeedViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortVideoFeedViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,6 +83,7 @@
 				F2C4AFEC4B4A917207DDF8DA /* App */,
 				2AD07111BEC667656C557694 /* Modules */,
 				7F6ACEB7DE664FDAE4C7A160 /* Resources */,
+				A4555BD72F8E5CB50023C641 /* Vendor */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -148,6 +151,14 @@
 				23B443018ED43A48D506F6DC /* Sources */,
 				39933C111B5D68B861640975 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		A4555BD72F8E5CB50023C641 /* Vendor */ = {
+			isa = PBXGroup;
+			children = (
+				A4555BD82F8E5CBB0023C641 /* CHTCollectionViewWaterfallLayout.swift */,
+			);
+			path = Vendor;
 			sourceTree = "<group>";
 		};
 		AC6D878AFFA65C248413A405 /* PlaybackSettings */ = {
@@ -282,6 +293,7 @@
 				B4F7673BF47E4F3B95C4FE29 /* FullScreenModesViewController.swift in Sources */,
 				169AC89463B0C43121465489 /* HomeViewController.swift in Sources */,
 				AF205196F5BEE8E2E546F5B6 /* MinimalControlOverlay.swift in Sources */,
+				A4555BD92F8E5CBB0023C641 /* CHTCollectionViewWaterfallLayout.swift in Sources */,
 				6759F88D359E11CE4F9364E6 /* PlaybackSettingsViewController.swift in Sources */,
 				576CC73C1BADA9309AFAE5C8 /* SceneDelegate.swift in Sources */,
 				E1A2C3D4F5B6A7E8C9D0E1F2 /* ShortVideoFeedCell.swift in Sources */,
