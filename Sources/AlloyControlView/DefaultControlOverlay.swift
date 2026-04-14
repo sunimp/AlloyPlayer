@@ -116,6 +116,8 @@
         // MARK: - 内部状态
 
         private var isShowing = false
+        private var isSeeking = false
+        private var seekingSliderValue: Float = 0
         private var sumTime: TimeInterval = 0
         private var autoHideWorkItem: DispatchWorkItem?
         private var cancellables = Set<AnyCancellable>()
@@ -238,10 +240,23 @@
         private func handleSliderSeek(value: CGFloat) {
             guard let player, player.totalTime > 0 else { return }
             let seekTime = player.totalTime * TimeInterval(value)
+
+            // 锁定 slider 位置，seek 期间阻止 playTimePublisher 覆盖
+            isSeeking = true
+            seekingSliderValue = Float(value)
+
             Task {
-                _ = await player.seek(to: seekTime)
-                if shouldSeekToPlay {
-                    player.engine.play()
+                let success = await player.seek(to: seekTime)
+                isSeeking = false
+                if success {
+                    if shouldSeekToPlay {
+                        player.engine.play()
+                    }
+                } else {
+                    // seek 失败，slider 恢复到当前实际播放位置
+                    let currentValue = player.totalTime > 0 ? Float(player.currentTime / player.totalTime) : 0
+                    portraitPanel.slider.value = currentValue
+                    landscapePanel.slider.value = currentValue
                 }
             }
         }
@@ -345,6 +360,10 @@
         }
 
         public func player(_: Player, didUpdateTime currentTime: TimeInterval, totalTime: TimeInterval) {
+            // seek 期间保持 slider 在用户拖动的位置，不被旧的 currentTime 覆盖
+            if isSeeking {
+                return
+            }
             portraitPanel.updateTime(current: currentTime, total: totalTime)
             landscapePanel.updateTime(current: currentTime, total: totalTime)
             if !portraitPanel.slider.isDragging, totalTime > 0 {
@@ -416,9 +435,19 @@
 
         public func gestureEndedPan(_: GestureManager, direction: PanDirection, location _: PanLocation) {
             guard direction == .horizontal, let player else { return }
+
+            // 锁定 slider 位置
+            isSeeking = true
+            if player.totalTime > 0 {
+                seekingSliderValue = Float(sumTime / player.totalTime)
+            }
+
             Task {
-                _ = await player.seek(to: sumTime)
-                if shouldSeekToPlay { player.engine.play() }
+                let success = await player.seek(to: sumTime)
+                isSeeking = false
+                if success, shouldSeekToPlay {
+                    player.engine.play()
+                }
                 portraitPanel.sliderDidEndChanging()
                 landscapePanel.sliderDidEndChanging()
             }
