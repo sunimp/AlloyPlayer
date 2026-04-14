@@ -208,7 +208,15 @@
         }
 
         private func setupBindings() {
+            // 横屏返回按钮
             landscapePanel.backButtonTapPublisher.sink { [weak self] in
+                guard let self, let player = self.player else { return }
+                Task { await player.enterFullScreen(false, animated: true) }
+                self._backButtonTap.send()
+            }.store(in: &cancellables)
+
+            // 竖屏返回按钮
+            portraitPanel.backButtonTapPublisher.sink { [weak self] in
                 guard let self, let player = self.player else { return }
                 Task { await player.enterFullScreen(false, animated: true) }
                 self._backButtonTap.send()
@@ -360,6 +368,8 @@
             let isLandscape = player.isFullScreen && fullScreenMode != .portrait
             portraitPanel.isHidden = isLandscape
             landscapePanel.isHidden = !isLandscape
+            // 竖屏全屏时显示返回按钮
+            portraitPanel.updateFullScreenState(isFullScreen: player.isFullScreen)
         }
 
         // MARK: - 手势回调

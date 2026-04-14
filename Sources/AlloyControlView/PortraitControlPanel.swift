@@ -27,6 +27,16 @@
             return v
         }()
 
+        public private(set) var backButton: UIButton = {
+            let btn = UIButton(type: .custom)
+            let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .medium)
+            btn.setImage(UIImage(systemName: "chevron.left", withConfiguration: config), for: .normal)
+            btn.tintColor = .white
+            btn.isHidden = true
+            btn.translatesAutoresizingMaskIntoConstraints = false
+            return btn
+        }()
+
         public private(set) var titleLabel: UILabel = {
             let label = UILabel()
             label.textColor = .white
@@ -84,6 +94,11 @@
 
         private let _sliderValueChanging = PassthroughSubject<(value: CGFloat, isForward: Bool), Never>()
         private let _sliderValueChanged = PassthroughSubject<CGFloat, Never>()
+        private let _backButtonTap = PassthroughSubject<Void, Never>()
+        public var backButtonTapPublisher: AnyPublisher<Void, Never> {
+            _backButtonTap.eraseToAnyPublisher()
+        }
+
         public var sliderValueChangingPublisher: AnyPublisher<(value: CGFloat, isForward: Bool), Never> {
             _sliderValueChanging.eraseToAnyPublisher()
         }
@@ -117,6 +132,7 @@
             topGradient.translatesAutoresizingMaskIntoConstraints = false
             addSubview(topGradient)
             addSubview(topToolBar)
+            topToolBar.addSubview(backButton)
             topToolBar.addSubview(titleLabel)
 
             // 底部工具栏
@@ -141,7 +157,12 @@
                 topToolBar.trailingAnchor.constraint(equalTo: trailingAnchor),
                 topToolBar.heightAnchor.constraint(equalToConstant: 44),
 
-                titleLabel.leadingAnchor.constraint(equalTo: topToolBar.leadingAnchor, constant: 16),
+                backButton.leadingAnchor.constraint(equalTo: topToolBar.leadingAnchor, constant: 12),
+                backButton.centerYAnchor.constraint(equalTo: topToolBar.centerYAnchor),
+                backButton.widthAnchor.constraint(equalToConstant: 30),
+                backButton.heightAnchor.constraint(equalToConstant: 30),
+
+                titleLabel.leadingAnchor.constraint(equalTo: backButton.trailingAnchor, constant: 4),
                 titleLabel.centerYAnchor.constraint(equalTo: topToolBar.centerYAnchor),
 
                 bottomGradient.bottomAnchor.constraint(equalTo: bottomAnchor),
@@ -198,6 +219,7 @@
         private func setupActions() {
             playPauseButton.addTarget(self, action: #selector(playOrPauseTapped), for: .touchUpInside)
             fullScreenButton.addTarget(self, action: #selector(fullScreenTapped), for: .touchUpInside)
+            backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         }
 
         @objc private func playOrPauseTapped() {
@@ -207,6 +229,10 @@
         @objc private func fullScreenTapped() {
             guard let player else { return }
             Task { await player.enterFullScreen(!player.isFullScreen, animated: true) }
+        }
+
+        @objc private func backTapped() {
+            _backButtonTap.send()
         }
 
         // MARK: - 公开方法
@@ -238,6 +264,14 @@
         public func show(title: String?, fullScreenMode: FullScreenMode) {
             titleLabel.text = title
             self.fullScreenMode = fullScreenMode
+        }
+
+        /// 更新全屏状态 UI（返回按钮可见性 + 全屏按钮图标）
+        public func updateFullScreenState(isFullScreen: Bool) {
+            backButton.isHidden = !isFullScreen
+            let config = UIImage.SymbolConfiguration(pointSize: 14)
+            let imageName = isFullScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"
+            fullScreenButton.setImage(UIImage(systemName: imageName, withConfiguration: config), for: .normal)
         }
 
         public func updatePlayButtonState(isPlaying: Bool) {
