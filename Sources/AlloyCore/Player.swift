@@ -316,9 +316,8 @@
         }
 
         private func commonInit() {
+            // setupEngine() 内部通过 subscribeEngine() 已调用 setupGesture() 和 setupOrientation()
             setupEngine()
-            setupGesture()
-            setupOrientation()
             configureVolume()
             ReachabilityMonitor.shared.startMonitoring()
             subscribeReachability()
