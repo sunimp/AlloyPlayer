@@ -56,11 +56,11 @@ AlloyPlayer (umbrella)
 //  FileName.swift
 //  ModuleName
 //
-//  Created by Sun on YYYY/M/D.
+//  Created by Author on YYYY/M/D.
 //
 ```
 
-其中 `YYYY/M/D` 为实际创建日期。
+其中 `Author` 为当前作者， `YYYY/M/D` 为实际创建日期。
 
 ### 语言
 
@@ -68,8 +68,6 @@ AlloyPlayer (umbrella)
 - **Git commit 信息**：简体中文，带签名：
   ```
   简要描述变更内容
-
-  Signed-off-by: Sun <yangguang@webull.com>
   ```
 - **文档文件**（README、CONTRIBUTING 等）：中文
 
