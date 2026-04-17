@@ -171,23 +171,15 @@
 
         public func play() {
             guard isPreparedToPlay else { return }
-            // 播放结束后 AVPlayer 的 currentTime 会停留在 duration，
-            // 此时直接调用 play() 无效，必须先 seek 回 0
-            if isAtEnd {
+            // 播放结束后 AVPlayer 的 currentTime 会停留在末尾，直接调用 play() 无效。
+            // 用 playbackState 作为判定信号：didPlayToEnd 会置为 .stopped，
+            // 而 stop() 虽然也会置为 .stopped 但会将 isPreparedToPlay 置 false，已在
+            // 上面的 guard 中被拦截，因此这里一定是"播完"场景。
+            if playbackState == .stopped {
                 replay()
                 return
             }
-            player?.play()
-            player?.rate = rate
-            playbackState = .playing
-        }
-
-        /// 当前播放位置是否已到达（或超过）媒体末尾
-        private var isAtEnd: Bool {
-            guard let item = playerItem else { return false }
-            let duration = item.duration
-            guard duration.isValid, !duration.isIndefinite, duration.seconds > 0 else { return false }
-            return CMTimeCompare(item.currentTime(), duration) >= 0
+            startPlaying()
         }
 
         public func pause() {
@@ -199,8 +191,18 @@
             seekTime = 0
             Task {
                 _ = await seek(to: 0)
-                play()
+                // 直接走"真正启动播放"的路径，避免通过 play() 再次命中
+                // playbackState == .stopped 的分支造成递归。
+                startPlaying()
             }
+        }
+
+        /// 实际驱动 AVPlayer 开始播放的核心路径（不做"播完检测"）。
+        private func startPlaying() {
+            guard isPreparedToPlay else { return }
+            player?.play()
+            player?.rate = rate
+            playbackState = .playing
         }
 
         public func stop() {
