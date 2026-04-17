@@ -379,6 +379,14 @@
             }
         }
 
+        public func playerDidPlayToEnd(_: Player) {
+            // 播放结束后，将两个面板的播放按钮切换为重播图标
+            portraitPanel.markPlayEnded()
+            landscapePanel.markPlayEnded()
+            // 结束时把控制层展示出来，方便用户看到重播按钮
+            showControlView()
+        }
+
         public func player(_: Player, willChangeOrientation _: OrientationManager) {
             // 提前切换面板
         }

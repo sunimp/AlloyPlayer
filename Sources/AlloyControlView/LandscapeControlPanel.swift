@@ -111,6 +111,7 @@
 
         private var cancellables = Set<AnyCancellable>()
         private var isControlVisible = false
+        private var isEnded = false
 
         override public init(frame: CGRect) {
             super.init(frame: frame)
@@ -249,9 +250,23 @@
         }
 
         public func updatePlayButtonState(isPlaying: Bool) {
+            // 进入播放后清除"已播完"标记，按钮恢复常规播放/暂停语义
+            if isPlaying { isEnded = false }
             let config = UIImage.SymbolConfiguration(pointSize: 16)
-            playPauseButton.setImage(UIImage(systemName: isPlaying ? "pause.fill" : "play.fill", withConfiguration: config), for: .normal)
+            let imageName: String
+            if isEnded {
+                imageName = "arrow.counterclockwise"
+            } else {
+                imageName = isPlaying ? "pause.fill" : "play.fill"
+            }
+            playPauseButton.setImage(UIImage(systemName: imageName, withConfiguration: config), for: .normal)
             playPauseButton.tintColor = .white
+        }
+
+        /// 标记视频播放已结束，按钮切换为"重播"图标
+        public func markPlayEnded() {
+            isEnded = true
+            updatePlayButtonState(isPlaying: false)
         }
 
         public func updateTime(current: TimeInterval, total: TimeInterval) {
