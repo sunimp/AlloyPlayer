@@ -171,9 +171,23 @@
 
         public func play() {
             guard isPreparedToPlay else { return }
+            // 播放结束后 AVPlayer 的 currentTime 会停留在 duration，
+            // 此时直接调用 play() 无效，必须先 seek 回 0
+            if isAtEnd {
+                replay()
+                return
+            }
             player?.play()
             player?.rate = rate
             playbackState = .playing
+        }
+
+        /// 当前播放位置是否已到达（或超过）媒体末尾
+        private var isAtEnd: Bool {
+            guard let item = playerItem else { return false }
+            let duration = item.duration
+            guard duration.isValid, !duration.isIndefinite, duration.seconds > 0 else { return false }
+            return CMTimeCompare(item.currentTime(), duration) >= 0
         }
 
         public func pause() {
