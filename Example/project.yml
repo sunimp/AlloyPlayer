@@ -11,6 +11,9 @@ settings:
     CODE_SIGNING_REQUIRED: "NO"
     CODE_SIGNING_ALLOWED: "YES"
 packages:
+  LookInside:
+    url: https://github.com/LookInsideApp/LookInside-Release
+    exactVersion: 0.2.0
   AlloyPlayer:
     path: ../..
 targets:
@@ -29,4 +32,6 @@ targets:
         GENERATE_INFOPLIST_FILE: false
         CODE_SIGN_STYLE: Automatic
     dependencies:
+      - package: LookInside
+        product: LookInsideServer
       - package: AlloyPlayer

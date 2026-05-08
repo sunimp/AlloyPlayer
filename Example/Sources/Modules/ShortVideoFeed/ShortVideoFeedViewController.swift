@@ -160,6 +160,9 @@ final class ShortVideoFeedViewController: UIViewController {
 
         // 重置进度并隐藏封面
         cell.updateProgress(0)
+        cell.updateBufferProgress(0)
+        cell.setBuffering(false)
+        cell.setPausedIndicatorVisible(false)
         cell.hideCover()
 
         // 播放
@@ -169,8 +172,46 @@ final class ShortVideoFeedViewController: UIViewController {
         cancellables.removeAll()
         engine?.playTimePublisher.sink { [weak cell] time in
             guard let cell, time.total > 0 else { return }
-            cell.updateProgress(Float(time.current / time.total))
+            cell.syncPlaybackProgress(Float(time.current / time.total))
         }.store(in: &cancellables)
+
+        engine?.bufferTimePublisher.sink { [weak cell, weak self] bufferTime in
+            guard let cell, let totalTime = self?.engine?.totalTime, totalTime > 0 else { return }
+            cell.updateBufferProgress(Float(bufferTime / totalTime))
+        }.store(in: &cancellables)
+
+        engine?.loadStatePublisher.sink { [weak cell, weak self] state in
+            guard let cell, let self else { return }
+            if state.contains(.playable) || state.contains(.playthroughOK) {
+                cell.setBuffering(false)
+            }
+            if state.contains(.stalled), self.engine?.isPlaying == true {
+                cell.setPausedIndicatorVisible(false)
+                cell.setBuffering(true)
+            }
+            if state.contains(.prepare) {
+                cell.setPausedIndicatorVisible(false)
+                cell.setBuffering(true)
+            }
+        }.store(in: &cancellables)
+
+        engine?.statePublisher.sink { [weak cell] state in
+            switch state {
+            case .paused:
+                cell?.setPausedIndicatorVisible(true)
+            default:
+                cell?.setPausedIndicatorVisible(false)
+            }
+        }.store(in: &cancellables)
+    }
+
+    private func seekCurrentVideo(to progress: Float) {
+        guard let engine, engine.totalTime > 0 else { return }
+        let seekTime = engine.totalTime * TimeInterval(progress)
+        Task {
+            _ = await engine.seek(to: seekTime)
+            engine.play()
+        }
     }
 
     // MARK: - 操作
@@ -201,10 +242,13 @@ extension ShortVideoFeedViewController: UICollectionViewDataSource {
             guard let self, let engine = self.engine else { return }
             if engine.isPlaying {
                 engine.pause()
-                cell.showPauseIndicator()
             } else {
+                cell.setPausedIndicatorVisible(false)
                 engine.play()
             }
+        }
+        cell.onSeek = { [weak self] progress in
+            self?.seekCurrentVideo(to: progress)
         }
         return cell
     }

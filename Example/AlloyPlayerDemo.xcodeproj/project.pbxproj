@@ -16,11 +16,7 @@
 		83AD1687496B5669595B9B88 /* VideoTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0283F839B517EA8D7C5FDF50 /* VideoTableViewCell.swift */; };
 		958B04BF7C8FDF562DDC6F26 /* VideoCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97158D5C9586386143867E11 /* VideoCollectionViewCell.swift */; };
 		A0DABFB585DC396FB5B03885 /* CustomControlOverlayViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 576DC5944A78F42717EDB103 /* CustomControlOverlayViewController.swift */; };
-		A4555BC52F8E4F4D0023C641 /* LookinServer in Frameworks */ = {isa = PBXBuildFile; productRef = A4555BC42F8E4F4D0023C641 /* LookinServer */; };
-		A4555BC72F8E4FC20023C641 /* AlloyAVPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = A4555BC62F8E4FC20023C641 /* AlloyAVPlayer */; };
-		A4555BC92F8E4FC20023C641 /* AlloyControlView in Frameworks */ = {isa = PBXBuildFile; productRef = A4555BC82F8E4FC20023C641 /* AlloyControlView */; };
-		A4555BCB2F8E4FC20023C641 /* AlloyCore in Frameworks */ = {isa = PBXBuildFile; productRef = A4555BCA2F8E4FC20023C641 /* AlloyCore */; };
-		A4555BCD2F8E4FC20023C641 /* AlloyPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = A4555BCC2F8E4FC20023C641 /* AlloyPlayer */; };
+		A4555BC52F8E4F4D0023C641 /* LookInsideServer in Frameworks */ = {isa = PBXBuildFile; productRef = A4555BC42F8E4F4D0023C641 /* LookInsideServer */; };
 		A4555BD02F8E4FCE0023C641 /* AlloyAVPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = A4555BCF2F8E4FCE0023C641 /* AlloyAVPlayer */; };
 		A4555BD22F8E4FCE0023C641 /* AlloyControlView in Frameworks */ = {isa = PBXBuildFile; productRef = A4555BD12F8E4FCE0023C641 /* AlloyControlView */; };
 		A4555BD42F8E4FCE0023C641 /* AlloyCore in Frameworks */ = {isa = PBXBuildFile; productRef = A4555BD32F8E4FCE0023C641 /* AlloyCore */; };
@@ -62,14 +58,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				A4555BD42F8E4FCE0023C641 /* AlloyCore in Frameworks */,
-				A4555BC72F8E4FC20023C641 /* AlloyAVPlayer in Frameworks */,
-				A4555BC92F8E4FC20023C641 /* AlloyControlView in Frameworks */,
-				A4555BCB2F8E4FC20023C641 /* AlloyCore in Frameworks */,
-				A4555BCD2F8E4FC20023C641 /* AlloyPlayer in Frameworks */,
 				A4555BD62F8E4FCE0023C641 /* AlloyPlayer in Frameworks */,
 				AE9431EBDCBA8D07879EC6A6 /* AlloyPlayer in Frameworks */,
 				A4555BD22F8E4FCE0023C641 /* AlloyControlView in Frameworks */,
-				A4555BC52F8E4F4D0023C641 /* LookinServer in Frameworks */,
+				A4555BC52F8E4F4D0023C641 /* LookInsideServer in Frameworks */,
 				A4555BD02F8E4FCE0023C641 /* AlloyAVPlayer in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -230,11 +222,7 @@
 			name = AlloyPlayerDemo;
 			packageProductDependencies = (
 				526831B0AF8E71E9F9D796AB /* AlloyPlayer */,
-				A4555BC42F8E4F4D0023C641 /* LookinServer */,
-				A4555BC62F8E4FC20023C641 /* AlloyAVPlayer */,
-				A4555BC82F8E4FC20023C641 /* AlloyControlView */,
-				A4555BCA2F8E4FC20023C641 /* AlloyCore */,
-				A4555BCC2F8E4FC20023C641 /* AlloyPlayer */,
+				A4555BC42F8E4F4D0023C641 /* LookInsideServer */,
 				A4555BCF2F8E4FCE0023C641 /* AlloyAVPlayer */,
 				A4555BD12F8E4FCE0023C641 /* AlloyControlView */,
 				A4555BD32F8E4FCE0023C641 /* AlloyCore */,
@@ -268,7 +256,7 @@
 			mainGroup = 9E2C76CF72D6DD90ABC09424;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				A4555BC32F8E4F4D0023C641 /* XCRemoteSwiftPackageReference "LookInside" */,
+				A4555BC32F8E4F4D0023C641 /* XCRemoteSwiftPackageReference "LookInside-Release" */,
 				A4555BCE2F8E4FCE0023C641 /* XCLocalSwiftPackageReference "../../AlloyPlayer" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -506,12 +494,12 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		A4555BC32F8E4F4D0023C641 /* XCRemoteSwiftPackageReference "LookInside" */ = {
+		A4555BC32F8E4F4D0023C641 /* XCRemoteSwiftPackageReference "LookInside-Release" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/Lakr233/LookInside";
+			repositoryURL = "https://github.com/LookInsideApp/LookInside-Release";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.2.6;
+				kind = exactVersion;
+				version = 0.2.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -521,30 +509,10 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = AlloyPlayer;
 		};
-		A4555BC42F8E4F4D0023C641 /* LookinServer */ = {
+		A4555BC42F8E4F4D0023C641 /* LookInsideServer */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = A4555BC32F8E4F4D0023C641 /* XCRemoteSwiftPackageReference "LookInside" */;
-			productName = LookinServer;
-		};
-		A4555BC62F8E4FC20023C641 /* AlloyAVPlayer */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A4555BC32F8E4F4D0023C641 /* XCRemoteSwiftPackageReference "LookInside" */;
-			productName = AlloyAVPlayer;
-		};
-		A4555BC82F8E4FC20023C641 /* AlloyControlView */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A4555BC32F8E4F4D0023C641 /* XCRemoteSwiftPackageReference "LookInside" */;
-			productName = AlloyControlView;
-		};
-		A4555BCA2F8E4FC20023C641 /* AlloyCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A4555BC32F8E4F4D0023C641 /* XCRemoteSwiftPackageReference "LookInside" */;
-			productName = AlloyCore;
-		};
-		A4555BCC2F8E4FC20023C641 /* AlloyPlayer */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A4555BC32F8E4F4D0023C641 /* XCRemoteSwiftPackageReference "LookInside" */;
-			productName = AlloyPlayer;
+			package = A4555BC32F8E4F4D0023C641 /* XCRemoteSwiftPackageReference "LookInside-Release" */;
+			productName = LookInsideServer;
 		};
 		A4555BCF2F8E4FCE0023C641 /* AlloyAVPlayer */ = {
 			isa = XCSwiftPackageProductDependency;

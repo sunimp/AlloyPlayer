@@ -34,7 +34,8 @@
             let v = ProgressSlider()
             v.trackHeight = 1
             v.isThumbHidden = true
-            v.isTapEnabled = false
+            v.isTapEnabled = true
+            v.hitTestInsets = UIEdgeInsets(top: -12, left: 0, bottom: -10, right: 0)
             v.maximumTrackTintColor = .clear
             v.minimumTrackTintColor = .white
             v.bufferTrackTintColor = UIColor(white: 1, alpha: 0.5)
@@ -233,7 +234,27 @@
                 self?.handleSliderSeek(value: value)
             }.store(in: &cancellables)
 
+            bottomProgress.valueChangedPublisher.sink { [weak self] value in
+                self?.handleBottomProgressChanging(value: CGFloat(value))
+            }.store(in: &cancellables)
+
+            bottomProgress.touchEndedPublisher.sink { [weak self] value in
+                self?.handleSliderSeek(value: CGFloat(value))
+            }.store(in: &cancellables)
+
+            bottomProgress.tappedPublisher.sink { [weak self] value in
+                self?.handleSliderSeek(value: CGFloat(value))
+            }.store(in: &cancellables)
+
             failButton.addTarget(self, action: #selector(failButtonTapped), for: .touchUpInside)
+        }
+
+        private func handleBottomProgressChanging(value: CGFloat) {
+            guard let player, player.totalTime > 0 else { return }
+            let currentTime = player.totalTime * TimeInterval(value)
+            let currentTimeString = TimeFormatter.string(from: Int(currentTime))
+            portraitPanel.updateSlider(value: value, currentTimeString: currentTimeString)
+            landscapePanel.updateSlider(value: value, currentTimeString: currentTimeString)
         }
 
         /// 处理 slider 拖动/点击结束后的 seek
@@ -257,11 +278,16 @@
                     let currentValue = player.totalTime > 0 ? Float(player.currentTime / player.totalTime) : 0
                     portraitPanel.slider.value = currentValue
                     landscapePanel.slider.value = currentValue
+                    bottomProgress.value = currentValue
                 }
             }
         }
 
         @objc private func failButtonTapped() {
+            retryPlayback()
+        }
+
+        func retryPlayback() {
             player?.engine.reloadPlayer()
         }
 
@@ -272,6 +298,8 @@
             portraitPanel.show(title: title, fullScreenMode: fullScreenMode)
             landscapePanel.show(title: title, fullScreenMode: fullScreenMode)
             if let placeholder = placeholderImage { coverImageView.image = placeholder }
+            setPlayButtonsHidden(true)
+            showControlView()
         }
 
         public func show(title: String?, coverImage: UIImage?, fullScreenMode: FullScreenMode) {
@@ -279,13 +307,18 @@
             portraitPanel.show(title: title, fullScreenMode: fullScreenMode)
             landscapePanel.show(title: title, fullScreenMode: fullScreenMode)
             if let image = coverImage { coverImageView.image = image }
+            setPlayButtonsHidden(true)
+            showControlView()
         }
 
         public func resetControlView() {
             portraitPanel.resetControlView()
             landscapePanel.resetControlView()
+            restoreControlPanels()
+            setPlayButtonsHidden(true)
             bottomProgress.value = 0
             bottomProgress.bufferValue = 0
+            bottomProgress.stopLoading()
             coverImageView.isHidden = false
             failButton.isHidden = true
             seekHUDView.isHidden = true
@@ -335,10 +368,14 @@
 
             switch state {
             case .playing:
-                failButton.isHidden = true
+                restoreControlPanels()
+                setPlayButtonsHidden(true)
                 bufferingIndicator.stopAnimating()
+            case .paused:
+                restoreControlPanels()
+                setPlayButtonsHidden(false)
             case .failed:
-                failButton.isHidden = false
+                showFailureView()
                 bufferingIndicator.stopAnimating()
             default:
                 break
@@ -347,14 +384,22 @@
 
         public func player(_ player: Player, didChangeLoadState state: LoadState) {
             if state.contains(.playthroughOK) || state.contains(.playable) {
+                restoreControlPanels()
+                setPlayButtonsHidden(player.engine.playbackState != .paused)
                 coverImageView.isHidden = true
                 bufferingIndicator.stopAnimating()
+                bottomProgress.stopLoading()
             }
             if state.contains(.stalled), player.engine.isPlaying {
+                setPlayButtonsHidden(true)
                 bufferingIndicator.startAnimating()
+                bottomProgress.startLoading()
             }
             if state.contains(.prepare) {
+                restoreControlPanels()
+                setPlayButtonsHidden(true)
                 if shouldShowLoadingOnPrepare { bufferingIndicator.startAnimating() }
+                bottomProgress.startLoading()
                 if shouldShowControlOnPrepare { showControlView() }
             }
         }
@@ -366,7 +411,7 @@
             }
             portraitPanel.updateTime(current: currentTime, total: totalTime)
             landscapePanel.updateTime(current: currentTime, total: totalTime)
-            if !portraitPanel.slider.isDragging, totalTime > 0 {
+            if !portraitPanel.slider.isDragging, !bottomProgress.isDragging, totalTime > 0 {
                 bottomProgress.value = Float(currentTime / totalTime)
             }
         }
@@ -471,6 +516,30 @@
                 return landscapePanel.shouldRespondToGesture(at: point, type: type, touch: touch)
             }
             return portraitPanel.shouldRespondToGesture(at: point, type: type, touch: touch)
+        }
+
+        private func showFailureView() {
+            cancelAutoHide()
+            isShowing = false
+            _controlVisibility.send(false)
+            failButton.isHidden = false
+            bottomProgress.isHidden = true
+            bottomProgress.stopLoading()
+            portraitPanel.isHidden = true
+            landscapePanel.isHidden = true
+            bringSubviewToFront(failButton)
+        }
+
+        private func restoreControlPanels() {
+            failButton.isHidden = true
+            let isLandscape = player?.isFullScreen == true && fullScreenMode != .portrait
+            portraitPanel.isHidden = isLandscape
+            landscapePanel.isHidden = !isLandscape
+        }
+
+        private func setPlayButtonsHidden(_ isHidden: Bool) {
+            portraitPanel.playPauseButton.isHidden = isHidden
+            landscapePanel.playPauseButton.isHidden = isHidden
         }
     }
 #endif
