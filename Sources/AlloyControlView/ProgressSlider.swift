@@ -23,12 +23,18 @@
 
         // MARK: - 轨道外观
 
-        public var maximumTrackTintColor: UIColor = .init(white: 0.5, alpha: 0.3) { didSet { bgTrack.backgroundColor = maximumTrackTintColor } }
+        public var maximumTrackTintColor: UIColor = .init(white: 0.5, alpha: 0.3) {
+            didSet { bgTrack.backgroundColor = maximumTrackTintColor }
+        }
+
         public var minimumTrackTintColor: UIColor = .white {
             didSet { progressTrack.backgroundColor = minimumTrackTintColor }
         }
 
-        public var bufferTrackTintColor: UIColor = .init(white: 1.0, alpha: 0.5) { didSet { bufferTrack.backgroundColor = bufferTrackTintColor } }
+        public var bufferTrackTintColor: UIColor = .init(white: 1.0, alpha: 0.5) {
+            didSet { bufferTrack.backgroundColor = bufferTrackTintColor }
+        }
+
         public var loadingTintColor: UIColor = .white {
             didSet { loadingBar.backgroundColor = loadingTintColor }
         }
@@ -60,6 +66,7 @@
         public private(set) var isDragging = false
         public private(set) var isForward = false
         public var thumbSize = CGSize(width: 19, height: 19)
+        var hitTestInsets: UIEdgeInsets = .zero
 
         // MARK: - Delegate
 
@@ -94,7 +101,6 @@
         private let bufferTrack = UIView()
         private let progressTrack = UIView()
         private let loadingBar = UIView()
-        private var previousValue: Float = 0
 
         // MARK: - 初始化
 
@@ -127,11 +133,10 @@
 
         private func setupGestures() {
             let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
-            thumbButton.addGestureRecognizer(pan)
+            addGestureRecognizer(pan)
 
             let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
-            bgTrack.isUserInteractionEnabled = true
-            bgTrack.addGestureRecognizer(tap)
+            addGestureRecognizer(tap)
         }
 
         // MARK: - 布局
@@ -158,38 +163,24 @@
             thumbButton.frame = CGRect(x: thumbX, y: thumbY, width: thumbSize.width, height: thumbSize.height)
         }
 
+        override public func point(inside point: CGPoint, with _: UIEvent?) -> Bool {
+            bounds.inset(by: hitTestInsets).contains(point)
+        }
+
         // MARK: - 手势处理
 
         @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
-            let trackWidth = bounds.width - thumbSize.width
-            guard trackWidth > 0 else { return }
-            let translation = gesture.translation(in: self)
+            let point = gesture.location(in: self)
 
             switch gesture.state {
             case .began:
-                isDragging = true
-                previousValue = value
-                _touchBegan.send(value)
-                delegate?.sliderTouchBegan(self, value: value)
-                UIView.animate(withDuration: 0.2) {
-                    self.thumbButton.transform = CGAffineTransform(scaleX: 1.2, y: 1.2)
-                }
+                beginTrackInteraction(at: point)
 
             case .changed:
-                let delta = Float(translation.x / trackWidth)
-                let newValue = min(max(previousValue + delta, 0), 1)
-                isForward = newValue > value
-                value = newValue
-                _valueChanged.send(value)
-                delegate?.sliderValueChanged(self, value: value)
+                updateTrackInteraction(at: point)
 
             case .ended, .cancelled, .failed:
-                isDragging = false
-                _touchEnded.send(value)
-                delegate?.sliderTouchEnded(self, value: value)
-                UIView.animate(withDuration: 0.2) {
-                    self.thumbButton.transform = .identity
-                }
+                endTrackInteraction(at: point)
 
             default:
                 break
@@ -198,11 +189,8 @@
 
         @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
             guard isTapEnabled else { return }
-            let point = gesture.location(in: bgTrack)
-            let trackWidth = bgTrack.bounds.width
-            guard trackWidth > 0 else { return }
-            let newValue = Float(point.x / trackWidth)
-            value = min(max(newValue, 0), 1)
+            let point = gesture.location(in: self)
+            value = trackValue(at: point)
             _tapped.send(value)
             delegate?.sliderTapped(self, value: value)
         }
@@ -211,26 +199,26 @@
 
         /// 开始加载动画
         public func startLoading() {
-            progressTrack.isHidden = true
-            bufferTrack.isHidden = true
-            thumbButton.isHidden = true
             loadingBar.isHidden = false
 
             let trackWidth = bgTrack.bounds.width
-            loadingBar.frame = CGRect(x: bgTrack.frame.minX, y: bgTrack.frame.minY, width: 0, height: trackHeight)
+            let loadingWidth = min(max(trackWidth * 0.2, 20), trackWidth)
+            loadingBar.frame = CGRect(x: bgTrack.frame.minX, y: bgTrack.frame.minY, width: loadingWidth, height: trackHeight)
+            loadingBar.layer.cornerRadius = trackCornerRadius
 
-            let scaleAnimation = CABasicAnimation(keyPath: "transform.scaleX")
-            scaleAnimation.fromValue = 0
-            scaleAnimation.toValue = trackWidth / 10
+            let positionAnimation = CABasicAnimation(keyPath: "position.x")
+            positionAnimation.fromValue = bgTrack.frame.minX + loadingWidth / 2
+            positionAnimation.toValue = bgTrack.frame.maxX - loadingWidth / 2
 
             let opacityAnimation = CABasicAnimation(keyPath: "opacity")
-            opacityAnimation.fromValue = 1.0
-            opacityAnimation.toValue = 0.0
+            opacityAnimation.fromValue = 0.2
+            opacityAnimation.toValue = 0.9
+            opacityAnimation.autoreverses = true
 
             let group = CAAnimationGroup()
-            group.duration = 0.4
+            group.duration = 0.8
             group.repeatCount = .infinity
-            group.animations = [scaleAnimation, opacityAnimation]
+            group.animations = [positionAnimation, opacityAnimation]
             loadingBar.layer.add(group, forKey: "loading")
         }
 
@@ -238,8 +226,6 @@
         public func stopLoading() {
             loadingBar.layer.removeAllAnimations()
             loadingBar.isHidden = true
-            progressTrack.isHidden = false
-            bufferTrack.isHidden = false
             thumbButton.isHidden = isThumbHidden
         }
 
@@ -251,6 +237,51 @@
         /// 设置滑块背景图片
         public func setBackgroundImage(_ image: UIImage?, for state: UIControl.State) {
             thumbButton.setBackgroundImage(image, for: state)
+        }
+
+        // MARK: - 内部交互入口
+
+        func beginTrackInteraction(at point: CGPoint) {
+            isDragging = true
+            updateValueFromTrackPoint(point)
+            _touchBegan.send(value)
+            delegate?.sliderTouchBegan(self, value: value)
+            UIView.animate(withDuration: 0.2) {
+                self.thumbButton.transform = CGAffineTransform(scaleX: 1.2, y: 1.2)
+            }
+        }
+
+        func updateTrackInteraction(at point: CGPoint) {
+            guard isDragging else { return }
+            updateValueFromTrackPoint(point)
+            _valueChanged.send(value)
+            delegate?.sliderValueChanged(self, value: value)
+        }
+
+        func endTrackInteraction(at point: CGPoint) {
+            if isDragging {
+                updateValueFromTrackPoint(point)
+            }
+            isDragging = false
+            _touchEnded.send(value)
+            delegate?.sliderTouchEnded(self, value: value)
+            UIView.animate(withDuration: 0.2) {
+                self.thumbButton.transform = .identity
+            }
+        }
+
+        private func updateValueFromTrackPoint(_ point: CGPoint) {
+            let newValue = trackValue(at: point)
+            isForward = newValue > value
+            value = newValue
+        }
+
+        private func trackValue(at point: CGPoint) -> Float {
+            layoutIfNeeded()
+            let trackWidth = bgTrack.bounds.width
+            guard trackWidth > 0 else { return value }
+            let rawValue = (point.x - bgTrack.frame.minX) / trackWidth
+            return Float(min(max(rawValue, 0), 1))
         }
     }
 #endif

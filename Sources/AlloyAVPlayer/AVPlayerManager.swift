@@ -166,7 +166,7 @@
         public func reloadPlayer() {
             guard let url = assetURL else { return }
             stop()
-            assetURL = url
+            initializePlayer(url: url)
         }
 
         public func play() {

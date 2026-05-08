@@ -5,16 +5,19 @@
 //  Created by Sun on 2026/4/14.
 //
 
+import AlloyPlayer
+import Combine
 import UIKit
 
 // MARK: - ShortVideoFeedCell
 
 /// 全屏视频 Cell（抖音风格）
-final class ShortVideoFeedCell: UICollectionViewCell {
+final class ShortVideoFeedCell: UICollectionViewCell, UIGestureRecognizerDelegate {
     static let reuseIdentifier = "ShortVideoFeedCell"
 
     /// 点击回调
     var onTap: (() -> Void)?
+    var onSeek: ((Float) -> Void)?
 
     // MARK: - 子视图
 
@@ -37,7 +40,6 @@ final class ShortVideoFeedCell: UICollectionViewCell {
     /// 底部信息栏
     private let infoView: UIView = {
         let v = UIView()
-        v.isUserInteractionEnabled = false
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
     }()
@@ -59,17 +61,17 @@ final class ShortVideoFeedCell: UICollectionViewCell {
         return l
     }()
 
-    /// 底部进度条（极细）
-    private let progressBar: UIView = {
-        let v = UIView()
-        v.backgroundColor = UIColor(white: 1, alpha: 0.3)
+    /// 底部进度条
+    private let progressSlider: ProgressSlider = {
+        let v = ProgressSlider()
+        v.trackHeight = 2
+        v.trackCornerRadius = 1
+        v.isThumbHidden = true
+        v.maximumTrackTintColor = UIColor(white: 1, alpha: 0.25)
+        v.minimumTrackTintColor = .white
+        v.bufferTrackTintColor = UIColor(white: 1, alpha: 0.45)
+        v.loadingTintColor = .white
         v.translatesAutoresizingMaskIntoConstraints = false
-        return v
-    }()
-
-    private let progressFill: UIView = {
-        let v = UIView()
-        v.backgroundColor = .white
         return v
     }()
 
@@ -89,13 +91,14 @@ final class ShortVideoFeedCell: UICollectionViewCell {
     private let shareButton = ShortVideoFeedCell.makeButton(systemName: "arrowshape.turn.up.right.fill", label: "分享")
 
     private let gradientLayer = CAGradientLayer()
-    private var progressFillWidth: NSLayoutConstraint?
+    private var cancellables = Set<AnyCancellable>()
 
     // MARK: - 初始化
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupViews()
+        setupProgressSlider()
         setupTapGesture()
     }
 
@@ -111,10 +114,13 @@ final class ShortVideoFeedCell: UICollectionViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
-        progressFillWidth?.constant = 0
-        pauseIcon.isHidden = true
+        progressSlider.value = 0
+        progressSlider.bufferValue = 0
+        progressSlider.stopLoading()
+        setPausedIndicatorVisible(false)
         coverView.isHidden = false
         onTap = nil
+        onSeek = nil
     }
 
     // MARK: - 公开方法
@@ -132,24 +138,34 @@ final class ShortVideoFeedCell: UICollectionViewCell {
 
     /// 更新播放进度（0...1）
     func updateProgress(_ value: Float) {
-        let width = contentView.bounds.width * CGFloat(max(0, min(value, 1)))
-        progressFillWidth?.constant = width
+        progressSlider.value = value
     }
 
-    /// 显示暂停指示器（短暂动画）
-    func showPauseIndicator() {
-        pauseIcon.isHidden = false
-        pauseIcon.alpha = 1
-        pauseIcon.transform = CGAffineTransform(scaleX: 0.5, y: 0.5)
-        UIView.animate(withDuration: 0.15, animations: {
-            self.pauseIcon.transform = .identity
-        }, completion: { _ in
-            UIView.animate(withDuration: 0.8, delay: 0.5, options: [], animations: {
-                self.pauseIcon.alpha = 0
-            }, completion: { _ in
-                self.pauseIcon.isHidden = true
-            })
-        })
+    func syncPlaybackProgress(_ value: Float) {
+        guard !progressSlider.isDragging else { return }
+        progressSlider.value = value
+    }
+
+    /// 更新缓冲进度（0...1）
+    func updateBufferProgress(_ value: Float) {
+        progressSlider.bufferValue = value
+    }
+
+    func setBuffering(_ isBuffering: Bool) {
+        if isBuffering {
+            setPausedIndicatorVisible(false)
+            progressSlider.startLoading()
+        } else {
+            progressSlider.stopLoading()
+        }
+    }
+
+    /// 控制用户暂停后的中心播放按钮。
+    func setPausedIndicatorVisible(_ isVisible: Bool) {
+        pauseIcon.layer.removeAllAnimations()
+        pauseIcon.transform = .identity
+        pauseIcon.alpha = isVisible ? 1 : 0
+        pauseIcon.isHidden = !isVisible
     }
 
     // MARK: - 私有方法
@@ -174,14 +190,9 @@ final class ShortVideoFeedCell: UICollectionViewCell {
         gradientLayer.colors = [UIColor.clear.cgColor, UIColor(white: 0, alpha: 0.6).cgColor]
         infoView.layer.insertSublayer(gradientLayer, at: 0)
 
-        infoView.addSubview(progressBar)
-        progressBar.addSubview(progressFill)
+        infoView.addSubview(progressSlider)
         infoView.addSubview(titleLabel)
         infoView.addSubview(descLabel)
-
-        progressFill.translatesAutoresizingMaskIntoConstraints = false
-        let fillWidth = progressFill.widthAnchor.constraint(equalToConstant: 0)
-        progressFillWidth = fillWidth
 
         NSLayoutConstraint.activate([
             // 视频容器铺满
@@ -207,18 +218,13 @@ final class ShortVideoFeedCell: UICollectionViewCell {
             infoView.bottomAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.bottomAnchor),
 
             // 进度条在 infoView 顶部
-            progressBar.topAnchor.constraint(equalTo: infoView.topAnchor, constant: 12),
-            progressBar.leadingAnchor.constraint(equalTo: infoView.leadingAnchor, constant: 16),
-            progressBar.trailingAnchor.constraint(equalTo: infoView.trailingAnchor, constant: -16),
-            progressBar.heightAnchor.constraint(equalToConstant: 2),
-
-            progressFill.leadingAnchor.constraint(equalTo: progressBar.leadingAnchor),
-            progressFill.topAnchor.constraint(equalTo: progressBar.topAnchor),
-            progressFill.bottomAnchor.constraint(equalTo: progressBar.bottomAnchor),
-            fillWidth,
+            progressSlider.topAnchor.constraint(equalTo: infoView.topAnchor, constant: 4),
+            progressSlider.leadingAnchor.constraint(equalTo: infoView.leadingAnchor, constant: 16),
+            progressSlider.trailingAnchor.constraint(equalTo: infoView.trailingAnchor, constant: -16),
+            progressSlider.heightAnchor.constraint(equalToConstant: 30),
 
             // 标题
-            titleLabel.topAnchor.constraint(equalTo: progressBar.bottomAnchor, constant: 10),
+            titleLabel.topAnchor.constraint(equalTo: progressSlider.bottomAnchor, constant: 2),
             titleLabel.leadingAnchor.constraint(equalTo: infoView.leadingAnchor, constant: 16),
             titleLabel.trailingAnchor.constraint(equalTo: infoView.trailingAnchor, constant: -16),
 
@@ -234,13 +240,39 @@ final class ShortVideoFeedCell: UICollectionViewCell {
         ])
     }
 
+    private func setupProgressSlider() {
+        progressSlider.valueChangedPublisher
+            .sink { [weak self] value in
+                self?.updateProgress(value)
+            }
+            .store(in: &cancellables)
+
+        progressSlider.touchEndedPublisher
+            .sink { [weak self] value in
+                self?.onSeek?(value)
+            }
+            .store(in: &cancellables)
+
+        progressSlider.tappedPublisher
+            .sink { [weak self] value in
+                self?.onSeek?(value)
+            }
+            .store(in: &cancellables)
+    }
+
     private func setupTapGesture() {
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+        tap.delegate = self
         contentView.addGestureRecognizer(tap)
     }
 
     @objc private func handleTap() {
         onTap?()
+    }
+
+    func gestureRecognizer(_: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        guard let touchView = touch.view else { return true }
+        return !touchView.isDescendant(of: progressSlider)
     }
 
     private static func makeButton(systemName: String, label: String) -> UIView {

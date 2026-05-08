@@ -33,7 +33,9 @@ final class CustomControlOverlayViewController: UIViewController {
         • 仅包含播放/暂停按钮、进度条和时间标签
         • 单击切换控制层可见性
         • 双击播放/暂停
-        • 拖拽进度条可跳转
+        • 进度条展示播放与缓冲进度
+        • 拖拽或点击进度条可跳转
+        • 卡顿时展示缓冲动画
         """
         l.translatesAutoresizingMaskIntoConstraints = false
         return l

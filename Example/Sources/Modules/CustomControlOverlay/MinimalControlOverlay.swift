@@ -66,6 +66,7 @@ final class MinimalControlOverlay: UIView, ControlOverlay {
     // MARK: - 状态
 
     private var isShowing = true
+    private var isLoading = true
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - 初始化
@@ -86,6 +87,7 @@ final class MinimalControlOverlay: UIView, ControlOverlay {
         addSubview(playButton)
         addSubview(progressSlider)
         addSubview(timeLabel)
+        playButton.isHidden = true
 
         NSLayoutConstraint.activate([
             overlayView.topAnchor.constraint(equalTo: topAnchor),
@@ -111,27 +113,40 @@ final class MinimalControlOverlay: UIView, ControlOverlay {
     private func setupActions() {
         playButton.addTarget(self, action: #selector(playButtonTapped), for: .touchUpInside)
 
+        progressSlider.valueChangedPublisher
+            .sink { [weak self] value in
+                self?.updateTimeForProgress(value)
+            }
+            .store(in: &cancellables)
+
         progressSlider.touchEndedPublisher
             .sink { [weak self] value in
-                guard let self, let player = self.player else { return }
-                let seekTime = player.totalTime * Double(value)
-                Task {
-                    _ = await player.seek(to: seekTime)
-                    player.engine.play()
-                }
+                self?.seek(to: value)
             }
             .store(in: &cancellables)
 
         progressSlider.tappedPublisher
             .sink { [weak self] value in
-                guard let self, let player = self.player else { return }
-                let seekTime = player.totalTime * Double(value)
-                Task {
-                    _ = await player.seek(to: seekTime)
-                    player.engine.play()
-                }
+                self?.seek(to: value)
             }
             .store(in: &cancellables)
+    }
+
+    private func seek(to progress: Float) {
+        guard let player, player.totalTime > 0 else { return }
+        let seekTime = player.totalTime * Double(progress)
+        Task {
+            _ = await player.seek(to: seekTime)
+            player.engine.play()
+        }
+    }
+
+    private func updateTimeForProgress(_ progress: Float) {
+        guard let player, player.totalTime > 0 else { return }
+        let currentTime = player.totalTime * Double(progress)
+        let current = TimeFormatter.string(from: Int(currentTime))
+        let total = TimeFormatter.string(from: Int(player.totalTime))
+        timeLabel.text = "\(current) / \(total)"
     }
 
     @objc private func playButtonTapped() {
@@ -149,10 +164,15 @@ final class MinimalControlOverlay: UIView, ControlOverlay {
         isShowing.toggle()
         UIView.animate(withDuration: 0.25) {
             self.overlayView.alpha = self.isShowing ? 1 : 0
-            self.playButton.alpha = self.isShowing ? 1 : 0
+            self.playButton.alpha = self.isShowing && !self.playButton.isHidden ? 1 : 0
             self.progressSlider.alpha = self.isShowing ? 1 : 0
             self.timeLabel.alpha = self.isShowing ? 1 : 0
         }
+    }
+
+    private func setCenterPlayButtonVisible(_ isVisible: Bool) {
+        playButton.isHidden = !isVisible
+        playButton.alpha = isVisible && isShowing ? 1 : 0
     }
 
     // MARK: - ControlOverlay 回调
@@ -180,9 +200,31 @@ final class MinimalControlOverlay: UIView, ControlOverlay {
         progressSlider.bufferValue = Float(bufferTime / player.totalTime)
     }
 
+    func player(_ player: Player, didChangeLoadState state: LoadState) {
+        if state.contains(.playable) || state.contains(.playthroughOK) {
+            isLoading = false
+            progressSlider.stopLoading()
+        }
+        if state.contains(.stalled), player.engine.isPlaying {
+            isLoading = true
+            setCenterPlayButtonVisible(false)
+            progressSlider.startLoading()
+        }
+        if state.contains(.prepare) {
+            isLoading = true
+            setCenterPlayButtonVisible(false)
+            progressSlider.startLoading()
+        }
+    }
+
     func player(_: Player, didChangePlaybackState state: PlaybackState) {
         let config = UIImage.SymbolConfiguration(pointSize: 50, weight: .regular)
-        let imageName = state == .playing ? "pause.fill" : "play.fill"
-        playButton.setImage(UIImage(systemName: imageName, withConfiguration: config), for: .normal)
+        playButton.setImage(UIImage(systemName: "play.fill", withConfiguration: config), for: .normal)
+        switch state {
+        case .paused:
+            setCenterPlayButtonVisible(!isLoading)
+        default:
+            setCenterPlayButtonVisible(false)
+        }
     }
 }
