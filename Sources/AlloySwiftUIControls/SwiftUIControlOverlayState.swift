@@ -144,12 +144,12 @@
         }
 
         public func showControls() {
-            isControlVisible = true
+            setControlVisible(true)
             scheduleAutoHide()
         }
 
         public func hideControls() {
-            isControlVisible = false
+            setControlVisible(false)
             cancelAutoHide()
         }
 
@@ -163,8 +163,10 @@
 
         func attach(player: Player?) {
             self.player = player
-            isFullScreen = player?.isFullScreen ?? false
-            isScreenLocked = player?.isScreenLocked ?? false
+            enqueuePlayerDrivenUpdate { state in
+                state.isFullScreen = player?.isFullScreen ?? false
+                state.isScreenLocked = player?.isScreenLocked ?? false
+            }
             if player == nil {
                 cancelAutoHide()
             } else if isControlVisible {
@@ -173,53 +175,75 @@
         }
 
         func updatePrepareToPlay(url: URL) {
-            activeURL = url
-            didPlayToEnd = false
-            lastError = nil
-            showControls()
+            enqueuePlayerDrivenUpdate { state in
+                state.activeURL = url
+                state.didPlayToEnd = false
+                state.lastError = nil
+                state.showControls()
+            }
         }
 
         func updatePlaybackState(_ state: PlaybackState) {
-            playbackState = state
+            enqueuePlayerDrivenUpdate { overlayState in
+                overlayState.playbackState = state
+            }
         }
 
         func updateLoadState(_ state: LoadState) {
-            loadState = state
+            enqueuePlayerDrivenUpdate { overlayState in
+                overlayState.loadState = state
+            }
         }
 
         func updateTime(current: TimeInterval, total: TimeInterval) {
-            currentTime = current
-            totalTime = total
+            enqueuePlayerDrivenUpdate { state in
+                state.currentTime = current
+                state.totalTime = total
+            }
         }
 
         func updateBufferTime(_ time: TimeInterval) {
-            bufferTime = time
+            enqueuePlayerDrivenUpdate { state in
+                state.bufferTime = time
+            }
         }
 
         func updatePlayToEnd() {
-            didPlayToEnd = true
-            showControls()
+            enqueuePlayerDrivenUpdate { state in
+                state.didPlayToEnd = true
+                state.showControls()
+            }
         }
 
         func updateError(_ error: any Error) {
-            lastError = error
-            showControls()
+            enqueuePlayerDrivenUpdate { state in
+                state.lastError = error
+                state.showControls()
+            }
         }
 
         func updateLockState(_ isLocked: Bool) {
-            isScreenLocked = isLocked
+            enqueuePlayerDrivenUpdate { state in
+                state.isScreenLocked = isLocked
+            }
         }
 
         func updateOrientation(player: Player) {
-            isFullScreen = player.isFullScreen
+            enqueuePlayerDrivenUpdate { state in
+                state.isFullScreen = player.isFullScreen
+            }
         }
 
         func updateReachability(_ status: ReachabilityStatus) {
-            reachabilityStatus = status
+            enqueuePlayerDrivenUpdate { state in
+                state.reachabilityStatus = status
+            }
         }
 
         func updatePresentationSize(_ size: CGSize) {
-            presentationSize = size
+            enqueuePlayerDrivenUpdate { state in
+                state.presentationSize = size
+            }
         }
 
         func updateGesture(_ type: GestureType) {
@@ -227,7 +251,21 @@
         }
 
         func updateFloatingViewVisible(_ isVisible: Bool) {
-            isFloatingViewVisible = isVisible
+            enqueuePlayerDrivenUpdate { state in
+                state.isFloatingViewVisible = isVisible
+            }
+        }
+
+        private func setControlVisible(_ isVisible: Bool) {
+            guard isControlVisible != isVisible else { return }
+            isControlVisible = isVisible
+        }
+
+        private func enqueuePlayerDrivenUpdate(_ update: @escaping @MainActor (SwiftUIControlOverlayState) -> Void) {
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                update(self)
+            }
         }
 
         private func scheduleAutoHide() {

@@ -7,6 +7,7 @@
 
 #if canImport(UIKit) && canImport(SwiftUI)
     @testable import AlloySwiftUIControls
+    import Combine
     import SwiftUI
     import Testing
 
@@ -34,5 +35,24 @@
             }
         }
         .disabledGestures([.pinch])
+    }
+
+    @MainActor
+    @Test func playerDrivenStateUpdatesAreDeferred() async throws {
+        let state = SwiftUIControlOverlayState()
+        let url = try #require(URL(string: "https://example.invalid/video.mp4"))
+        var activeURL: URL?
+        let cancellable = state.$activeURL.dropFirst().sink { value in
+            activeURL = value
+        }
+
+        state.updatePrepareToPlay(url: url)
+
+        #expect(activeURL == nil)
+
+        await Task.yield()
+
+        #expect(activeURL == url)
+        _ = cancellable
     }
 #endif
