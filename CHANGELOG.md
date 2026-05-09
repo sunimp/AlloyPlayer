@@ -48,8 +48,9 @@
 - **AlloyCore**：`RenderView`、`KVOManager`、`SystemEventObserver` 工具类。
 - **AlloyCore**：完整的枚举/OptionSet 集合：`PlaybackState`、`LoadState`、`ScalingMode`、`FullScreenMode`、`GestureType`、`PanDirection`、`ReachabilityStatus` 等。
 - **AlloyAVPlayer**：`AVPlayerManager` — 基于 AVFoundation 的 `PlaybackEngine` 实现。
-- **AlloyControlView**：`DefaultControlOverlay`，包含 `PortraitControlPanel`、`LandscapeControlPanel` 和 `FloatingControlPanel`。
-- **AlloyControlView**：`ProgressSlider`、`BufferingIndicator`、`LoadingIndicator`、`VolumeAndBrightnessHUD`、`NetworkSpeedMonitor`、`CustomStatusBar`。
+- **AlloyUIKitControls**：`DefaultControlOverlay`，包含 `PortraitControlPanel`、`LandscapeControlPanel` 和 `FloatingControlPanel`。
+- **AlloyUIKitControls**：`ProgressSlider`、`BufferingIndicator`、`LoadingIndicator`、`VolumeAndBrightnessHUD`、`NetworkSpeedMonitor`、`CustomStatusBar`。
+- **AlloySwiftUIControls**：`AlloyPlayerView`、`AlloyPlayerController`、`DefaultSwiftUIControlOverlayView`、`SwiftUIControlOverlay` 和 `SwiftUIControlOverlayState`，提供开箱即用和自定义 SwiftUI 控制层能力。
 - 所有播放状态、时间更新、缓冲进度、错误和方向变化均提供 Combine 发布者。
 - ScrollView/TableView/CollectionView 列表播放，滚动时自动播放/暂停。
 - Swift 6 严格并发支持，使用 `@MainActor` 隔离和 `Sendable` 一致性。

@@ -12,12 +12,14 @@ AlloyPlayer/
 ├── Sources/
 │   ├── AlloyCore/           ← 协议、枚举、Player 控制器
 │   ├── AlloyAVPlayer/       ← AVFoundation 播放引擎
-│   ├── AlloyControlView/    ← 默认控制层 UI + 资源
+│   ├── AlloyUIKitControls/  ← 默认 UIKit 控制层 UI + 资源
+│   ├── AlloySwiftUIControls/ ← SwiftUI 控制层桥接
 │   └── AlloyPlayer/         ← Umbrella 重新导出模块
 ├── Tests/
 │   ├── AlloyCoreTests/
 │   ├── AlloyAVPlayerTests/
-│   └── AlloyControlViewTests/
+│   ├── AlloyUIKitControlsTests/
+│   └── AlloySwiftUIControlsTests/
 ├── README.md
 ├── LICENSE
 ├── AGENTS.md
@@ -32,7 +34,8 @@ AlloyPlayer/
 AlloyPlayer (umbrella)
 ├── AlloyCore
 ├── AlloyAVPlayer      → 依赖 AlloyCore
-└── AlloyControlView   → 依赖 AlloyCore
+├── AlloyUIKitControls   → 依赖 AlloyCore
+└── AlloySwiftUIControls → 依赖 AlloyCore
 ```
 
 ## 技术栈约束
@@ -41,8 +44,9 @@ AlloyPlayer (umbrella)
 - **最低部署版本**：iOS 15.0，macOS 12.0（macOS 仅用于 SPM 测试宿主）
 - **包管理器**：仅 SPM — 不使用 CocoaPods、不使用 Carthage
 - **事件通信**：Combine（`AnyPublisher`、`PassthroughSubject`）
-- **UI 框架**：UIKit + Auto Layout — 不使用 SwiftUI
+- **UI 框架**：UIKit + Auto Layout；SwiftUI 仅用于 `AlloySwiftUIControls` 桥接层
 - **UIKit 代码**必须用 `#if canImport(UIKit)` 包裹
+- **SwiftUI 代码**必须用 `#if canImport(SwiftUI)` 包裹
 - **主线程隔离**：所有面向 UI 的协议和类使用 `@MainActor`
 
 ## 代码规范
@@ -99,7 +103,8 @@ AlloyPlayer (umbrella)
 - 测试 target：
   - `AlloyCoreTests` → 测试 AlloyCore
   - `AlloyAVPlayerTests` → 测试 AlloyAVPlayer
-  - `AlloyControlViewTests` → 测试 AlloyControlView
+  - `AlloyUIKitControlsTests` → 测试 AlloyUIKitControls
+  - `AlloySwiftUIControlsTests` → 测试 AlloySwiftUIControls
 
 ### 运行测试
 
@@ -161,7 +166,7 @@ swift test
 |------|------|
 | `AVPlayerManager` | 基于 AVFoundation `AVPlayer` 的 `PlaybackEngine` 实现 |
 
-### AlloyControlView
+### AlloyUIKitControls
 
 | 类 | 描述 |
 |------|------|
@@ -175,3 +180,13 @@ swift test
 | `VolumeAndBrightnessHUD` | 系统音量/亮度调节浮层 |
 | `NetworkSpeedMonitor` | 当前网速显示 |
 | `CustomStatusBar` | 全屏模式自定义状态栏 |
+
+### AlloySwiftUIControls
+
+| 类 | 描述 |
+|------|------|
+| `SwiftUIControlOverlay` | 将 SwiftUI 控制界面桥接为 `ControlOverlay` |
+| `SwiftUIControlOverlayState` | SwiftUI 控制层可观察状态与播放器动作入口 |
+| `AlloyPlayerView` | 开箱即用的 SwiftUI 播放器视图 |
+| `AlloyPlayerController` | SwiftUI 外部播放控制句柄 |
+| `DefaultSwiftUIControlOverlayView` | 默认 SwiftUI 控制层 |

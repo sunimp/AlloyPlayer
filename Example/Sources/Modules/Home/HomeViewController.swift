@@ -55,6 +55,11 @@ final class HomeViewController: UITableViewController {
             subtitle: "实现 ControlOverlay 协议的极简控制层",
             viewControllerFactory: { CustomControlOverlayViewController() }
         ),
+        DemoItem(
+            title: "SwiftUI 控制层",
+            subtitle: "使用 SwiftUIControlOverlay 构建自定义控制层",
+            viewControllerFactory: { SwiftUIControlsDemoViewController() }
+        ),
     ]
 
     // MARK: - 生命周期

@@ -36,6 +36,17 @@ final class PlaybackSettingsViewController: UIViewController {
     private let controlOverlay = DefaultControlOverlay()
     private var selectedSampleGroup: VideoSampleGroup = .hls
     private var currentSampleIndex = 0
+    private let rates: [Float] = [0.5, 1.0, 1.5, 2.0]
+    private let scalingModes: [ScalingMode] = [.aspectFit, .aspectFill, .fill]
+    private let fullScreenModes: [FullScreenMode] = [.automatic, .landscape, .portrait]
+    private var selectedRate: Float = 1.0
+    private var selectedScalingMode: ScalingMode = .aspectFit
+    private var selectedFullScreenMode: FullScreenMode = .automatic
+    private var disabledGestureTypes: DisableGestureTypes = []
+    private var disabledPanMovingDirection: DisablePanMovingDirection = []
+    private var isMuted = false
+    private var pauseWhenAppResignActive = true
+    private var exitFullScreenWhenStop = true
     private var currentSamples: [VideoItem] {
         selectedSampleGroup.samples
     }
@@ -75,7 +86,7 @@ final class PlaybackSettingsViewController: UIViewController {
             playerContainerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             playerContainerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             playerContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            playerContainerView.heightAnchor.constraint(equalTo: playerContainerView.widthAnchor, multiplier: 9.0 / 16.0),
+            playerContainerView.heightAnchor.constraint(equalTo: playerContainerView.widthAnchor, multiplier: 3.0 / 4.0),
 
             tableView.topAnchor.constraint(equalTo: playerContainerView.bottomAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -92,6 +103,7 @@ final class PlaybackSettingsViewController: UIViewController {
         player.controlOverlay = controlOverlay
         player.addDeviceOrientationObserver()
         self.player = player
+        applyPlaybackConfiguration()
 
         playCurrentVideo()
     }
@@ -99,9 +111,24 @@ final class PlaybackSettingsViewController: UIViewController {
     private func playCurrentVideo() {
         guard currentSamples.indices.contains(currentSampleIndex) else { return }
         let video = currentSamples[currentSampleIndex]
+        player?.stop()
+        applyPlaybackConfiguration()
         controlOverlay.resetControlView()
-        controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
+        controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: selectedFullScreenMode)
         player?.assetURL = video.url
+        applyPlaybackConfiguration()
+    }
+
+    private func applyPlaybackConfiguration() {
+        player?.rate = selectedRate
+        player?.engine.scalingMode = selectedScalingMode
+        player?.orientationManager.fullScreenMode = selectedFullScreenMode
+        player?.disabledGestureTypes = disabledGestureTypes
+        player?.disabledPanMovingDirection = disabledPanMovingDirection
+        player?.isMuted = isMuted
+        player?.pauseWhenAppResignActive = pauseWhenAppResignActive
+        player?.exitFullScreenWhenStop = exitFullScreenWhenStop
+        controlOverlay.fullScreenMode = selectedFullScreenMode
     }
 
     // MARK: - 控件工厂
@@ -123,18 +150,18 @@ final class PlaybackSettingsViewController: UIViewController {
     // MARK: - Actions
 
     @objc private func rateChanged(_ sender: UISegmentedControl) {
-        let rates: [Float] = [0.5, 1.0, 1.5, 2.0]
-        player?.rate = rates[sender.selectedSegmentIndex]
+        selectedRate = rates[sender.selectedSegmentIndex]
+        applyPlaybackConfiguration()
     }
 
     @objc private func scalingModeChanged(_ sender: UISegmentedControl) {
-        let modes: [ScalingMode] = [.aspectFit, .aspectFill, .fill]
-        player?.engine.scalingMode = modes[sender.selectedSegmentIndex]
+        selectedScalingMode = scalingModes[sender.selectedSegmentIndex]
+        applyPlaybackConfiguration()
     }
 
     @objc private func fullScreenModeChanged(_ sender: UISegmentedControl) {
-        let modes: [FullScreenMode] = [.automatic, .landscape, .portrait]
-        controlOverlay.fullScreenMode = modes[sender.selectedSegmentIndex]
+        selectedFullScreenMode = fullScreenModes[sender.selectedSegmentIndex]
+        applyPlaybackConfiguration()
     }
 
     @objc private func sampleGroupChanged(_ sender: UISegmentedControl) {
@@ -181,33 +208,36 @@ final class PlaybackSettingsViewController: UIViewController {
     }
 
     @objc private func muteToggled(_ sender: UISwitch) {
-        player?.isMuted = sender.isOn
+        isMuted = sender.isOn
+        applyPlaybackConfiguration()
     }
 
     @objc private func pauseInBackgroundToggled(_ sender: UISwitch) {
-        player?.pauseWhenAppResignActive = sender.isOn
+        pauseWhenAppResignActive = sender.isOn
+        applyPlaybackConfiguration()
     }
 
     @objc private func exitFullScreenOnStopToggled(_ sender: UISwitch) {
-        player?.exitFullScreenWhenStop = sender.isOn
+        exitFullScreenWhenStop = sender.isOn
+        applyPlaybackConfiguration()
     }
 
     private func toggleGesture(_ type: DisableGestureTypes, enabled: Bool) {
-        guard let player else { return }
         if enabled {
-            player.disabledGestureTypes.remove(type)
+            disabledGestureTypes.remove(type)
         } else {
-            player.disabledGestureTypes.insert(type)
+            disabledGestureTypes.insert(type)
         }
+        applyPlaybackConfiguration()
     }
 
     private func togglePanDirection(_ direction: DisablePanMovingDirection, enabled: Bool) {
-        guard let player else { return }
         if enabled {
-            player.disabledPanMovingDirection.remove(direction)
+            disabledPanMovingDirection.remove(direction)
         } else {
-            player.disabledPanMovingDirection.insert(direction)
+            disabledPanMovingDirection.insert(direction)
         }
+        applyPlaybackConfiguration()
     }
 }
 
@@ -299,7 +329,7 @@ extension PlaybackSettingsViewController: UITableViewDataSource {
             cell.contentConfiguration = config
             cell.accessoryView = makeSegmentedControl(
                 items: ["0.5x", "1.0x", "1.5x", "2.0x"],
-                selectedIndex: 1,
+                selectedIndex: rates.firstIndex(of: selectedRate) ?? 1,
                 action: #selector(rateChanged(_:))
             )
 
@@ -308,7 +338,7 @@ extension PlaybackSettingsViewController: UITableViewDataSource {
             cell.contentConfiguration = config
             cell.accessoryView = makeSegmentedControl(
                 items: ["AspectFit", "AspectFill", "Fill"],
-                selectedIndex: 0,
+                selectedIndex: scalingModes.firstIndex(of: selectedScalingMode) ?? 0,
                 action: #selector(scalingModeChanged(_:))
             )
 
@@ -317,7 +347,7 @@ extension PlaybackSettingsViewController: UITableViewDataSource {
             cell.contentConfiguration = config
             cell.accessoryView = makeSegmentedControl(
                 items: ["自动", "横屏", "竖屏"],
-                selectedIndex: 0,
+                selectedIndex: fullScreenModes.firstIndex(of: selectedFullScreenMode) ?? 0,
                 action: #selector(fullScreenModeChanged(_:))
             )
 
@@ -332,7 +362,9 @@ extension PlaybackSettingsViewController: UITableViewDataSource {
             ]
             config.text = titles[indexPath.row]
             cell.contentConfiguration = config
-            cell.accessoryView = makeSwitch(isOn: true, action: actions[indexPath.row])
+            let gestureTypes: [DisableGestureTypes] = [.singleTap, .doubleTap, .pan, .pinch, .longPress]
+            let isEnabled = !disabledGestureTypes.contains(gestureTypes[indexPath.row])
+            cell.accessoryView = makeSwitch(isOn: isEnabled, action: actions[indexPath.row])
 
         case .panDirection:
             let titles = ["垂直滑动", "水平滑动"]
@@ -342,22 +374,24 @@ extension PlaybackSettingsViewController: UITableViewDataSource {
             ]
             config.text = titles[indexPath.row]
             cell.contentConfiguration = config
-            cell.accessoryView = makeSwitch(isOn: true, action: actions[indexPath.row])
+            let directions: [DisablePanMovingDirection] = [.vertical, .horizontal]
+            let isEnabled = !disabledPanMovingDirection.contains(directions[indexPath.row])
+            cell.accessoryView = makeSwitch(isOn: isEnabled, action: actions[indexPath.row])
 
         case .other:
             switch indexPath.row {
             case 0:
                 config.text = "静音"
                 cell.contentConfiguration = config
-                cell.accessoryView = makeSwitch(isOn: false, action: #selector(muteToggled(_:)))
+                cell.accessoryView = makeSwitch(isOn: isMuted, action: #selector(muteToggled(_:)))
             case 1:
                 config.text = "进入后台暂停"
                 cell.contentConfiguration = config
-                cell.accessoryView = makeSwitch(isOn: true, action: #selector(pauseInBackgroundToggled(_:)))
+                cell.accessoryView = makeSwitch(isOn: pauseWhenAppResignActive, action: #selector(pauseInBackgroundToggled(_:)))
             case 2:
                 config.text = "停止时退出全屏"
                 cell.contentConfiguration = config
-                cell.accessoryView = makeSwitch(isOn: true, action: #selector(exitFullScreenOnStopToggled(_:)))
+                cell.accessoryView = makeSwitch(isOn: exitFullScreenWhenStop, action: #selector(exitFullScreenOnStopToggled(_:)))
             default:
                 cell.contentConfiguration = config
             }

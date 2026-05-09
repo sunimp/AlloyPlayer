@@ -6,5 +6,6 @@
 //
 
 @_exported import AlloyAVPlayer
-@_exported import AlloyControlView
 @_exported import AlloyCore
+@_exported import AlloySwiftUIControls
+@_exported import AlloyUIKitControls

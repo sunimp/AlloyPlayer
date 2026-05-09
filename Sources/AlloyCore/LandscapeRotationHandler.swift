@@ -13,6 +13,7 @@
     /// 内部按 iOS 版本差异分策略：
     /// - iOS 16+: 基于 `UIWindowScene.requestGeometryUpdate`
     /// - iOS 15: 基于 `UIDevice.setValue` + `supportedInterfaceOrientations`
+    @MainActor
     final class LandscapeRotationHandler {
         // MARK: - 状态
 
@@ -149,7 +150,7 @@
             window.alpha = 0
             UIView.animate(withDuration: duration, animations: {
                 window.alpha = 1
-            }, completion: { @Sendable _ in
+            }, completion: { _ in
                 completion()
             })
         }
@@ -180,9 +181,9 @@
             containerView.addSubview(contentView)
             contentView.frame = containerView.bounds
 
-            UIView.animate(withDuration: duration, animations: { @Sendable in
+            UIView.animate(withDuration: duration, animations: {
                 self.window?.alpha = 0
-            }, completion: { @Sendable [weak self] _ in
+            }, completion: { [weak self] _ in
                 self?.cleanupWindow()
                 completion()
             })

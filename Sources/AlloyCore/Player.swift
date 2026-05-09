@@ -443,6 +443,7 @@
             engine.didPlayToEndPublisher.sink { [weak self] in
                 guard let self else { return }
                 self.controlOverlay?.playerDidPlayToEnd(self)
+                self.exitFullScreenIfNeeded()
             }.store(in: &cancellables)
 
             engine.presentationSizePublisher.sink { [weak self] size in

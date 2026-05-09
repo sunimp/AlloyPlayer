@@ -75,13 +75,14 @@ swift test
 
 ## 模块结构
 
-AlloyPlayer 分为四个 SPM target：
+AlloyPlayer 分为五个 SPM target：
 
 | 模块 | 描述 |
 |------|------|
 | `AlloyCore` | 协议、枚举和 `Player` 控制器 |
 | `AlloyAVPlayer` | 基于 AVFoundation 的 `PlaybackEngine` |
-| `AlloyControlView` | 默认 `ControlOverlay` UI 组件 |
+| `AlloyUIKitControls` | 默认 UIKit `ControlOverlay` UI 组件 |
+| `AlloySwiftUIControls` | SwiftUI 控制层桥接组件 |
 | `AlloyPlayer` | 重新导出以上所有模块的 umbrella 模块 |
 
 添加代码时，请放入对应的模块。如不确定，请先提 issue 讨论。

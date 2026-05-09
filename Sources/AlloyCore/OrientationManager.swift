@@ -131,12 +131,16 @@
             UIDevice.current.beginGeneratingDeviceOrientationNotifications()
             landscapeHandler.isActiveDeviceObserver = true
 
+            // 在闭包外部捕获 landscapeHandler 引用，避免在 Sendable 闭包中访问 MainActor 隔离属性
+            let handler = landscapeHandler
             deviceOrientationObserver = NotificationCenter.default.addObserver(
                 forName: UIDevice.orientationDidChangeNotification,
                 object: nil,
                 queue: .main
-            ) { [weak self] _ in
-                self?.landscapeHandler.handleDeviceOrientationChange()
+            ) { _ in
+                MainActor.assumeIsolated {
+                    handler.handleDeviceOrientationChange()
+                }
             }
         }
 
@@ -197,8 +201,12 @@
             // 退出全屏时，根据当前实际全屏状态决定退出方式，而非仅依赖 fullScreenMode 配置。
             // 修复：通过 enterPortraitFullScreen 直接进入竖屏全屏后，
             // 返回按钮调用 enterFullScreen(false) 可能因 fullScreenMode 走错分支。
-            if !fullScreen, portraitController != nil {
-                await enterPortraitFullScreen(false, animated: animated)
+            if !fullScreen {
+                if portraitController != nil {
+                    await enterPortraitFullScreen(false, animated: animated)
+                } else if isFullScreen {
+                    await rotate(to: .portrait, animated: animated)
+                }
                 return
             }
 

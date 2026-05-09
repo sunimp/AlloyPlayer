@@ -362,13 +362,15 @@
             removeTimeObserver()
             let interval = CMTime(seconds: timeRefreshInterval, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
             timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
-                guard let self, let item = self.playerItem else { return }
-                let current = CMTimeGetSeconds(time)
-                let total = CMTimeGetSeconds(item.duration)
-                guard current >= 0, total > 0 else { return }
-                self.currentTime = current
-                self.totalTime = total
-                self._playTime.send((current: current, total: total))
+                MainActor.assumeIsolated {
+                    guard let self, let item = self.playerItem else { return }
+                    let current = CMTimeGetSeconds(time)
+                    let total = CMTimeGetSeconds(item.duration)
+                    guard current >= 0, total > 0 else { return }
+                    self.currentTime = current
+                    self.totalTime = total
+                    self._playTime.send((current: current, total: total))
+                }
             }
         }
 
@@ -386,9 +388,11 @@
                 object: item,
                 queue: .main
             ) { [weak self] _ in
-                guard let self else { return }
-                self.playbackState = .stopped
-                self._didPlayToEnd.send()
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.playbackState = .stopped
+                    self._didPlayToEnd.send()
+                }
             }
         }
 

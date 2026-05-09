@@ -12,7 +12,8 @@ let package = Package(
         .library(name: "AlloyPlayer", targets: ["AlloyPlayer"]),
         .library(name: "AlloyCore", targets: ["AlloyCore"]),
         .library(name: "AlloyAVPlayer", targets: ["AlloyAVPlayer"]),
-        .library(name: "AlloyControlView", targets: ["AlloyControlView"]),
+        .library(name: "AlloyUIKitControls", targets: ["AlloyUIKitControls"]),
+        .library(name: "AlloySwiftUIControls", targets: ["AlloySwiftUIControls"]),
     ],
     targets: [
         .target(name: "AlloyCore"),
@@ -21,12 +22,16 @@ let package = Package(
             dependencies: ["AlloyCore"]
         ),
         .target(
-            name: "AlloyControlView",
+            name: "AlloyUIKitControls",
             dependencies: ["AlloyCore"]
         ),
         .target(
+            name: "AlloySwiftUIControls",
+            dependencies: ["AlloyCore", "AlloyAVPlayer"]
+        ),
+        .target(
             name: "AlloyPlayer",
-            dependencies: ["AlloyCore", "AlloyAVPlayer", "AlloyControlView"]
+            dependencies: ["AlloyCore", "AlloyAVPlayer", "AlloyUIKitControls", "AlloySwiftUIControls"]
         ),
         .testTarget(
             name: "AlloyCoreTests",
@@ -37,8 +42,12 @@ let package = Package(
             dependencies: ["AlloyAVPlayer"]
         ),
         .testTarget(
-            name: "AlloyControlViewTests",
-            dependencies: ["AlloyControlView"]
+            name: "AlloyUIKitControlsTests",
+            dependencies: ["AlloyUIKitControls"]
+        ),
+        .testTarget(
+            name: "AlloySwiftUIControlsTests",
+            dependencies: ["AlloySwiftUIControls"]
         ),
     ],
     swiftLanguageModes: [.v6]

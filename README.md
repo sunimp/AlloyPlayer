@@ -76,7 +76,8 @@ dependencies: [
 .target(name: "YourApp", dependencies: [
     .product(name: "AlloyCore", package: "AlloyPlayer"),
     .product(name: "AlloyAVPlayer", package: "AlloyPlayer"),
-    .product(name: "AlloyControlView", package: "AlloyPlayer"),
+    .product(name: "AlloyUIKitControls", package: "AlloyPlayer"),
+    .product(name: "AlloySwiftUIControls", package: "AlloyPlayer"),
 ])
 ```
 
@@ -116,6 +117,46 @@ class PlayerViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         player.isViewControllerDisappear = false
+    }
+}
+```
+
+### SwiftUI 播放
+
+```swift
+import AlloyPlayer
+import SwiftUI
+
+struct PlayerScreen: View {
+    let url: URL
+
+    var body: some View {
+        AlloyPlayerView(url: url)
+            .autoPlay(true)
+            .scalingMode(.aspectFit)
+            .controlAutoHideInterval(2.5)
+            .aspectRatio(16.0 / 9.0, contentMode: .fit)
+    }
+}
+```
+
+需要外部控制或自定义控制层时：
+
+```swift
+struct CustomPlayerScreen: View {
+    @StateObject private var controller = AlloyPlayerController()
+    let url: URL
+
+    var body: some View {
+        AlloyPlayerView(url: url, controller: controller) { state in
+            Button(state.isPlaying ? "暂停" : "播放") {
+                state.playOrPause()
+            }
+        }
+        .disabledGestures([.pinch])
+        .configurePlayer { player in
+            player.isAllowOrientationRotation = true
+        }
     }
 }
 ```
@@ -205,7 +246,8 @@ class CustomEngine: PlaybackEngine {
 AlloyPlayer (umbrella)
 ├── AlloyCore          ← 协议、枚举、Player 控制器
 ├── AlloyAVPlayer      ← AVPlayer 引擎实现
-└── AlloyControlView   ← 默认控制层 UI
+├── AlloyUIKitControls ← 默认 UIKit 控制层 UI
+└── AlloySwiftUIControls ← SwiftUI 控制层桥接
 ```
 
 ## 模块
@@ -237,7 +279,7 @@ AlloyPlayer (umbrella)
 |------|------|
 | `AVPlayerManager` | 使用 AVPlayer 的 `PlaybackEngine` 实现 |
 
-### AlloyControlView
+### AlloyUIKitControls
 
 默认控制层，包含竖屏和横屏面板。
 
@@ -248,6 +290,18 @@ AlloyPlayer (umbrella)
 | `LandscapeControlPanel` | 横屏模式控制面板 |
 | `FloatingControlPanel` | 浮动窗口控制面板 |
 | `ProgressSlider` | 播放进度滑块 |
+
+### AlloySwiftUIControls
+
+SwiftUI 控制层桥接模块，复用 `AlloyCore.ControlOverlay` 协议，不重写播放内核。
+
+| 类型 | 描述 |
+|------|------|
+| `SwiftUIControlOverlay` | 将 SwiftUI 控制界面桥接为播放器控制层 |
+| `SwiftUIControlOverlayState` | SwiftUI 可观察状态与播放动作入口 |
+| `AlloyPlayerView` | 开箱即用的 SwiftUI 播放器视图 |
+| `AlloyPlayerController` | SwiftUI 外部播放控制句柄 |
+| `DefaultSwiftUIControlOverlayView` | 默认 SwiftUI 控制层 |
 | `BufferingIndicator` | 缓冲状态指示器 |
 | `LoadingIndicator` | 加载动画 |
 | `VolumeAndBrightnessHUD` | 音量/亮度调节 HUD |

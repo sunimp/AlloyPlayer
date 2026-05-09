@@ -17,6 +17,11 @@
             systemEventObserver?.stopObserving()
             systemEventObserver = nil
 
+            exitFullScreenIfNeeded()
+        }
+
+        /// 按配置在停止态退出全屏
+        func exitFullScreenIfNeeded() {
             if exitFullScreenWhenStop, isFullScreen {
                 Task {
                     await orientationManager.enterFullScreen(false, animated: true)

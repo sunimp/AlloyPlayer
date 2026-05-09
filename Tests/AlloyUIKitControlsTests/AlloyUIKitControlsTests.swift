@@ -1,4 +1,4 @@
-@testable import AlloyControlView
+@testable import AlloyUIKitControls
 import Combine
 import Testing
 
