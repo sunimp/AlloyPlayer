@@ -60,7 +60,10 @@
         public var trackHeight: CGFloat = 2
         public var trackCornerRadius: CGFloat = 1
         public var isThumbHidden = false {
-            didSet { thumbButton.isHidden = isThumbHidden }
+            didSet {
+                thumbButton.isHidden = isThumbHidden
+                setNeedsLayout()
+            }
         }
 
         public private(set) var isDragging = false
@@ -129,6 +132,9 @@
             addSubview(thumbButton)
 
             thumbButton.adjustsImageWhenHighlighted = false
+            thumbButton.tintColor = .white
+            let thumbConfig = UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold)
+            thumbButton.setImage(UIImage(systemName: "circle.fill", withConfiguration: thumbConfig), for: .normal)
         }
 
         private func setupGestures() {
@@ -144,9 +150,10 @@
         override public func layoutSubviews() {
             super.layoutSubviews()
             let trackY = (bounds.height - trackHeight) / 2
-            let trackWidth = bounds.width - thumbSize.width
+            let horizontalInset = isThumbHidden ? 0 : thumbSize.width / 2
+            let trackWidth = max(0, bounds.width - horizontalInset * 2)
 
-            bgTrack.frame = CGRect(x: thumbSize.width / 2, y: trackY, width: trackWidth, height: trackHeight)
+            bgTrack.frame = CGRect(x: horizontalInset, y: trackY, width: trackWidth, height: trackHeight)
             bgTrack.layer.cornerRadius = trackCornerRadius
 
             let bufferWidth = trackWidth * CGFloat(min(max(bufferValue, 0), 1))

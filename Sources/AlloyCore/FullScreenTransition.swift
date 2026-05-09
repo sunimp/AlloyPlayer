@@ -45,6 +45,7 @@
             toView.frame = container.bounds
 
             // 切换到 frame-based 布局
+            deactivateSuperviewConstraints(for: contentView)
             contentView.translatesAutoresizingMaskIntoConstraints = true
 
             // 记录原始 frame
@@ -66,6 +67,7 @@
             let container = context.containerView
             let targetFrame = containerView.convert(containerView.bounds, to: container)
 
+            deactivateSuperviewConstraints(for: contentView)
             contentView.translatesAutoresizingMaskIntoConstraints = true
             container.addSubview(contentView)
             contentView.frame = container.bounds
@@ -78,6 +80,14 @@
                 self.contentView.frame = self.containerView.bounds
                 context.completeTransition(!context.transitionWasCancelled)
             })
+        }
+
+        private func deactivateSuperviewConstraints(for view: UIView) {
+            guard let superview = view.superview else { return }
+            let constraints = superview.constraints.filter {
+                $0.firstItem === view || $0.secondItem === view
+            }
+            NSLayoutConstraint.deactivate(constraints)
         }
     }
 #endif

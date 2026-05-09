@@ -109,9 +109,13 @@ extension CollectionViewPlaybackViewController: UICollectionViewDataSource {
         let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: VideoCollectionViewCell.reuseIdentifier,
             for: indexPath
-        ) as! VideoCollectionViewCell
-        cell.configure(with: videos[indexPath.item])
-        return cell
+        )
+        guard let videoCell = cell as? VideoCollectionViewCell else {
+            assertionFailure("无法复用 VideoCollectionViewCell")
+            return cell
+        }
+        videoCell.configure(with: videos[indexPath.item])
+        return videoCell
     }
 }
 

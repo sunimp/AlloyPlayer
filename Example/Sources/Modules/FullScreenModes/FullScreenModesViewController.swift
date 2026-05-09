@@ -44,6 +44,11 @@ final class FullScreenModesViewController: UIViewController {
     private var player: Player?
     private let controlOverlay = DefaultControlOverlay()
     private var cancellables = Set<AnyCancellable>()
+    private var selectedSampleGroup: VideoSampleGroup = .hls
+    private var currentSampleIndex = 0
+    private var currentSamples: [VideoItem] {
+        selectedSampleGroup.samples
+    }
 
     // MARK: - 生命周期
 
@@ -79,13 +84,15 @@ final class FullScreenModesViewController: UIViewController {
         view.addSubview(statusLabel)
 
         // 操作按钮
+        let sampleGroupControl = makeSegmentedControl(action: #selector(sampleGroupChanged(_:)))
+        let nextSampleButton = makeButton(title: "切换下一个素材", action: #selector(playNextSample))
         let landscapeButton = makeButton(title: "进入横屏全屏", action: #selector(enterLandscapeFullScreen))
         let portraitButton = makeButton(title: "进入竖屏全屏", action: #selector(enterPortraitFullScreen))
         let autoButton = makeButton(title: "自动全屏", action: #selector(enterAutoFullScreen))
         let lockButton = makeButton(title: "切换锁屏", action: #selector(toggleLockScreen))
         let exitButton = makeButton(title: "退出全屏", action: #selector(exitFullScreen))
 
-        for item in [landscapeButton, portraitButton, autoButton, lockButton, exitButton] {
+        for item in [sampleGroupControl, nextSampleButton, landscapeButton, portraitButton, autoButton, lockButton, exitButton] {
             buttonStack.addArrangedSubview(item)
         }
 
@@ -114,10 +121,7 @@ final class FullScreenModesViewController: UIViewController {
         player.addDeviceOrientationObserver()
         self.player = player
 
-        let video = VideoResource.hlsSamples[0]
-        controlOverlay.resetControlView()
-        controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
-        player.assetURL = video.url
+        playCurrentVideo()
 
         // 监听旋转事件
         player.orientationDidChangePublisher
@@ -128,7 +132,29 @@ final class FullScreenModesViewController: UIViewController {
             .store(in: &cancellables)
     }
 
+    private func playCurrentVideo() {
+        guard currentSamples.indices.contains(currentSampleIndex) else { return }
+        let video = currentSamples[currentSampleIndex]
+        controlOverlay.resetControlView()
+        controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
+        player?.assetURL = video.url
+        updateStatusLabel()
+    }
+
     // MARK: - Actions
+
+    @objc private func sampleGroupChanged(_ sender: UISegmentedControl) {
+        guard let group = VideoSampleGroup(rawValue: sender.selectedSegmentIndex) else { return }
+        selectedSampleGroup = group
+        currentSampleIndex = 0
+        playCurrentVideo()
+    }
+
+    @objc private func playNextSample() {
+        guard !currentSamples.isEmpty else { return }
+        currentSampleIndex = (currentSampleIndex + 1) % currentSamples.count
+        playCurrentVideo()
+    }
 
     @objc private func enterLandscapeFullScreen() {
         guard let player else { return }
@@ -171,7 +197,7 @@ final class FullScreenModesViewController: UIViewController {
     // MARK: - 辅助
 
     private func updateStatusLabel() {
-        guard let player else { return }
+        guard let player, currentSamples.indices.contains(currentSampleIndex) else { return }
         let orientation = player.orientationManager.currentOrientation
         let orientationText: String
         switch orientation {
@@ -186,7 +212,16 @@ final class FullScreenModesViewController: UIViewController {
         当前方向: \(orientationText)
         是否全屏: \(player.isFullScreen ? "是" : "否")
         是否锁屏: \(player.isScreenLocked ? "是" : "否")
+        当前素材: \(currentSamples[currentSampleIndex].title)
         """
+    }
+
+    private func makeSegmentedControl(action: Selector) -> UISegmentedControl {
+        let sc = UISegmentedControl(items: VideoSampleGroup.allCases.map(\.title))
+        sc.selectedSegmentIndex = selectedSampleGroup.rawValue
+        sc.addTarget(self, action: action, for: .valueChanged)
+        sc.heightAnchor.constraint(equalToConstant: 36).isActive = true
+        return sc
     }
 
     private func makeButton(title: String, action: Selector) -> UIButton {

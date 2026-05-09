@@ -16,7 +16,7 @@ final class ShortVideoFeedViewController: UIViewController {
     // MARK: - 数据源
 
     private var videos: [VideoItem] = {
-        let samples = VideoResource.allSamples
+        let samples = VideoResource.shortVideoSamples
         return (0 ..< 30).map { samples[$0 % samples.count] }
     }()
 
@@ -235,22 +235,26 @@ extension ShortVideoFeedViewController: UICollectionViewDataSource {
         let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: ShortVideoFeedCell.reuseIdentifier,
             for: indexPath
-        ) as! ShortVideoFeedCell
+        )
+        guard let feedCell = cell as? ShortVideoFeedCell else {
+            assertionFailure("无法复用 ShortVideoFeedCell")
+            return cell
+        }
         let video = videos[indexPath.item]
-        cell.configure(title: video.title, description: video.description, coverColor: video.coverColor)
-        cell.onTap = { [weak self] in
+        feedCell.configure(title: video.title, description: video.description, coverColor: video.coverColor)
+        feedCell.onTap = { [weak self, weak feedCell] in
             guard let self, let engine = self.engine else { return }
             if engine.isPlaying {
                 engine.pause()
             } else {
-                cell.setPausedIndicatorVisible(false)
+                feedCell?.setPausedIndicatorVisible(false)
                 engine.play()
             }
         }
-        cell.onSeek = { [weak self] progress in
+        feedCell.onSeek = { [weak self] progress in
             self?.seekCurrentVideo(to: progress)
         }
-        return cell
+        return feedCell
     }
 }
 

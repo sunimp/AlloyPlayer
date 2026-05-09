@@ -261,6 +261,8 @@
 
         var cancellables = Set<AnyCancellable>()
         private var volumeSlider: UISlider?
+        private var renderViewConstraints: [NSLayoutConstraint] = []
+        private var overlayConstraints: [NSLayoutConstraint] = []
         private static var playRecords: [String: TimeInterval] = [:]
 
         // MARK: - 列表播放存储属性（供 Player+ScrollView 扩展使用）
@@ -489,29 +491,41 @@
             // 全屏模式下 renderView 由旋转管理器管理，不移回容器
             if !isFullScreen {
                 if renderView.superview !== containerView {
+                    NSLayoutConstraint.deactivate(renderViewConstraints)
+                    renderViewConstraints.removeAll()
                     containerView.addSubview(renderView)
                 }
                 renderView.translatesAutoresizingMaskIntoConstraints = false
-                NSLayoutConstraint.activate([
-                    renderView.topAnchor.constraint(equalTo: containerView.topAnchor),
-                    renderView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-                    renderView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-                    renderView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-                ])
+                if renderViewConstraints.isEmpty || renderViewConstraints.contains(where: { !$0.isActive }) {
+                    NSLayoutConstraint.deactivate(renderViewConstraints)
+                    renderViewConstraints = [
+                        renderView.topAnchor.constraint(equalTo: containerView.topAnchor),
+                        renderView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                        renderView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                        renderView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+                    ]
+                    NSLayoutConstraint.activate(renderViewConstraints)
+                }
             }
 
             // controlOverlay 始终跟随 renderView
             if let overlay = controlOverlay {
                 if overlay.superview !== renderView {
+                    NSLayoutConstraint.deactivate(overlayConstraints)
+                    overlayConstraints.removeAll()
                     renderView.addSubview(overlay)
                 }
                 overlay.translatesAutoresizingMaskIntoConstraints = false
-                NSLayoutConstraint.activate([
-                    overlay.topAnchor.constraint(equalTo: renderView.topAnchor),
-                    overlay.leadingAnchor.constraint(equalTo: renderView.leadingAnchor),
-                    overlay.trailingAnchor.constraint(equalTo: renderView.trailingAnchor),
-                    overlay.bottomAnchor.constraint(equalTo: renderView.bottomAnchor),
-                ])
+                if overlayConstraints.isEmpty || overlayConstraints.contains(where: { !$0.isActive }) {
+                    NSLayoutConstraint.deactivate(overlayConstraints)
+                    overlayConstraints = [
+                        overlay.topAnchor.constraint(equalTo: renderView.topAnchor),
+                        overlay.leadingAnchor.constraint(equalTo: renderView.leadingAnchor),
+                        overlay.trailingAnchor.constraint(equalTo: renderView.trailingAnchor),
+                        overlay.bottomAnchor.constraint(equalTo: renderView.bottomAnchor),
+                    ]
+                    NSLayoutConstraint.activate(overlayConstraints)
+                }
             }
 
             if !isFullScreen {

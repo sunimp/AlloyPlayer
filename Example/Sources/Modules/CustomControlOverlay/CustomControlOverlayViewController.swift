@@ -21,6 +21,23 @@ final class CustomControlOverlayViewController: UIViewController {
         return v
     }()
 
+    private lazy var sampleGroupControl: UISegmentedControl = {
+        let sc = UISegmentedControl(items: VideoSampleGroup.allCases.map(\.title))
+        sc.selectedSegmentIndex = selectedSampleGroup.rawValue
+        sc.addTarget(self, action: #selector(sampleGroupChanged(_:)), for: .valueChanged)
+        sc.translatesAutoresizingMaskIntoConstraints = false
+        return sc
+    }()
+
+    private lazy var nextSampleButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.setTitle("切换下一个素材", for: .normal)
+        btn.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+        btn.addTarget(self, action: #selector(playNextSample), for: .touchUpInside)
+        btn.translatesAutoresizingMaskIntoConstraints = false
+        return btn
+    }()
+
     private let descriptionLabel: UILabel = {
         let l = UILabel()
         l.numberOfLines = 0
@@ -45,6 +62,11 @@ final class CustomControlOverlayViewController: UIViewController {
 
     private var player: Player?
     private let controlOverlay = MinimalControlOverlay()
+    private var selectedSampleGroup: VideoSampleGroup = .hls
+    private var currentSampleIndex = 0
+    private var currentSamples: [VideoItem] {
+        selectedSampleGroup.samples
+    }
 
     // MARK: - 生命周期
 
@@ -75,6 +97,8 @@ final class CustomControlOverlayViewController: UIViewController {
 
     private func setupUI() {
         view.addSubview(playerContainerView)
+        view.addSubview(sampleGroupControl)
+        view.addSubview(nextSampleButton)
         view.addSubview(descriptionLabel)
 
         NSLayoutConstraint.activate([
@@ -83,7 +107,14 @@ final class CustomControlOverlayViewController: UIViewController {
             playerContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             playerContainerView.heightAnchor.constraint(equalTo: playerContainerView.widthAnchor, multiplier: 9.0 / 16.0),
 
-            descriptionLabel.topAnchor.constraint(equalTo: playerContainerView.bottomAnchor, constant: 24),
+            sampleGroupControl.topAnchor.constraint(equalTo: playerContainerView.bottomAnchor, constant: 16),
+            sampleGroupControl.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            sampleGroupControl.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+
+            nextSampleButton.topAnchor.constraint(equalTo: sampleGroupControl.bottomAnchor, constant: 12),
+            nextSampleButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+
+            descriptionLabel.topAnchor.constraint(equalTo: nextSampleButton.bottomAnchor, constant: 20),
             descriptionLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             descriptionLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
         ])
@@ -98,7 +129,24 @@ final class CustomControlOverlayViewController: UIViewController {
         player.addDeviceOrientationObserver()
         self.player = player
 
-        let video = VideoResource.mp4Samples[0]
-        player.assetURL = video.url
+        playCurrentVideo()
+    }
+
+    private func playCurrentVideo() {
+        guard currentSamples.indices.contains(currentSampleIndex) else { return }
+        player?.assetURL = currentSamples[currentSampleIndex].url
+    }
+
+    @objc private func sampleGroupChanged(_ sender: UISegmentedControl) {
+        guard let group = VideoSampleGroup(rawValue: sender.selectedSegmentIndex) else { return }
+        selectedSampleGroup = group
+        currentSampleIndex = 0
+        playCurrentVideo()
+    }
+
+    @objc private func playNextSample() {
+        guard !currentSamples.isEmpty else { return }
+        currentSampleIndex = (currentSampleIndex + 1) % currentSamples.count
+        playCurrentVideo()
     }
 }

@@ -226,12 +226,24 @@
             }.store(in: &cancellables)
 
             // 订阅 slider 拖动/点击结束事件，执行 seek
+            portraitPanel.slider.touchBeganPublisher.sink { [weak self] _ in
+                self?.handleSliderInteractionBegan()
+            }.store(in: &cancellables)
+
             portraitPanel.sliderValueChangedPublisher.sink { [weak self] value in
-                self?.handleSliderSeek(value: value)
+                self?.handleSliderInteractionEnded(value: value)
+            }.store(in: &cancellables)
+
+            landscapePanel.slider.touchBeganPublisher.sink { [weak self] _ in
+                self?.handleSliderInteractionBegan()
             }.store(in: &cancellables)
 
             landscapePanel.sliderValueChangedPublisher.sink { [weak self] value in
-                self?.handleSliderSeek(value: value)
+                self?.handleSliderInteractionEnded(value: value)
+            }.store(in: &cancellables)
+
+            bottomProgress.touchBeganPublisher.sink { [weak self] _ in
+                self?.handleSliderInteractionBegan()
             }.store(in: &cancellables)
 
             bottomProgress.valueChangedPublisher.sink { [weak self] value in
@@ -239,11 +251,11 @@
             }.store(in: &cancellables)
 
             bottomProgress.touchEndedPublisher.sink { [weak self] value in
-                self?.handleSliderSeek(value: CGFloat(value))
+                self?.handleSliderInteractionEnded(value: CGFloat(value))
             }.store(in: &cancellables)
 
             bottomProgress.tappedPublisher.sink { [weak self] value in
-                self?.handleSliderSeek(value: CGFloat(value))
+                self?.handleSliderInteractionEnded(value: CGFloat(value))
             }.store(in: &cancellables)
 
             failButton.addTarget(self, action: #selector(failButtonTapped), for: .touchUpInside)
@@ -255,6 +267,18 @@
             let currentTimeString = TimeFormatter.string(from: Int(currentTime))
             portraitPanel.updateSlider(value: value, currentTimeString: currentTimeString)
             landscapePanel.updateSlider(value: value, currentTimeString: currentTimeString)
+        }
+
+        private func handleSliderInteractionBegan() {
+            guard isShowing else { return }
+            cancelAutoHide()
+        }
+
+        private func handleSliderInteractionEnded(value: CGFloat) {
+            handleSliderSeek(value: value)
+            if isShowing {
+                scheduleAutoHide()
+            }
         }
 
         /// 处理 slider 拖动/点击结束后的 seek
@@ -298,7 +322,6 @@
             portraitPanel.show(title: title, fullScreenMode: fullScreenMode)
             landscapePanel.show(title: title, fullScreenMode: fullScreenMode)
             if let placeholder = placeholderImage { coverImageView.image = placeholder }
-            setPlayButtonsHidden(true)
             showControlView()
         }
 
@@ -307,7 +330,6 @@
             portraitPanel.show(title: title, fullScreenMode: fullScreenMode)
             landscapePanel.show(title: title, fullScreenMode: fullScreenMode)
             if let image = coverImage { coverImageView.image = image }
-            setPlayButtonsHidden(true)
             showControlView()
         }
 
@@ -315,7 +337,6 @@
             portraitPanel.resetControlView()
             landscapePanel.resetControlView()
             restoreControlPanels()
-            setPlayButtonsHidden(true)
             bottomProgress.value = 0
             bottomProgress.bufferValue = 0
             bottomProgress.stopLoading()
@@ -369,11 +390,9 @@
             switch state {
             case .playing:
                 restoreControlPanels()
-                setPlayButtonsHidden(true)
                 bufferingIndicator.stopAnimating()
             case .paused:
                 restoreControlPanels()
-                setPlayButtonsHidden(false)
             case .failed:
                 showFailureView()
                 bufferingIndicator.stopAnimating()
@@ -385,19 +404,16 @@
         public func player(_ player: Player, didChangeLoadState state: LoadState) {
             if state.contains(.playthroughOK) || state.contains(.playable) {
                 restoreControlPanels()
-                setPlayButtonsHidden(player.engine.playbackState != .paused)
                 coverImageView.isHidden = true
                 bufferingIndicator.stopAnimating()
                 bottomProgress.stopLoading()
             }
             if state.contains(.stalled), player.engine.isPlaying {
-                setPlayButtonsHidden(true)
                 bufferingIndicator.startAnimating()
                 bottomProgress.startLoading()
             }
             if state.contains(.prepare) {
                 restoreControlPanels()
-                setPlayButtonsHidden(true)
                 if shouldShowLoadingOnPrepare { bufferingIndicator.startAnimating() }
                 bottomProgress.startLoading()
                 if shouldShowControlOnPrepare { showControlView() }
@@ -535,11 +551,6 @@
             let isLandscape = player?.isFullScreen == true && fullScreenMode != .portrait
             portraitPanel.isHidden = isLandscape
             landscapePanel.isHidden = !isLandscape
-        }
-
-        private func setPlayButtonsHidden(_ isHidden: Bool) {
-            portraitPanel.playPauseButton.isHidden = isHidden
-            landscapePanel.playPauseButton.isHidden = isHidden
         }
     }
 #endif

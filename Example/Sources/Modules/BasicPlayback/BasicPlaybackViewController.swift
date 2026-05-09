@@ -34,6 +34,14 @@ final class BasicPlaybackViewController: UIViewController {
         return tv
     }()
 
+    private lazy var sampleGroupControl: UISegmentedControl = {
+        let sc = UISegmentedControl(items: VideoSampleGroup.allCases.map(\.title))
+        sc.selectedSegmentIndex = selectedSampleGroup.rawValue
+        sc.addTarget(self, action: #selector(sampleGroupChanged(_:)), for: .valueChanged)
+        sc.translatesAutoresizingMaskIntoConstraints = false
+        return sc
+    }()
+
     // MARK: - 播放器
 
     private var player: Player?
@@ -49,7 +57,10 @@ final class BasicPlaybackViewController: UIViewController {
     private var bufferTime: TimeInterval = 0
     private var presentationSize: CGSize = .zero
 
-    private let videos = VideoResource.allSamples
+    private var selectedSampleGroup: VideoSampleGroup = .hls
+    private var videos: [VideoItem] {
+        selectedSampleGroup.samples
+    }
 
     // MARK: - 生命周期
 
@@ -81,6 +92,7 @@ final class BasicPlaybackViewController: UIViewController {
 
     private func setupUI() {
         view.addSubview(playerContainerView)
+        view.addSubview(sampleGroupControl)
         view.addSubview(tableView)
 
         NSLayoutConstraint.activate([
@@ -89,7 +101,11 @@ final class BasicPlaybackViewController: UIViewController {
             playerContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             playerContainerView.heightAnchor.constraint(equalTo: playerContainerView.widthAnchor, multiplier: 9.0 / 16.0),
 
-            tableView.topAnchor.constraint(equalTo: playerContainerView.bottomAnchor),
+            sampleGroupControl.topAnchor.constraint(equalTo: playerContainerView.bottomAnchor, constant: 12),
+            sampleGroupControl.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            sampleGroupControl.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+
+            tableView.topAnchor.constraint(equalTo: sampleGroupControl.bottomAnchor, constant: 12),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
@@ -165,6 +181,13 @@ final class BasicPlaybackViewController: UIViewController {
         controlOverlay.resetControlView()
         controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
         player?.assetURL = video.url
+    }
+
+    @objc private func sampleGroupChanged(_ sender: UISegmentedControl) {
+        guard let group = VideoSampleGroup(rawValue: sender.selectedSegmentIndex) else { return }
+        selectedSampleGroup = group
+        tableView.reloadSections(IndexSet(integer: 1), with: .automatic)
+        playVideo(at: 0)
     }
 
     // MARK: - 辅助

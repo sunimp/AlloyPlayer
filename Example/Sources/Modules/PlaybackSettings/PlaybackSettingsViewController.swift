@@ -34,6 +34,11 @@ final class PlaybackSettingsViewController: UIViewController {
 
     private var player: Player?
     private let controlOverlay = DefaultControlOverlay()
+    private var selectedSampleGroup: VideoSampleGroup = .hls
+    private var currentSampleIndex = 0
+    private var currentSamples: [VideoItem] {
+        selectedSampleGroup.samples
+    }
 
     // MARK: - 生命周期
 
@@ -88,10 +93,15 @@ final class PlaybackSettingsViewController: UIViewController {
         player.addDeviceOrientationObserver()
         self.player = player
 
-        let video = VideoResource.hlsSamples[0]
+        playCurrentVideo()
+    }
+
+    private func playCurrentVideo() {
+        guard currentSamples.indices.contains(currentSampleIndex) else { return }
+        let video = currentSamples[currentSampleIndex]
         controlOverlay.resetControlView()
         controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
-        player.assetURL = video.url
+        player?.assetURL = video.url
     }
 
     // MARK: - 控件工厂
@@ -125,6 +135,21 @@ final class PlaybackSettingsViewController: UIViewController {
     @objc private func fullScreenModeChanged(_ sender: UISegmentedControl) {
         let modes: [FullScreenMode] = [.automatic, .landscape, .portrait]
         controlOverlay.fullScreenMode = modes[sender.selectedSegmentIndex]
+    }
+
+    @objc private func sampleGroupChanged(_ sender: UISegmentedControl) {
+        guard let group = VideoSampleGroup(rawValue: sender.selectedSegmentIndex) else { return }
+        selectedSampleGroup = group
+        currentSampleIndex = 0
+        playCurrentVideo()
+        tableView.reloadSections(IndexSet(integer: SettingsSection.videoSource.rawValue), with: .none)
+    }
+
+    private func playNextSample() {
+        guard !currentSamples.isEmpty else { return }
+        currentSampleIndex = (currentSampleIndex + 1) % currentSamples.count
+        playCurrentVideo()
+        tableView.reloadSections(IndexSet(integer: SettingsSection.videoSource.rawValue), with: .none)
     }
 
     @objc private func singleTapToggled(_ sender: UISwitch) {
@@ -189,7 +214,8 @@ final class PlaybackSettingsViewController: UIViewController {
 // MARK: - Section 定义
 
 private enum SettingsSection: Int, CaseIterable {
-    case rate = 0
+    case videoSource = 0
+    case rate
     case scalingMode
     case fullScreenMode
     case gestures
@@ -198,6 +224,7 @@ private enum SettingsSection: Int, CaseIterable {
 
     var title: String {
         switch self {
+        case .videoSource: return "视频素材"
         case .rate: return "播放速率"
         case .scalingMode: return "缩放模式"
         case .fullScreenMode: return "全屏模式"
@@ -209,6 +236,7 @@ private enum SettingsSection: Int, CaseIterable {
 
     var rowCount: Int {
         switch self {
+        case .videoSource: return 2
         case .rate, .scalingMode, .fullScreenMode: return 1
         case .gestures: return 5
         case .panDirection: return 2
@@ -244,6 +272,28 @@ extension PlaybackSettingsViewController: UITableViewDataSource {
         }
 
         switch section {
+        case .videoSource:
+            switch indexPath.row {
+            case 0:
+                config.text = "素材类型"
+                cell.contentConfiguration = config
+                cell.accessoryView = makeSegmentedControl(
+                    items: VideoSampleGroup.allCases.map(\.title),
+                    selectedIndex: selectedSampleGroup.rawValue,
+                    action: #selector(sampleGroupChanged(_:))
+                )
+            case 1:
+                let video = currentSamples[currentSampleIndex]
+                config.text = "切换下一个素材"
+                config.secondaryText = video.title
+                config.secondaryTextProperties.color = .secondaryLabel
+                cell.selectionStyle = .default
+                cell.contentConfiguration = config
+                cell.accessoryType = .disclosureIndicator
+            default:
+                cell.contentConfiguration = config
+            }
+
         case .rate:
             config.text = "速率"
             cell.contentConfiguration = config
@@ -319,4 +369,10 @@ extension PlaybackSettingsViewController: UITableViewDataSource {
 
 // MARK: - UITableViewDelegate
 
-extension PlaybackSettingsViewController: UITableViewDelegate {}
+extension PlaybackSettingsViewController: UITableViewDelegate {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        guard SettingsSection(rawValue: indexPath.section) == .videoSource, indexPath.row == 1 else { return }
+        playNextSample()
+    }
+}

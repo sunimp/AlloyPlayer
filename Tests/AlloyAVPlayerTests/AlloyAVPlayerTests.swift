@@ -15,7 +15,10 @@ import Testing
     final class AVPlayerManagerTests: XCTestCase {
         func testReloadPlayerPreparesSameURLAgain() {
             let manager = AVPlayerManager()
-            let url = URL(string: "https://example.invalid/video.mp4")!
+            guard let url = URL(string: "https://example.invalid/video.mp4") else {
+                XCTFail("测试 URL 构造失败")
+                return
+            }
             var prepareCount = 0
             var cancellables = Set<AnyCancellable>()
 

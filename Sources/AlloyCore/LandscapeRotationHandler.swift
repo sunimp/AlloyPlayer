@@ -140,6 +140,7 @@
             let duration = animated ? 0.3 : 0.0
 
             // 使用 frame-based 布局（跨窗口迁移时比 Auto Layout 更可靠）
+            deactivateSuperviewConstraints(for: contentView)
             contentView.translatesAutoresizingMaskIntoConstraints = true
             contentView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             controller.view.addSubview(contentView)
@@ -162,7 +163,6 @@
                 completion()
                 return
             }
-
             if #available(iOS 16.0, *) {
                 let preferences = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .portrait)
                 window?.windowScene?.requestGeometryUpdate(preferences)
@@ -172,15 +172,17 @@
             }
 
             let duration = animated ? 0.3 : 0.0
+            containerView.layoutIfNeeded()
+
+            deactivateSuperviewConstraints(for: contentView)
+            contentView.translatesAutoresizingMaskIntoConstraints = true
+            contentView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            containerView.addSubview(contentView)
+            contentView.frame = containerView.bounds
 
             UIView.animate(withDuration: duration, animations: { @Sendable in
                 self.window?.alpha = 0
             }, completion: { @Sendable [weak self] _ in
-                // 将内容视图移回原容器（使用 frame 布局，后续 Player.layoutPlayerSubViews 会恢复约束）
-                containerView.addSubview(contentView)
-                contentView.translatesAutoresizingMaskIntoConstraints = true
-                contentView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-                contentView.frame = containerView.bounds
                 self?.cleanupWindow()
                 completion()
             })
@@ -208,6 +210,14 @@
             win.makeKeyAndVisible()
             window = win
             return win
+        }
+
+        private func deactivateSuperviewConstraints(for view: UIView) {
+            guard let superview = view.superview else { return }
+            let constraints = superview.constraints.filter {
+                $0.firstItem === view || $0.secondItem === view
+            }
+            NSLayoutConstraint.deactivate(constraints)
         }
 
         private func cleanupWindow() {

@@ -108,9 +108,13 @@ extension TableViewPlaybackViewController: UITableViewDataSource {
         let cell = tableView.dequeueReusableCell(
             withIdentifier: VideoTableViewCell.reuseIdentifier,
             for: indexPath
-        ) as! VideoTableViewCell
-        cell.configure(with: videos[indexPath.row])
-        return cell
+        )
+        guard let videoCell = cell as? VideoTableViewCell else {
+            assertionFailure("无法复用 VideoTableViewCell")
+            return cell
+        }
+        videoCell.configure(with: videos[indexPath.row])
+        return videoCell
     }
 }
 

@@ -13,8 +13,65 @@ import Testing
 }
 
 #if canImport(UIKit)
+    @Test @MainActor
+    func toolbarPlayButtonStaysVisibleAcrossPlaybackStates() {
+        let overlay = DefaultControlOverlay(frame: CGRect(x: 0, y: 0, width: 320, height: 180))
+        let engine = RetryPlaybackEngine()
+        let player = Player(engine: engine, containerView: UIView())
+        player.controlOverlay = overlay
+
+        overlay.show(title: "测试视频", coverImage: nil, fullScreenMode: .automatic)
+        #expect(overlay.portraitPanel.playPauseButton.isHidden == false)
+
+        engine.playbackState = .playing
+        overlay.player(player, didChangePlaybackState: .playing)
+        overlay.player(player, didChangeLoadState: .stalled)
+        #expect(overlay.portraitPanel.playPauseButton.isHidden == false)
+
+        engine.playbackState = .paused
+        overlay.player(player, didChangeLoadState: .playable)
+        overlay.player(player, didChangePlaybackState: .paused)
+        #expect(overlay.portraitPanel.playPauseButton.isHidden == false)
+    }
+
+    @Test @MainActor
+    func coverImageHidesWhenPlayable() {
+        let overlay = DefaultControlOverlay(frame: CGRect(x: 0, y: 0, width: 320, height: 180))
+        let engine = RetryPlaybackEngine()
+        let player = Player(engine: engine, containerView: UIView())
+        player.controlOverlay = overlay
+
+        overlay.show(title: "测试视频", coverImage: UIImage(), fullScreenMode: .automatic)
+        #expect(overlay.coverImageView.isHidden == false)
+
+        engine.playbackState = .playing
+        overlay.player(player, didChangeLoadState: .playable)
+        #expect(overlay.coverImageView.isHidden)
+    }
+
     @MainActor
     final class ProgressSliderTests: XCTestCase {
+        func testHiddenThumbUsesFullTrackWidth() {
+            let slider = ProgressSlider(frame: CGRect(x: 0, y: 0, width: 100, height: 30))
+            slider.isThumbHidden = true
+            slider.layoutIfNeeded()
+
+            let track = slider.subviews[0]
+            XCTAssertEqual(track.frame.minX, 0, accuracy: 0.001)
+            XCTAssertEqual(track.frame.width, 100, accuracy: 0.001)
+        }
+
+        func testVisibleThumbInsetsTrackByHalfThumbWidth() {
+            let slider = ProgressSlider(frame: CGRect(x: 0, y: 0, width: 100, height: 30))
+            slider.isThumbHidden = false
+            slider.thumbSize = CGSize(width: 20, height: 20)
+            slider.layoutIfNeeded()
+
+            let track = slider.subviews[0]
+            XCTAssertEqual(track.frame.minX, 10, accuracy: 0.001)
+            XCTAssertEqual(track.frame.width, 80, accuracy: 0.001)
+        }
+
         func testHiddenThumbSliderSupportsTrackDragging() {
             let slider = ProgressSlider(frame: CGRect(x: 0, y: 0, width: 100, height: 30))
             slider.isThumbHidden = true
@@ -37,8 +94,8 @@ import Testing
             XCTAssertEqual(changedValues.count, 1)
             XCTAssertEqual(endedValues.count, 1)
             XCTAssertFalse(slider.isDragging)
-            XCTAssertEqual(changedValues[0], 0.8086, accuracy: 0.001)
-            XCTAssertEqual(endedValues[0], 0.8086, accuracy: 0.001)
+            XCTAssertEqual(changedValues[0], 0.75, accuracy: 0.001)
+            XCTAssertEqual(endedValues[0], 0.75, accuracy: 0.001)
         }
 
         func testLoadingAnimationStaysInsideTrackBounds() {
@@ -70,7 +127,7 @@ import Testing
 
             XCTAssertTrue(overlay.isControlViewVisible)
             XCTAssertTrue(overlay.bottomProgress.isHidden)
-            XCTAssertTrue(overlay.portraitPanel.playPauseButton.isHidden)
+            XCTAssertFalse(overlay.portraitPanel.playPauseButton.isHidden)
             XCTAssertEqual(overlay.portraitPanel.bottomToolBar.alpha, 1)
 
             let expectation = expectation(description: "控制条自动隐藏")
@@ -83,19 +140,49 @@ import Testing
             wait(for: [expectation], timeout: 1)
         }
 
-        func testPlayButtonOnlyShowsWhenUserPaused() {
+        func testSliderInteractionKeepsControlOverlayVisibleUntilEnded() {
+            let overlay = DefaultControlOverlay(frame: CGRect(x: 0, y: 0, width: 320, height: 180))
+            overlay.autoHideInterval = 0.01
+            let engine = RetryPlaybackEngine()
+            engine.totalTime = 100
+            let player = Player(engine: engine, containerView: UIView())
+            player.controlOverlay = overlay
+
+            overlay.show(title: "测试视频", coverImage: nil, fullScreenMode: .automatic)
+            overlay.portraitPanel.slider.beginTrackInteraction(at: CGPoint(x: 20, y: 15))
+
+            let keepVisibleExpectation = expectation(description: "拖动进度条时控制层保持可见")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                XCTAssertTrue(overlay.isControlViewVisible)
+                XCTAssertTrue(overlay.bottomProgress.isHidden)
+                keepVisibleExpectation.fulfill()
+            }
+            wait(for: [keepVisibleExpectation], timeout: 1)
+
+            overlay.portraitPanel.slider.endTrackInteraction(at: CGPoint(x: 40, y: 15))
+
+            let autoHideExpectation = expectation(description: "进度条操作结束后恢复自动隐藏")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                XCTAssertFalse(overlay.isControlViewVisible)
+                XCTAssertFalse(overlay.bottomProgress.isHidden)
+                autoHideExpectation.fulfill()
+            }
+            wait(for: [autoHideExpectation], timeout: 1)
+        }
+
+        func testToolbarPlayButtonStaysVisibleAcrossPlaybackStates() {
             let overlay = DefaultControlOverlay(frame: CGRect(x: 0, y: 0, width: 320, height: 180))
             let engine = RetryPlaybackEngine()
             let player = Player(engine: engine, containerView: UIView())
             player.controlOverlay = overlay
 
             overlay.show(title: "测试视频", coverImage: nil, fullScreenMode: .automatic)
-            XCTAssertTrue(overlay.portraitPanel.playPauseButton.isHidden)
+            XCTAssertFalse(overlay.portraitPanel.playPauseButton.isHidden)
 
             engine.playbackState = .playing
             overlay.player(player, didChangePlaybackState: .playing)
             overlay.player(player, didChangeLoadState: .stalled)
-            XCTAssertTrue(overlay.portraitPanel.playPauseButton.isHidden)
+            XCTAssertFalse(overlay.portraitPanel.playPauseButton.isHidden)
 
             engine.playbackState = .paused
             overlay.player(player, didChangeLoadState: .playable)

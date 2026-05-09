@@ -112,6 +112,8 @@
         private var cancellables = Set<AnyCancellable>()
         private var isControlVisible = false
         private var isEnded = false
+        private lazy var titleLeadingWithBackButtonConstraint = titleLabel.leadingAnchor.constraint(equalTo: backButton.trailingAnchor, constant: 4)
+        private lazy var titleLeadingWithoutBackButtonConstraint = titleLabel.leadingAnchor.constraint(equalTo: backButton.leadingAnchor)
 
         // MARK: - 初始化
 
@@ -147,6 +149,8 @@
             bottomToolBar.addSubview(totalTimeLabel)
             bottomToolBar.addSubview(fullScreenButton)
 
+            titleLeadingWithoutBackButtonConstraint.isActive = true
+
             NSLayoutConstraint.activate([
                 topGradient.topAnchor.constraint(equalTo: topAnchor),
                 topGradient.leadingAnchor.constraint(equalTo: leadingAnchor),
@@ -163,7 +167,6 @@
                 backButton.widthAnchor.constraint(equalToConstant: 30),
                 backButton.heightAnchor.constraint(equalToConstant: 30),
 
-                titleLabel.leadingAnchor.constraint(equalTo: backButton.trailingAnchor, constant: 4),
                 titleLabel.centerYAnchor.constraint(equalTo: topToolBar.centerYAnchor),
 
                 bottomGradient.bottomAnchor.constraint(equalTo: bottomAnchor),
@@ -270,9 +273,15 @@
         /// 更新全屏状态 UI（返回按钮可见性 + 全屏按钮图标）
         public func updateFullScreenState(isFullScreen: Bool) {
             backButton.isHidden = !isFullScreen
+            updateTitleLeadingConstraint(isBackButtonVisible: isFullScreen)
             let config = UIImage.SymbolConfiguration(pointSize: 14)
             let imageName = isFullScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"
             fullScreenButton.setImage(UIImage(systemName: imageName, withConfiguration: config), for: .normal)
+        }
+
+        private func updateTitleLeadingConstraint(isBackButtonVisible: Bool) {
+            titleLeadingWithoutBackButtonConstraint.isActive = !isBackButtonVisible
+            titleLeadingWithBackButtonConstraint.isActive = isBackButtonVisible
         }
 
         public func updatePlayButtonState(isPlaying: Bool) {
