@@ -1,11 +1,11 @@
 # AlloyPlayer
 
-[![CI](https://github.com/nicklasundell/AlloyPlayer/actions/workflows/ci.yml/badge.svg)](https://github.com/nicklasundell/AlloyPlayer/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/nicklasundell/AlloyPlayer?include_prereleases&sort=semver)](https://github.com/nicklasundell/AlloyPlayer/releases)
+[![CI](https://github.com/sunimp/AlloyPlayer/actions/workflows/ci.yml/badge.svg)](https://github.com/sunimp/AlloyPlayer/actions/workflows/ci.yml)
+[![Release](https://github.com/sunimp/AlloyPlayer/actions/workflows/release.yml/badge.svg)](https://github.com/sunimp/AlloyPlayer/actions/workflows/release.yml)
 [![Swift](https://img.shields.io/badge/SwiftPM-5.10+-orange.svg)](Package.swift)
 [![Platforms](https://img.shields.io/badge/platform-iOS%2015%2B%20%7C%20macOS%2012%2B-lightgrey.svg)](Package.swift)
 [![SPM](https://img.shields.io/badge/SPM-compatible-brightgreen.svg)](Package.swift)
-[![License](https://img.shields.io/github/license/nicklasundell/AlloyPlayer)](LICENSE)
+[![License](https://img.shields.io/github/license/sunimp/AlloyPlayer)](LICENSE)
 
 AlloyPlayer 是一个 Swift-only 的现代视频播放器框架。它基于 AVFoundation、Combine、UIKit 和 SwiftUI 构建，提供可插拔播放引擎、控制层协议、列表播放、全屏转换、手势控制和可选 HTTPMediaCache 代理缓存支持。
 
@@ -34,7 +34,7 @@ AlloyPlayer 是一个 Swift-only 的现代视频播放器框架。它基于 AVFo
 在 `Package.swift` 中添加依赖：
 
 ```swift
-.package(url: "https://github.com/nicklasundell/AlloyPlayer.git", from: "0.2.0")
+.package(url: "https://github.com/sunimp/AlloyPlayer.git", from: "0.2.0")
 ```
 
 完整播放器能力可以直接添加 `AlloyPlayer`：
