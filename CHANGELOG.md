@@ -5,6 +5,22 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)，
 版本号遵循[语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [0.2.0] - 2026-05-12
+
+### 新增
+
+- 新增 `AlloyHTTPMediaCacheSupport` 可选模块，支持 HTTPMediaCache 代理播放。
+- Demo 增加 HTTPMediaCache 播放开关与代理 URL 展示。
+
+### 调整
+
+- Package manifest 降至 SwiftPM 5.10 兼容版本。
+- `AlloyHTTPMediaCacheSupport` API 收敛为配置对象入口，便于统一控制端口、localhost 绑定和请求头。
+
+### 修复
+
+- 修复 Swift 6 并发检查下的 KVO 与关联对象 key 报警问题。
+
 ## [0.1.2] - 2026-05-08
 
 ### 新增

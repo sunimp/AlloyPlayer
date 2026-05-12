@@ -44,7 +44,7 @@
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/nicklasundell/AlloyPlayer.git", from: "0.1.2")
+.package(url: "https://github.com/nicklasundell/AlloyPlayer.git", from: "0.2.0")
 ]
 
 // 在你的 target 中：
