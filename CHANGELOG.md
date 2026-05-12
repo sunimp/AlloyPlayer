@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-12
+
 ### 新增
 
 - 新增 `PlayerState` / `PlayerEvent` 统一状态与事件输出。

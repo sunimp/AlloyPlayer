@@ -34,7 +34,7 @@ AlloyPlayer 是一个 Swift-only 的现代视频播放器框架。它基于 AVFo
 在 `Package.swift` 中添加依赖：
 
 ```swift
-.package(url: "https://github.com/sunimp/AlloyPlayer.git", from: "0.2.0")
+.package(url: "https://github.com/sunimp/AlloyPlayer.git", from: "0.3.0")
 ```
 
 完整播放器能力可以直接添加 `AlloyPlayer`：
