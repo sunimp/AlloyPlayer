@@ -82,51 +82,26 @@ final class HomeViewController: UITableViewController {
         super.viewDidLoad()
         title = "AlloyPlayer Demo"
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
-        setupTableHeader()
+        setupNavigationItems()
     }
 
     // MARK: - 配置
 
-    private func setupTableHeader() {
+    private func setupNavigationItems() {
         let titleLabel = UILabel()
-        titleLabel.text = "HTTPMediaCache"
-        titleLabel.font = .preferredFont(forTextStyle: .headline)
-        titleLabel.textColor = .label
+        titleLabel.text = "缓存"
+        titleLabel.font = .preferredFont(forTextStyle: .footnote)
+        titleLabel.textColor = .secondaryLabel
+        titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
-        let subtitleLabel = UILabel()
-        subtitleLabel.text = "开启后，所有 Demo 播放前都会转换为本地缓存代理 URL；关闭则直接播放原始 URL。"
-        subtitleLabel.font = .preferredFont(forTextStyle: .footnote)
-        subtitleLabel.textColor = .secondaryLabel
-        subtitleLabel.numberOfLines = 0
-
-        let textStack = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
-        textStack.axis = .vertical
-        textStack.spacing = 4
-
-        let headerStack = UIStackView(arrangedSubviews: [textStack, httpMediaCacheSwitch])
+        let headerStack = UIStackView(arrangedSubviews: [titleLabel, httpMediaCacheSwitch])
         headerStack.axis = .horizontal
         headerStack.alignment = .center
-        headerStack.spacing = 16
-        headerStack.layoutMargins = UIEdgeInsets(top: 16, left: 20, bottom: 16, right: 20)
+        headerStack.spacing = 8
+        headerStack.layoutMargins = UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 10)
         headerStack.isLayoutMarginsRelativeArrangement = true
 
-        let headerView = UIView()
-        headerView.addSubview(headerStack)
-        headerStack.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            headerStack.topAnchor.constraint(equalTo: headerView.topAnchor),
-            headerStack.leadingAnchor.constraint(equalTo: headerView.leadingAnchor),
-            headerStack.trailingAnchor.constraint(equalTo: headerView.trailingAnchor),
-            headerStack.bottomAnchor.constraint(equalTo: headerView.bottomAnchor),
-        ])
-
-        let fittingSize = CGSize(width: tableView.bounds.width, height: UIView.layoutFittingCompressedSize.height)
-        headerView.frame.size = headerView.systemLayoutSizeFitting(
-            fittingSize,
-            withHorizontalFittingPriority: .required,
-            verticalFittingPriority: .fittingSizeLevel
-        )
-        tableView.tableHeaderView = headerView
+        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: headerStack)
     }
 
     // MARK: - UITableViewDataSource

@@ -46,7 +46,7 @@
 		339A73F44AA874176CAFE7E3 /* FullScreenModesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullScreenModesViewController.swift; sourceTree = "<group>"; };
 		576DC5944A78F42717EDB103 /* CustomControlOverlayViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomControlOverlayViewController.swift; sourceTree = "<group>"; };
 		59C926FD23ED839DDD9BC823 /* BasicPlaybackViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicPlaybackViewController.swift; sourceTree = "<group>"; };
-		7D07E383B421AE2ECFAC092A /* architecture-optimization */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "architecture-optimization"; path = ..; sourceTree = SOURCE_ROOT; };
+		5C3549474019250DFCD73531 /* AlloyPlayer */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AlloyPlayer; path = ..; sourceTree = SOURCE_ROOT; };
 		8F936FE579F5B25987519651 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		97158D5C9586386143867E11 /* VideoCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCollectionViewCell.swift; sourceTree = "<group>"; };
 		9AE08AF18B115785572E8B03 /* HomeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewController.swift; sourceTree = "<group>"; };
@@ -75,7 +75,7 @@
 		0342BD86EEEED0951A7740BD /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				7D07E383B421AE2ECFAC092A /* architecture-optimization */,
+				5C3549474019250DFCD73531 /* AlloyPlayer */,
 			);
 			name = Packages;
 			sourceTree = "<group>";

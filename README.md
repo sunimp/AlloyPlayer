@@ -74,6 +74,10 @@ AlloyPlayer 是一个 Swift-only 的现代视频播放器框架。它基于 AVFo
 )
 ```
 
+## 迁移指南
+
+从旧版 API 升级时，破坏性变更和 old-to-new 示例见 [迁移指南](docs/MigrationGuide.md)。
+
 ## 快速开始
 
 创建播放器、绑定容器视图，并设置视频 URL：

@@ -1,13 +1,13 @@
 {
-  "originHash" : "e71213a9cda4f7e42745d89415368677ed9c460ea1c48efc7319c63a781be3b4",
+  "originHash" : "2f25c1e3183677feba3d0b1231e98089d5f17e40d8f8511a962f8a3315513eaa",
   "pins" : [
     {
       "identity" : "httpmediacache",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/sunimp/HTTPMediaCache.git",
       "state" : {
-        "revision" : "2c5db600b2e93b9451c57bf5782d14c2bc499c54",
-        "version" : "1.0.1"
+        "revision" : "9c04a08865ce98d2c17c30e63777e5b77f11a002",
+        "version" : "1.0.2"
       }
     },
     {
