@@ -293,6 +293,12 @@ open Example/AlloyPlayerDemo.xcodeproj
 swift test
 ```
 
+## 致谢
+
+AlloyPlayer 的设计参考了以下开源项目的能力边界与使用经验：
+
+- [ZFPlayer](https://github.com/renzifeng/ZFPlayer)
+
 ## 许可证
 
 AlloyPlayer 基于 [MIT 许可证](LICENSE) 开源。
