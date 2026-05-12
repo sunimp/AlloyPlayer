@@ -1,128 +1,102 @@
 # AlloyPlayer
 
-[![SwiftPM 5.10+](https://img.shields.io/badge/SwiftPM-5.10+-F05138.svg)](https://swift.org/package-manager/)
-[![Platform iOS 15.0+](https://img.shields.io/badge/Platform-iOS%2015.0+-007AFF.svg)](https://developer.apple.com/ios/)
-[![License MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![SPM Compatible](https://img.shields.io/badge/SPM-Compatible-brightgreen.svg)](https://swift.org/package-manager/)
+[![CI](https://github.com/nicklasundell/AlloyPlayer/actions/workflows/ci.yml/badge.svg)](https://github.com/nicklasundell/AlloyPlayer/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/nicklasundell/AlloyPlayer?include_prereleases&sort=semver)](https://github.com/nicklasundell/AlloyPlayer/releases)
+[![Swift](https://img.shields.io/badge/SwiftPM-5.10+-orange.svg)](Package.swift)
+[![Platforms](https://img.shields.io/badge/platform-iOS%2015%2B%20%7C%20macOS%2012%2B-lightgrey.svg)](Package.swift)
+[![SPM](https://img.shields.io/badge/SPM-compatible-brightgreen.svg)](Package.swift)
+[![License](https://img.shields.io/github/license/nicklasundell/AlloyPlayer)](LICENSE)
 
-一个现代的纯 Swift 视频播放器框架。基于 [ZFPlayer](https://github.com/renzifeng/ZFPlayer) 进行重写，采用并发风格的 Swift 实现、Combine 事件流和模块化 SPM 架构。
+AlloyPlayer 是一个 Swift-only 的现代视频播放器框架。它基于 AVFoundation、Combine、UIKit 和 SwiftUI 构建，提供可插拔播放引擎、控制层协议、列表播放、全屏转换、手势控制和可选 HTTPMediaCache 代理缓存支持。
 
 ## 特性
 
-- 协议驱动的插件架构（可自由替换引擎/UI）
-- 完整的竖屏和横屏全屏支持
-- ScrollView/TableView/CollectionView 列表播放
-- 丰富的手势支持（单击、双击、拖动、捏合、长按）
-- 可插拔的 `PlaybackEngine` 协议（内置 AVPlayer，可自定义）
-- 可自定义的 `ControlOverlay` 协议（内置 `DefaultControlOverlay`）
-- 网络可达性监控（WiFi / 2G / 3G / 4G / 5G）
-- 列表播放的浮动画中画窗口
-- 所有事件均提供 Combine 发布者
-- 并发隔离和主线程语义明确
+- 纯 Swift Package Manager 分发，核心模块可按需组合。
+- 内置 AVFoundation 播放引擎，也可以自行实现 `PlaybackEngine`。
+- 内置 UIKit 控制层和 SwiftUI 播放器视图，也可以自行实现 `ControlOverlay`。
+- 支持竖屏全屏、横屏全屏、自动旋转、锁定方向和自定义转场。
+- 支持单击、双击、拖动、捏合、长按等播放器手势。
+- 支持 ScrollView、TableView、CollectionView 列表播放和浮动画中画窗口。
+- 播放状态、加载状态、播放时间、缓冲时间、错误和尺寸变化均提供 Combine 发布者。
+- 支持网络可达性监控、缓冲提示、音量/亮度 HUD、网速显示和自定义状态栏。
+- 可选接入 `AlloyHTTPMediaCacheSupport`，通过 HTTPMediaCache 本地代理实现边播边缓存。
+- 支持 iOS 播放场景，并提供 macOS Swift Package 测试宿主。
 
-## 截图
-
-| 基础播放 | 短视频 | 播放配置 |
-|:---:|:---:|:---:|
-| ![基础播放](Screenshots/basic.png) | ![短视频](Screenshots/shot-video.png) | ![播放配置](Screenshots/play-prameters.png) |
-
-| 横屏全屏 | 竖屏全屏 | 自定义控制层 |
-|:---:|:---:|:---:|
-| ![横屏全屏](Screenshots/landscape-mode.png) | ![竖屏全屏](Screenshots/portrait-mode.png) | ![自定义控制层](Screenshots/custom-control-view.png) |
-
-## 系统要求
+## 环境要求
 
 - iOS 15.0+
+- macOS 12.0+（Swift Package 测试宿主）
 - SwiftPM 5.10+
 - Xcode 16.0+
 
 ## 安装
 
-### Swift Package Manager
-
-**方式一 — 完整框架（推荐）：**
+在 `Package.swift` 中添加依赖：
 
 ```swift
-dependencies: [
 .package(url: "https://github.com/nicklasundell/AlloyPlayer.git", from: "0.2.0")
-]
-
-// 在你的 target 中：
-.target(name: "YourApp", dependencies: [
-    .product(name: "AlloyPlayer", package: "AlloyPlayer")
-])
 ```
 
-**方式二 — Core + AVPlayer 引擎（不含默认 UI）：**
+完整播放器能力可以直接添加 `AlloyPlayer`：
 
 ```swift
-.target(name: "YourApp", dependencies: [
-    .product(name: "AlloyCore", package: "AlloyPlayer"),
-    .product(name: "AlloyAVPlayer", package: "AlloyPlayer"),
-])
+.target(
+    name: "YourApp",
+    dependencies: [
+        .product(name: "AlloyPlayer", package: "AlloyPlayer"),
+    ]
+)
 ```
 
-**方式三 — 仅 Core（自行提供引擎和 UI）：**
+如果需要按模块拆分，可以只引入所需产品：
 
 ```swift
-.target(name: "YourApp", dependencies: [
-    .product(name: "AlloyCore", package: "AlloyPlayer")
-])
+.target(
+    name: "YourApp",
+    dependencies: [
+        .product(name: "AlloyCore", package: "AlloyPlayer"),
+        .product(name: "AlloyAVPlayer", package: "AlloyPlayer"),
+        .product(name: "AlloyUIKitControls", package: "AlloyPlayer"),
+        .product(name: "AlloySwiftUIControls", package: "AlloyPlayer"),
+    ]
+)
 ```
 
-**方式四 — 单独模块：**
+需要 HTTPMediaCache 缓存播放时，再显式添加可选产品：
 
 ```swift
-.target(name: "YourApp", dependencies: [
-    .product(name: "AlloyCore", package: "AlloyPlayer"),
-    .product(name: "AlloyAVPlayer", package: "AlloyPlayer"),
-    .product(name: "AlloyUIKitControls", package: "AlloyPlayer"),
-    .product(name: "AlloySwiftUIControls", package: "AlloyPlayer"),
-])
-```
-
-**可选模块 — HTTPMediaCache 支持：**
-
-`AlloyHTTPMediaCacheSupport` 是独立可选产品，不会被 `AlloyPlayer` 或 `AlloyAVPlayer` 默认依赖。
-
-```swift
-.package(url: "https://github.com/sunimp/HTTPMediaCache.git", from: "1.0.0")
-```
-
-使用时在业务 target 中显式添加：
-
-```swift
-.target(name: "YourApp", dependencies: [
-    .product(name: "AlloyPlayer", package: "AlloyPlayer"),
-    .product(name: "AlloyHTTPMediaCacheSupport", package: "AlloyPlayer"),
-])
+.target(
+    name: "YourApp",
+    dependencies: [
+        .product(name: "AlloyPlayer", package: "AlloyPlayer"),
+        .product(name: "AlloyHTTPMediaCacheSupport", package: "AlloyPlayer"),
+    ]
+)
 ```
 
 ## 快速开始
 
-### 基本播放
+创建播放器、绑定容器视图，并设置视频 URL：
 
 ```swift
 import AlloyPlayer
+import UIKit
 
-class PlayerViewController: UIViewController {
+final class PlayerViewController: UIViewController {
     private var player: Player!
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // 1. 创建容器视图
         let containerView = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 220))
         view.addSubview(containerView)
 
-        // 2. 使用 AVPlayer 引擎创建播放器
         let engine = AVPlayerManager()
+        engine.shouldAutoPlay = true
+
         player = Player(engine: engine, containerView: containerView)
-
-        // 3. 设置默认控制层
         player.controlOverlay = DefaultControlOverlay()
-
-        // 4. 设置视频 URL，自动开始播放
+        player.addDeviceOrientationObserver()
         player.assetURL = URL(string: "https://example.com/video.mp4")
     }
 
@@ -138,28 +112,43 @@ class PlayerViewController: UIViewController {
 }
 ```
 
-### HTTPMediaCache 缓存播放
+监听播放状态：
+
+```swift
+player.playbackStatePublisher
+    .sink { state in
+        print("playback state:", state)
+    }
+    .store(in: &cancellables)
+
+player.playTimePublisher
+    .sink { time in
+        print("current:", time.current, "total:", time.total)
+    }
+    .store(in: &cancellables)
+```
+
+## HTTPMediaCache 缓存播放
+
+`AlloyHTTPMediaCacheSupport` 是独立可选产品。开启后，业务传入原始 URL，支持层会启动 HTTPMediaCache 本地代理、生成代理 URL，并交给播放器播放：
 
 ```swift
 import AlloyHTTPMediaCacheSupport
 import AlloyPlayer
 
 let originalURL = URL(string: "https://example.com/video.mp4")!
+let configuration = AlloyHTTPMediaCacheConfiguration(
+    requestHeaders: [
+        "Authorization": "Bearer token",
+    ]
+)
 
-Task {
-    let configuration = AlloyHTTPMediaCacheConfiguration(
-        requestHeaders: [
-            "Authorization": "Bearer token",
-        ]
-    )
-
-    let proxyURL = try await AlloyHTTPMediaCacheSupport.prepare(
-        player: player,
-        originalURL: originalURL,
-        configuration: configuration
-    )
-    print("使用代理 URL 播放：\(proxyURL)")
-}
+let proxyURL = try await AlloyHTTPMediaCacheSupport.prepare(
+    player: player,
+    originalURL: originalURL,
+    configuration: configuration
+)
+print("proxy URL:", proxyURL)
 ```
 
 如果业务只需要代理 URL，也可以自行赋值：
@@ -172,9 +161,11 @@ let proxyURL = try await AlloyHTTPMediaCacheSupport.proxyURL(
 player.assetURL = proxyURL
 ```
 
-AVPlayer 访问的是本地代理 URL，源站请求由 HTTPMediaCache 发出。需要鉴权或追踪头时，应通过 `AlloyHTTPMediaCacheConfiguration.requestHeaders` 显式下发到下载链路。`configureRequestHeaders(_:)` 仍保留给需要手动管理全局下载头的场景。
+AVPlayer 访问的是本地代理 URL，源站请求由 HTTPMediaCache 发出。鉴权、追踪等源站请求头应通过 `AlloyHTTPMediaCacheConfiguration.requestHeaders` 显式下发到下载链路。
 
-### SwiftUI 播放
+## SwiftUI
+
+`AlloyPlayerView` 提供开箱即用的 SwiftUI 播放器视图：
 
 ```swift
 import AlloyPlayer
@@ -214,29 +205,28 @@ struct CustomPlayerScreen: View {
 }
 ```
 
-### 列表播放（TableView）
+## 列表播放
+
+TableView / CollectionView 场景可以使用基于滚动容器的初始化方式。播放器会根据 indexPath 定位 Cell 内的容器视图：
 
 ```swift
 import AlloyPlayer
 
-class ListPlayerViewController: UIViewController, UITableViewDelegate {
+final class ListPlayerViewController: UIViewController, UITableViewDelegate {
     private var player: Player!
-    @IBOutlet weak var tableView: UITableView!
+    @IBOutlet private var tableView: UITableView!
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         let engine = AVPlayerManager()
-        // 使用 scrollView 和容器视图 tag 初始化
         player = Player(scrollView: tableView, engine: engine, containerViewTag: 100)
         player.controlOverlay = DefaultControlOverlay()
-
-        // 配置列表播放 URL（按 section 分组）
         player.sectionAssetURLs = [
             [
                 URL(string: "https://example.com/video1.mp4")!,
                 URL(string: "https://example.com/video2.mp4")!,
-            ]
+            ],
         ]
     }
 
@@ -246,125 +236,63 @@ class ListPlayerViewController: UIViewController, UITableViewDelegate {
 }
 ```
 
-### 自定义控制层
+## 项目架构
 
-```swift
-import AlloyCore
+```mermaid
+flowchart LR
+    App[业务 App] --> Umbrella[AlloyPlayer<br/>Umbrella]
+    App --> Core[AlloyCore]
 
-class MinimalOverlay: UIView, ControlOverlay {
-    var player: Player?
+    Umbrella --> Core
+    Umbrella --> AV[AlloyAVPlayer]
+    Umbrella --> UIKitControls[AlloyUIKitControls]
+    Umbrella --> SwiftUIControls[AlloySwiftUIControls]
 
-    func gestureSingleTapped(_ gesture: GestureManager) {
-        guard let player else { return }
-        player.engine.isPlaying ? player.engine.pause() : player.engine.play()
-    }
+    AV --> Core
+    UIKitControls --> Core
+    SwiftUIControls --> Core
+    SwiftUIControls --> AV
 
-    func player(_ player: Player, didUpdateTime currentTime: TimeInterval, totalTime: TimeInterval) {
-        // 更新自定义时间标签
-    }
-
-    func player(_ player: Player, didChangePlaybackState state: PlaybackState) {
-        // 更新播放/暂停按钮
-    }
-}
+    CacheSupport[AlloyHTTPMediaCacheSupport] --> Core
+    CacheSupport --> HTTPMediaCache[HTTPMediaCache]
+    App -. optional .-> CacheSupport
 ```
 
-### 自定义播放引擎
+模块职责：
 
-```swift
-import AlloyCore
-import Combine
+| 模块 | 描述 |
+|------|------|
+| `AlloyCore` | 协议、枚举、`Player` 控制器、手势、方向、列表播放和基础工具 |
+| `AlloyAVPlayer` | 基于 AVFoundation 的 `PlaybackEngine` 实现 |
+| `AlloyUIKitControls` | 默认 UIKit 控制层、进度条、缓冲视图、音量/亮度 HUD 等 |
+| `AlloySwiftUIControls` | SwiftUI 播放器视图、控制层桥接和外部控制句柄 |
+| `AlloyHTTPMediaCacheSupport` | HTTPMediaCache 可选支持，负责代理 URL 生成和播放器准备 |
+| `AlloyPlayer` | Umbrella 模块，重新导出核心播放能力和默认控制层 |
 
-class CustomEngine: PlaybackEngine {
-    var renderView = RenderView()
-    var playbackState: PlaybackState = .unknown
-    var loadState: LoadState = .unknown
-    // ... 实现所有协议要求
+## 截图
 
-    var statePublisher: AnyPublisher<PlaybackState, Never> { /* ... */ }
-    // ... 实现所有发布者
+| 基础播放 | 短视频 | 播放配置 |
+|:---:|:---:|:---:|
+| ![基础播放](Screenshots/basic.png) | ![短视频](Screenshots/shot-video.png) | ![播放配置](Screenshots/play-prameters.png) |
 
-    func prepareToPlay() { /* ... */ }
-    func play() { /* ... */ }
-    func pause() { /* ... */ }
-    func stop() { /* ... */ }
-    func seek(to time: TimeInterval) async -> Bool { /* ... */ }
-    // ... 实现其余方法
-}
+| 横屏全屏 | 竖屏全屏 | 自定义控制层 |
+|:---:|:---:|:---:|
+| ![横屏全屏](Screenshots/landscape-mode.png) | ![竖屏全屏](Screenshots/portrait-mode.png) | ![自定义控制层](Screenshots/custom-control-view.png) |
+
+## 示例工程
+
+仓库内置 `Example/AlloyPlayerDemo.xcodeproj`，覆盖基础播放、短视频滑动、播放配置、列表播放、全屏模式、自定义控制层、SwiftUI 控制层和 HTTPMediaCache 缓存播放开关。
+
+```bash
+open Example/AlloyPlayerDemo.xcodeproj
 ```
 
-## 架构
+## 测试
 
+```bash
+swift test
 ```
-AlloyPlayer (umbrella)
-├── AlloyCore          ← 协议、枚举、Player 控制器
-├── AlloyAVPlayer      ← AVPlayer 引擎实现
-├── AlloyUIKitControls ← 默认 UIKit 控制层 UI
-└── AlloySwiftUIControls ← SwiftUI 控制层桥接
-```
-
-## 模块
-
-### AlloyCore
-
-基础模块，包含所有协议、枚举和 `Player` 控制器。
-
-| 类型 | 描述 |
-|------|------|
-| `Player` | 主控制器，协调引擎、UI、手势和方向 |
-| `PlaybackEngine` | 视频播放引擎协议 |
-| `ControlOverlay` | 控制层 UI 协议 |
-| `GestureManager` | 单击、拖动、捏合和长按手势处理 |
-| `OrientationManager` | 竖屏/横屏全屏转换 |
-| `FloatingView` | 列表播放的浮动画中画窗口 |
-| `ReachabilityMonitor` | 网络状态监控 |
-| `RenderView` | 视频渲染基础视图 |
-| `PlaybackState` | 播放状态枚举（unknown/playing/paused/failed/stopped） |
-| `LoadState` | 缓冲加载状态（OptionSet） |
-| `ScalingMode` | 视频缩放模式（aspectFit/aspectFill/fill） |
-| `FullScreenMode` | 全屏模式（automatic/landscape/portrait） |
-
-### AlloyAVPlayer
-
-基于 AVFoundation 的播放引擎实现。
-
-| 类型 | 描述 |
-|------|------|
-| `AVPlayerManager` | 使用 AVPlayer 的 `PlaybackEngine` 实现 |
-
-### AlloyUIKitControls
-
-默认控制层，包含竖屏和横屏面板。
-
-| 类型 | 描述 |
-|------|------|
-| `DefaultControlOverlay` | 完整功能的 `ControlOverlay` 实现 |
-| `PortraitControlPanel` | 竖屏模式控制面板 |
-| `LandscapeControlPanel` | 横屏模式控制面板 |
-| `FloatingControlPanel` | 浮动窗口控制面板 |
-| `ProgressSlider` | 播放进度滑块 |
-
-### AlloySwiftUIControls
-
-SwiftUI 控制层桥接模块，复用 `AlloyCore.ControlOverlay` 协议，不重写播放内核。
-
-| 类型 | 描述 |
-|------|------|
-| `SwiftUIControlOverlay` | 将 SwiftUI 控制界面桥接为播放器控制层 |
-| `SwiftUIControlOverlayState` | SwiftUI 可观察状态与播放动作入口 |
-| `AlloyPlayerView` | 开箱即用的 SwiftUI 播放器视图 |
-| `AlloyPlayerController` | SwiftUI 外部播放控制句柄 |
-| `DefaultSwiftUIControlOverlayView` | 默认 SwiftUI 控制层 |
-| `BufferingIndicator` | 缓冲状态指示器 |
-| `LoadingIndicator` | 加载动画 |
-| `VolumeAndBrightnessHUD` | 音量/亮度调节 HUD |
-| `NetworkSpeedMonitor` | 网速显示 |
-| `CustomStatusBar` | 全屏自定义状态栏 |
-
-### AlloyPlayer (umbrella)
-
-重新导出所有三个模块，方便单次导入使用。
 
 ## 许可证
 
-MIT 许可证。详见 [LICENSE](LICENSE)。
+AlloyPlayer 基于 [MIT 许可证](LICENSE) 开源。
