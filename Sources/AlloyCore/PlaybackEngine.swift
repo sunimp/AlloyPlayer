@@ -140,6 +140,11 @@
     // MARK: - 默认实现
 
     public extension PlaybackEngine {
+        /// 播放渲染承载面
+        var renderSurface: any PlaybackRenderSurface {
+            RenderViewSurface(renderView: renderView)
+        }
+
         func thumbnailImageAtCurrentTime() -> UIImage? {
             nil
         }

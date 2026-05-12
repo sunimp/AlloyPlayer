@@ -42,9 +42,6 @@
         /// 手势管理器
         public private(set) var gestureManager = GestureManager()
 
-        /// 系统事件观察者
-        public internal(set) var systemEventObserver: SystemEventObserver?
-
         /// 挂载模式
         public private(set) var attachmentMode: AttachmentMode
 
@@ -115,6 +112,7 @@
             get { engine.assetURL }
             set {
                 engine.assetURL = newValue
+                updateState { $0.assetURL = newValue }
                 if newValue != nil {
                     setupNotification()
                 }
@@ -144,10 +142,15 @@
         public var shouldResumePlayRecord = false
 
         /// 进入后台时暂停
-        public var pauseWhenAppResignActive = true
+        public var pauseWhenAppResignActive: Bool {
+            get { lifecycleCoordinator.pauseWhenAppResignActive }
+            set { lifecycleCoordinator.pauseWhenAppResignActive = newValue }
+        }
 
         /// 被外部事件暂停
-        public var isPausedByEvent = false
+        public var isPausedByEvent: Bool {
+            lifecycleCoordinator.isPausedByEvent
+        }
 
         /// VC 是否不可见
         public var isViewControllerDisappear = false {
@@ -173,6 +176,7 @@
             get { orientationManager.isScreenLocked }
             set {
                 orientationManager.isScreenLocked = newValue
+                updateState { $0.isScreenLocked = newValue }
                 controlOverlay?.player(self, didChangeLockState: newValue)
             }
         }
@@ -246,6 +250,16 @@
             engine.presentationSizePublisher
         }
 
+        /// 播放器状态快照
+        public var statePublisher: AnyPublisher<PlayerState, Never> {
+            stateSubject.eraseToAnyPublisher()
+        }
+
+        /// 播放器一次性事件
+        public var eventPublisher: AnyPublisher<PlayerEvent, Never> {
+            eventSubject.eraseToAnyPublisher()
+        }
+
         /// 即将旋转
         public var orientationWillChangePublisher: AnyPublisher<Bool, Never> {
             orientationManager.orientationWillChangePublisher
@@ -262,10 +276,12 @@
         private var gestureCancellables = Set<AnyCancellable>()
         private var orientationCancellables = Set<AnyCancellable>()
         private var reachabilityCancellables = Set<AnyCancellable>()
-        private var systemEventCancellables = Set<AnyCancellable>()
         private var volumeSlider: UISlider?
         private var renderViewConstraints: [NSLayoutConstraint] = []
         private var overlayConstraints: [NSLayoutConstraint] = []
+        private let stateSubject = CurrentValueSubject<PlayerState, Never>(PlayerState())
+        private let eventSubject = PassthroughSubject<PlayerEvent, Never>()
+        private let lifecycleCoordinator = PlayerLifecycleCoordinator()
         private static var playRecords: [String: TimeInterval] = [:]
 
         // MARK: - 列表播放存储属性（供 Player+ScrollView 扩展使用）
@@ -320,6 +336,11 @@
             commonInit()
         }
 
+        /// 将播放器渲染内容挂载到新的容器视图。
+        public func attach(to containerView: UIView) {
+            self.containerView = containerView
+        }
+
         private func commonInit() {
             // setupEngine() 内部通过 subscribeEngine() 已调用 setupGesture() 和 setupOrientation()
             setupEngine(replacing: nil)
@@ -331,8 +352,7 @@
         deinit {
             MainActor.assumeIsolated {
                 engine.stop()
-                systemEventObserver?.stopObserving()
-                systemEventCancellables.removeAll()
+                lifecycleCoordinator.stop()
                 reachabilityCancellables.removeAll()
             }
         }
@@ -346,6 +366,7 @@
             }
             // 绑定新手势
             gestureManager.attach(to: engine.renderView)
+            lifecycleCoordinator.bind(engine: engine)
             // 订阅引擎事件
             subscribeEngine()
             // 布局
@@ -405,11 +426,16 @@
             }
             orientationManager.orientationWillChangePublisher.sink { [weak self] _ in
                 guard let self else { return }
+                let willBeFullScreen = !self.isFullScreen
+                self.updateState { $0.isFullScreen = willBeFullScreen }
+                self.eventSubject.send(.orientationWillChange(isFullScreen: willBeFullScreen))
                 self.controlOverlay?.player(self, willChangeOrientation: self.orientationManager)
             }.store(in: &orientationCancellables)
 
-            orientationManager.orientationDidChangePublisher.sink { [weak self] _ in
+            orientationManager.orientationDidChangePublisher.sink { [weak self] isFullScreen in
                 guard let self else { return }
+                self.updateState { $0.isFullScreen = isFullScreen }
+                self.eventSubject.send(.orientationDidChange(isFullScreen: isFullScreen))
                 self.controlOverlay?.player(self, didChangeOrientation: self.orientationManager)
                 self.layoutPlayerSubViews()
             }.store(in: &orientationCancellables)
@@ -423,36 +449,59 @@
 
             engine.statePublisher.sink { [weak self] state in
                 guard let self else { return }
+                self.updateState { $0.playbackState = state }
+                self.eventSubject.send(.playbackStateChanged(state))
                 self.controlOverlay?.player(self, didChangePlaybackState: state)
             }.store(in: &engineCancellables)
 
             engine.loadStatePublisher.sink { [weak self] state in
                 guard let self else { return }
+                self.updateState { $0.loadState = state }
+                self.eventSubject.send(.loadStateChanged(state))
                 self.controlOverlay?.player(self, didChangeLoadState: state)
             }.store(in: &engineCancellables)
 
             engine.playTimePublisher.sink { [weak self] time in
                 guard let self else { return }
+                self.updateState {
+                    $0.currentTime = time.current
+                    $0.totalTime = time.total
+                }
+                self.eventSubject.send(.timeChanged(current: time.current, total: time.total))
                 self.controlOverlay?.player(self, didUpdateTime: time.current, totalTime: time.total)
             }.store(in: &engineCancellables)
 
             engine.bufferTimePublisher.sink { [weak self] bufferTime in
                 guard let self else { return }
+                self.updateState { $0.bufferTime = bufferTime }
+                self.eventSubject.send(.bufferTimeChanged(bufferTime))
                 self.controlOverlay?.player(self, didUpdateBufferTime: bufferTime)
             }.store(in: &engineCancellables)
 
             engine.prepareToPlayPublisher.sink { [weak self] url in
                 guard let self else { return }
+                self.updateState { $0.assetURL = url }
+                self.eventSubject.send(.prepareToPlay(url))
                 self.controlOverlay?.player(self, prepareToPlay: url)
+            }.store(in: &engineCancellables)
+
+            engine.readyToPlayPublisher.sink { [weak self] url in
+                guard let self else { return }
+                self.updateState { $0.assetURL = url }
+                self.eventSubject.send(.readyToPlay(url))
             }.store(in: &engineCancellables)
 
             engine.playFailedPublisher.sink { [weak self] error in
                 guard let self else { return }
+                self.updateState { $0.playbackState = .failed }
+                self.eventSubject.send(.failed(error))
                 self.controlOverlay?.player(self, didFailWithError: error)
             }.store(in: &engineCancellables)
 
             engine.didPlayToEndPublisher.sink { [weak self] in
                 guard let self else { return }
+                self.updateState { $0.playbackState = .stopped }
+                self.eventSubject.send(.playedToEnd)
                 self.controlOverlay?.playerDidPlayToEnd(self)
                 self.exitFullScreenIfNeeded()
             }.store(in: &engineCancellables)
@@ -460,8 +509,16 @@
             engine.presentationSizePublisher.sink { [weak self] size in
                 guard let self else { return }
                 self.orientationManager.presentationSize = size
+                self.updateState { $0.presentationSize = size }
+                self.eventSubject.send(.presentationSizeChanged(size))
                 self.controlOverlay?.player(self, didChangePresentationSize: size)
             }.store(in: &engineCancellables)
+        }
+
+        private func updateState(_ update: (inout PlayerState) -> Void) {
+            var state = stateSubject.value
+            update(&state)
+            stateSubject.send(state)
         }
 
         private func subscribeReachability() {
@@ -474,25 +531,11 @@
         }
 
         func setupNotification() {
-            systemEventObserver?.stopObserving()
-            systemEventCancellables.removeAll()
-            let observer = SystemEventObserver()
-            systemEventObserver = observer
-            observer.startObserving()
+            lifecycleCoordinator.start()
+        }
 
-            observer.willResignActivePublisher.sink { [weak self] in
-                guard let self, self.pauseWhenAppResignActive else { return }
-                self.isPausedByEvent = true
-                self.engine.pause()
-            }.store(in: &systemEventCancellables)
-
-            observer.didBecomeActivePublisher.sink { [weak self] in
-                guard let self, self.isPausedByEvent else { return }
-                self.isPausedByEvent = false
-                if self.engine.shouldAutoPlay {
-                    self.engine.play()
-                }
-            }.store(in: &systemEventCancellables)
+        func stopLifecycleObservation() {
+            lifecycleCoordinator.stop()
         }
 
         private func configureVolume() {

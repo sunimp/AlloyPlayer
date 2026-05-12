@@ -1,8 +1,8 @@
 //
-//  AlloyCoreTests.swift
+//  PlayerLifecycleCoordinatorTests.swift
 //  AlloyCoreTests
 //
-//  Created by Sun on 2026/4/14.
+//  Created by Sun on 2026/5/12.
 //
 
 @testable import AlloyCore
@@ -11,68 +11,41 @@ import Testing
 
 #if canImport(UIKit)
     import UIKit
-    import XCTest
-#endif
 
-@Test func moduleImports() {
-    // 验证模块可正常导入
-}
-
-#if canImport(UIKit)
     @MainActor
-    final class PlayerBindingTests: XCTestCase {
-        func testSettingAssetURLPreparesEngineOnlyOnce() throws {
-            let engine = AutoPreparingPlaybackEngine()
-            let player = Player(engine: engine, containerView: UIView())
-            let url = try XCTUnwrap(URL(string: "https://example.invalid/video.mp4"))
+    @Test func lifecycleCoordinatorPausesAndResumesBoundEngine() {
+        let engine = LifecyclePlaybackEngine()
+        let coordinator = PlayerLifecycleCoordinator()
+        coordinator.bind(engine: engine)
+        coordinator.start()
+        defer { coordinator.stop() }
 
-            player.assetURL = url
+        NotificationCenter.default.post(name: UIApplication.willResignActiveNotification, object: nil)
+        NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
 
-            XCTAssertEqual(engine.prepareCount, 1)
-        }
-
-        func testReplacingEngineMovesGesturesFromOldRenderViewToNewRenderView() {
-            let oldEngine = AutoPreparingPlaybackEngine()
-            let player = Player(engine: oldEngine, containerView: UIView())
-            let newEngine = AutoPreparingPlaybackEngine()
-
-            XCTAssertFalse(oldEngine.renderView.gestureRecognizers?.isEmpty ?? true)
-
-            player.replaceEngine(newEngine)
-
-            XCTAssertTrue(oldEngine.renderView.gestureRecognizers?.isEmpty ?? true)
-            XCTAssertFalse(newEngine.renderView.gestureRecognizers?.isEmpty ?? true)
-        }
-
-        func testAttachMovesRenderViewToNewContainer() {
-            let engine = AutoPreparingPlaybackEngine()
-            let initialContainer = UIView()
-            let nextContainer = UIView()
-            let player = Player(engine: engine, containerView: initialContainer)
-
-            player.attach(to: nextContainer)
-
-            XCTAssertTrue(player.containerView === nextContainer)
-            XCTAssertTrue(engine.renderSurface.view.superview === nextContainer)
-        }
-
-        func testSystemNotificationSubscriptionsSurviveEngineReplacement() throws {
-            let firstEngine = AutoPreparingPlaybackEngine()
-            let player = Player(engine: firstEngine, containerView: UIView())
-            let url = try XCTUnwrap(URL(string: "https://example.invalid/video.mp4"))
-            player.assetURL = url
-
-            let replacementEngine = AutoPreparingPlaybackEngine()
-            player.replaceEngine(replacementEngine)
-
-            NotificationCenter.default.post(name: UIApplication.willResignActiveNotification, object: nil)
-
-            XCTAssertEqual(replacementEngine.pauseCount, 1)
-        }
+        #expect(engine.pauseCount == 1)
+        #expect(engine.playCount == 1)
+        #expect(coordinator.isPausedByEvent == false)
     }
 
     @MainActor
-    private final class AutoPreparingPlaybackEngine: PlaybackEngine {
+    @Test func lifecycleCoordinatorDoesNotResumeWhenAutoPlayIsDisabled() {
+        let engine = LifecyclePlaybackEngine()
+        engine.shouldAutoPlay = false
+        let coordinator = PlayerLifecycleCoordinator()
+        coordinator.bind(engine: engine)
+        coordinator.start()
+        defer { coordinator.stop() }
+
+        NotificationCenter.default.post(name: UIApplication.willResignActiveNotification, object: nil)
+        NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
+
+        #expect(engine.pauseCount == 1)
+        #expect(engine.playCount == 0)
+    }
+
+    @MainActor
+    private final class LifecyclePlaybackEngine: PlaybackEngine {
         let renderView = RenderView()
         var playbackState: PlaybackState = .unknown
         var loadState: LoadState = .unknown
@@ -82,22 +55,15 @@ import Testing
         var isMuted = false
         var rate: Float = 1
         var scalingMode: ScalingMode = .aspectFit
-        var shouldAutoPlay = false
+        var shouldAutoPlay = true
         var currentTime: TimeInterval = 0
         var totalTime: TimeInterval = 0
         var bufferTime: TimeInterval = 0
         var seekTime: TimeInterval = 0
-        var assetURL: URL? {
-            didSet {
-                if assetURL != oldValue, assetURL != nil {
-                    prepareToPlay()
-                }
-            }
-        }
-
+        var assetURL: URL?
         var presentationSize: CGSize = .zero
-        var prepareCount = 0
         var pauseCount = 0
+        var playCount = 0
 
         private let stateSubject = PassthroughSubject<PlaybackState, Never>()
         private let loadStateSubject = PassthroughSubject<LoadState, Never>()
@@ -145,15 +111,10 @@ import Testing
             sizeSubject.eraseToAnyPublisher()
         }
 
-        func prepareToPlay() {
-            prepareCount += 1
-            if let assetURL {
-                prepareSubject.send(assetURL)
-            }
-        }
-
+        func prepareToPlay() {}
         func reloadPlayer() {}
         func play() {
+            playCount += 1
             isPlaying = true
         }
 

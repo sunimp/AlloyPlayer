@@ -6,7 +6,6 @@
 //
 
 #if canImport(UIKit) && canImport(SwiftUI)
-    import AlloyAVPlayer
     import AlloyCore
     import Combine
     import SwiftUI
@@ -18,39 +17,46 @@
 
         private let url: URL?
         private let controller: AlloyPlayerController
+        private let engineFactory: @MainActor () -> any PlaybackEngine
         private let controls: (SwiftUIControlOverlayState) -> Controls
         private var configuration: AlloyPlayerViewConfiguration
 
         public init(
-            url: URL?
+            url: URL?,
+            engineFactory: @escaping @MainActor () -> any PlaybackEngine
         ) where Controls == DefaultSwiftUIControlOverlayView {
-            self.init(url: url, controller: AlloyPlayerController())
+            self.init(url: url, controller: AlloyPlayerController(), engineFactory: engineFactory)
         }
 
         public init(
             url: URL?,
-            controller: AlloyPlayerController
+            controller: AlloyPlayerController,
+            engineFactory: @escaping @MainActor () -> any PlaybackEngine
         ) where Controls == DefaultSwiftUIControlOverlayView {
             self.url = url
             self.controller = controller
+            self.engineFactory = engineFactory
             controls = { DefaultSwiftUIControlOverlayView(state: $0) }
             configuration = AlloyPlayerViewConfiguration()
         }
 
         public init(
             url: URL?,
+            engineFactory: @escaping @MainActor () -> any PlaybackEngine,
             @ViewBuilder controls: @escaping (SwiftUIControlOverlayState) -> Controls
         ) {
-            self.init(url: url, controller: AlloyPlayerController(), controls: controls)
+            self.init(url: url, controller: AlloyPlayerController(), engineFactory: engineFactory, controls: controls)
         }
 
         public init(
             url: URL?,
             controller: AlloyPlayerController,
+            engineFactory: @escaping @MainActor () -> any PlaybackEngine,
             @ViewBuilder controls: @escaping (SwiftUIControlOverlayState) -> Controls
         ) {
             self.url = url
             self.controller = controller
+            self.engineFactory = engineFactory
             self.controls = controls
             configuration = AlloyPlayerViewConfiguration()
         }
@@ -58,11 +64,13 @@
         private init(
             url: URL?,
             controller: AlloyPlayerController,
+            engineFactory: @escaping @MainActor () -> any PlaybackEngine,
             controls: @escaping (SwiftUIControlOverlayState) -> Controls,
             configuration: AlloyPlayerViewConfiguration
         ) {
             self.url = url
             self.controller = controller
+            self.engineFactory = engineFactory
             self.controls = controls
             self.configuration = configuration
         }
@@ -83,7 +91,7 @@
                 }
             }
 
-            let engine = AVPlayerManager()
+            let engine = engineFactory()
             engine.shouldAutoPlay = configuration.autoPlay
             engine.scalingMode = configuration.scalingMode
 
@@ -167,43 +175,43 @@
         func autoPlay(_ autoPlay: Bool) -> Self {
             var config = configuration
             config.autoPlay = autoPlay
-            return Self(url: url, controller: controller, controls: controls, configuration: config)
+            return Self(url: url, controller: controller, engineFactory: engineFactory, controls: controls, configuration: config)
         }
 
         func scalingMode(_ scalingMode: ScalingMode) -> Self {
             var config = configuration
             config.scalingMode = scalingMode
-            return Self(url: url, controller: controller, controls: controls, configuration: config)
+            return Self(url: url, controller: controller, engineFactory: engineFactory, controls: controls, configuration: config)
         }
 
         func disabledGestures(_ types: DisableGestureTypes) -> Self {
             var config = configuration
             config.disabledGestureTypes = types
-            return Self(url: url, controller: controller, controls: controls, configuration: config)
+            return Self(url: url, controller: controller, engineFactory: engineFactory, controls: controls, configuration: config)
         }
 
         func controlAutoHideInterval(_ interval: TimeInterval) -> Self {
             var config = configuration
             config.controlAutoHideInterval = interval
-            return Self(url: url, controller: controller, controls: controls, configuration: config)
+            return Self(url: url, controller: controller, engineFactory: engineFactory, controls: controls, configuration: config)
         }
 
         func onPlaybackStateChange(_ action: @escaping (PlaybackState) -> Void) -> Self {
             var config = configuration
             config.onPlaybackStateChange = action
-            return Self(url: url, controller: controller, controls: controls, configuration: config)
+            return Self(url: url, controller: controller, engineFactory: engineFactory, controls: controls, configuration: config)
         }
 
         func pauseWhenDisappear(_ pauseWhenDisappear: Bool) -> Self {
             var config = configuration
             config.pauseWhenDisappear = pauseWhenDisappear
-            return Self(url: url, controller: controller, controls: controls, configuration: config)
+            return Self(url: url, controller: controller, engineFactory: engineFactory, controls: controls, configuration: config)
         }
 
         func configurePlayer(_ action: @escaping (Player) -> Void) -> Self {
             var config = configuration
             config.configurePlayer = action
-            return Self(url: url, controller: controller, controls: controls, configuration: config)
+            return Self(url: url, controller: controller, engineFactory: engineFactory, controls: controls, configuration: config)
         }
     }
 

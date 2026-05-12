@@ -207,31 +207,56 @@ struct CustomPlayerScreen: View {
 
 ## 列表播放
 
-TableView / CollectionView 场景可以使用基于滚动容器的初始化方式。播放器会根据 indexPath 定位 Cell 内的容器视图：
+TableView / CollectionView 场景使用 `AlloyListPlayback` 选择最适合播放的可见项，再驱动 `Player` 播放：
 
 ```swift
 import AlloyPlayer
 
 final class ListPlayerViewController: UIViewController, UITableViewDelegate {
     private var player: Player!
+    private var listPlayback: ListPlaybackCoordinator!
     @IBOutlet private var tableView: UITableView!
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         let engine = AVPlayerManager()
-        player = Player(scrollView: tableView, engine: engine, containerViewTag: 100)
+        player = Player(engine: engine, containerView: UIView())
         player.controlOverlay = DefaultControlOverlay()
-        player.sectionAssetURLs = [
-            [
-                URL(string: "https://example.com/video1.mp4")!,
-                URL(string: "https://example.com/video2.mp4")!,
-            ],
-        ]
+        listPlayback = ListPlaybackCoordinator(player: player)
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        player.playTheIndexPath(indexPath, scrollToTop: true)
+        guard let cell = tableView.cellForRow(at: indexPath) else { return }
+        let url = URL(string: "https://example.com/video\(indexPath.row).mp4")!
+        let candidate = ListPlaybackCandidate(
+            indexPath: indexPath,
+            frame: cell.frame,
+            assetURL: url
+        )
+        listPlayback.play(candidate, in: cell.contentView)
+    }
+
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        let visibleItems = tableView.indexPathsForVisibleRows?.compactMap { indexPath -> (ListPlaybackCandidate, UIView)? in
+            guard let cell = tableView.cellForRow(at: indexPath) else { return nil }
+            let frame = tableView.convert(cell.frame, to: tableView.superview)
+            let url = URL(string: "https://example.com/video\(indexPath.row).mp4")!
+            return (
+                ListPlaybackCandidate(indexPath: indexPath, frame: frame, assetURL: url),
+                cell.contentView
+            )
+        } ?? []
+
+        let viewport = tableView.convert(tableView.bounds, to: tableView.superview)
+        listPlayback.playBestCandidate(
+            in: visibleItems.map { $0.0 },
+            viewport: viewport,
+            minimumVisiblePercent: 0.5,
+            containerProvider: { selected in
+                visibleItems.first(where: { $0.0 == selected })?.1
+            }
+        )
     }
 }
 ```
@@ -247,11 +272,12 @@ flowchart LR
     Umbrella --> AV[AlloyAVPlayer]
     Umbrella --> UIKitControls[AlloyUIKitControls]
     Umbrella --> SwiftUIControls[AlloySwiftUIControls]
+    Umbrella --> ListPlayback[AlloyListPlayback]
 
     AV --> Core
     UIKitControls --> Core
     SwiftUIControls --> Core
-    SwiftUIControls --> AV
+    ListPlayback --> Core
 
     CacheSupport[AlloyHTTPMediaCacheSupport] --> Core
     CacheSupport --> HTTPMediaCache[HTTPMediaCache]
@@ -265,7 +291,8 @@ flowchart LR
 | `AlloyCore` | 协议、枚举、`Player` 控制器、手势、方向、列表播放和基础工具 |
 | `AlloyAVPlayer` | 基于 AVFoundation 的 `PlaybackEngine` 实现 |
 | `AlloyUIKitControls` | 默认 UIKit 控制层、进度条、缓冲视图、音量/亮度 HUD 等 |
-| `AlloySwiftUIControls` | SwiftUI 播放器视图、控制层桥接和外部控制句柄 |
+| `AlloySwiftUIControls` | SwiftUI 播放器视图、控制层桥接和外部控制句柄；只依赖 `AlloyCore`，自定义引擎通过 `engineFactory` 注入 |
+| `AlloyListPlayback` | 列表播放协调器和可见性计算，供 TableView、CollectionView、ScrollView 场景复用 |
 | `AlloyHTTPMediaCacheSupport` | HTTPMediaCache 可选支持，负责代理 URL 生成和播放器准备 |
 | `AlloyPlayer` | Umbrella 模块，重新导出核心播放能力和默认控制层 |
 

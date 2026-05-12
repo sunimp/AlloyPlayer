@@ -19,7 +19,7 @@
         // MARK: - 子视图
 
         /// 滑块按钮
-        public private(set) var thumbButton = UIButton(type: .custom)
+        public private(set) var thumbButton: UIButton = ProgressSliderThumbButton(type: .custom)
 
         // MARK: - 轨道外观
 
@@ -131,7 +131,6 @@
             addSubview(loadingBar)
             addSubview(thumbButton)
 
-            thumbButton.adjustsImageWhenHighlighted = false
             thumbButton.tintColor = .white
             let thumbConfig = UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold)
             thumbButton.setImage(UIImage(systemName: "circle.fill", withConfiguration: thumbConfig), for: .normal)
@@ -289,6 +288,13 @@
             guard trackWidth > 0 else { return value }
             let rawValue = (point.x - bgTrack.frame.minX) / trackWidth
             return Float(min(max(rawValue, 0), 1))
+        }
+    }
+
+    private final class ProgressSliderThumbButton: UIButton {
+        override var isHighlighted: Bool {
+            get { false }
+            set {}
         }
     }
 #endif

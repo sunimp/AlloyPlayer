@@ -15,6 +15,7 @@ let package = Package(
         .library(name: "AlloyHTTPMediaCacheSupport", targets: ["AlloyHTTPMediaCacheSupport"]),
         .library(name: "AlloyUIKitControls", targets: ["AlloyUIKitControls"]),
         .library(name: "AlloySwiftUIControls", targets: ["AlloySwiftUIControls"]),
+        .library(name: "AlloyListPlayback", targets: ["AlloyListPlayback"]),
     ],
     dependencies: [
         .package(url: "https://github.com/sunimp/HTTPMediaCache.git", from: "1.0.1"),
@@ -38,11 +39,15 @@ let package = Package(
         ),
         .target(
             name: "AlloySwiftUIControls",
-            dependencies: ["AlloyCore", "AlloyAVPlayer"]
+            dependencies: ["AlloyCore"]
+        ),
+        .target(
+            name: "AlloyListPlayback",
+            dependencies: ["AlloyCore"]
         ),
         .target(
             name: "AlloyPlayer",
-            dependencies: ["AlloyCore", "AlloyAVPlayer", "AlloyUIKitControls", "AlloySwiftUIControls"]
+            dependencies: ["AlloyCore", "AlloyAVPlayer", "AlloyUIKitControls", "AlloySwiftUIControls", "AlloyListPlayback"]
         ),
         .testTarget(
             name: "AlloyCoreTests",
@@ -66,6 +71,14 @@ let package = Package(
         .testTarget(
             name: "AlloySwiftUIControlsTests",
             dependencies: ["AlloySwiftUIControls"]
+        ),
+        .testTarget(
+            name: "AlloyPlayerTests",
+            dependencies: ["AlloyPlayer"]
+        ),
+        .testTarget(
+            name: "AlloyListPlaybackTests",
+            dependencies: ["AlloyListPlayback"]
         ),
     ]
 )

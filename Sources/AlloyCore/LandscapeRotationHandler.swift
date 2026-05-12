@@ -28,6 +28,12 @@
 
         weak var contentView: UIView?
         weak var containerView: UIView?
+        var windowSceneProvider: () -> UIWindowScene? = {
+            UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .first
+        }
+
         private var window: LandscapeWindow?
         private var landscapeController: LandscapeController?
 
@@ -66,18 +72,22 @@
                 return
             }
 
-            orientationWillChange?(orientation)
-
             let isToFullScreen = orientation.isLandscape
             let previousOrientation = currentOrientation
-            currentOrientation = orientation
 
             if isToFullScreen {
-                rotateToLandscape(orientation: orientation, animated: animated) { [weak self] in
+                rotateToLandscape(orientation: orientation, animated: animated) { [weak self] success in
+                    guard success else {
+                        completion?()
+                        return
+                    }
+                    self?.currentOrientation = orientation
                     self?.orientationDidChange?(orientation)
                     completion?()
                 }
             } else {
+                orientationWillChange?(orientation)
+                currentOrientation = orientation
                 rotateToPortrait(from: previousOrientation, animated: animated) { [weak self] in
                     self?.orientationDidChange?(orientation)
                     completion?()
@@ -118,15 +128,20 @@
         private func rotateToLandscape(
             orientation: UIInterfaceOrientation,
             animated: Bool,
-            completion: @escaping () -> Void
+            completion: @escaping (Bool) -> Void
         ) {
             guard let contentView else {
-                completion()
+                completion(false)
                 return
             }
 
             let controller = ensureLandscapeController()
-            let window = ensureWindow()
+            guard let window = ensureWindow() else {
+                completion(false)
+                return
+            }
+
+            orientationWillChange?(orientation)
 
             // 在 iOS 16+ 使用 requestGeometryUpdate
             if #available(iOS 16.0, *) {
@@ -151,7 +166,7 @@
             UIView.animate(withDuration: duration, animations: {
                 window.alpha = 1
             }, completion: { _ in
-                completion()
+                completion(true)
             })
         }
 
@@ -196,14 +211,9 @@
             return controller
         }
 
-        private func ensureWindow() -> LandscapeWindow {
+        private func ensureWindow() -> LandscapeWindow? {
             if let existing = window { return existing }
-            guard let scene = UIApplication.shared.connectedScenes
-                .compactMap({ $0 as? UIWindowScene })
-                .first
-            else {
-                fatalError("No UIWindowScene available")
-            }
+            guard let scene = windowSceneProvider() else { return nil }
             let win = LandscapeWindow(windowScene: scene)
             win.rotationHandler = self
             win.rootViewController = landscapeController

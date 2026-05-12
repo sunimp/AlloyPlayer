@@ -14,27 +14,10 @@ import HTTPMediaCache
 
 /// AlloyPlayer 对 HTTPMediaCache 的可选支持入口。
 public enum AlloyHTTPMediaCacheSupport {
-    /// 确保本地 HTTP 缓存代理服务已启动。
-    public static func startIfNeeded(port: UInt16 = 0) async throws {
-        try await startIfNeeded(configuration: .init(port: port))
-    }
-
     /// 按配置确保本地 HTTP 缓存代理服务已启动。
     public static func startIfNeeded(configuration: AlloyHTTPMediaCacheConfiguration = .default) async throws {
         guard await !HTTPMediaCache.isRunning else { return }
         try await HTTPMediaCache.start(port: configuration.port)
-    }
-
-    /// 为原始资源生成 HTTPMediaCache 代理 URL。
-    public static func proxyURL(
-        for originalURL: URL,
-        bindToLocalhost: Bool = true,
-        port: UInt16 = 0
-    ) async throws -> URL {
-        try await proxyURL(
-            for: originalURL,
-            configuration: .init(port: port, bindToLocalhost: bindToLocalhost)
-        )
     }
 
     /// 按配置为原始资源生成 HTTPMediaCache 代理 URL。
@@ -60,27 +43,6 @@ public enum AlloyHTTPMediaCacheSupport {
     }
 
     #if canImport(UIKit)
-        /// 将原始资源转换为 HTTPMediaCache 代理 URL 后交给播放器准备播放。
-        @discardableResult
-        @MainActor
-        public static func prepare(
-            player: Player,
-            originalURL: URL,
-            requestHeaders: [String: String]? = nil,
-            bindToLocalhost: Bool = true,
-            port: UInt16 = 0
-        ) async throws -> URL {
-            try await prepare(
-                player: player,
-                originalURL: originalURL,
-                configuration: .init(
-                    port: port,
-                    bindToLocalhost: bindToLocalhost,
-                    requestHeaders: requestHeaders ?? [:]
-                )
-            )
-        }
-
         /// 按配置将原始资源转换为 HTTPMediaCache 代理 URL 后交给播放器准备播放。
         @discardableResult
         @MainActor

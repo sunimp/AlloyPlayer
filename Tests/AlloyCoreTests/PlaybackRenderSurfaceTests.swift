@@ -1,82 +1,26 @@
 //
-//  AlloySwiftUIControlsTests.swift
-//  AlloySwiftUIControlsTests
+//  PlaybackRenderSurfaceTests.swift
+//  AlloyCoreTests
 //
-//  Created by Sun on 2026/5/9.
+//  Created by Sun on 2026/5/12.
 //
 
-#if canImport(UIKit) && canImport(SwiftUI)
-    import AlloyCore
-    @testable import AlloySwiftUIControls
-    import Combine
-    import SwiftUI
-    import Testing
+@testable import AlloyCore
+import Combine
+import Testing
+
+#if canImport(UIKit)
     import UIKit
 
-    @Test func moduleImports() {
-        // 验证 SwiftUI 桥接模块可正常导入
+    @MainActor
+    @Test func playbackEngineDefaultRenderSurfaceUsesRenderView() {
+        let engine = RenderSurfacePlaybackEngine()
+
+        #expect(engine.renderSurface.view === engine.renderView)
     }
 
     @MainActor
-    @Test func playerViewSupportsDefaultAndCustomControls() {
-        let url = URL(string: "https://example.invalid/video.mp4")
-        let controller = AlloyPlayerController()
-
-        _ = AlloyPlayerView(url: url, engineFactory: { RetainTestPlaybackEngine() })
-            .autoPlay(true)
-            .scalingMode(.aspectFit)
-            .controlAutoHideInterval(2.5)
-            .pauseWhenDisappear(true)
-            .configurePlayer { _ in }
-            .onPlaybackStateChange { _ in }
-
-        _ = AlloyPlayerView(url: url, controller: controller, engineFactory: { RetainTestPlaybackEngine() }) { state in
-            VStack {
-                SwiftUIPlaybackProgressBar(state: state)
-                Text(state.isPlaying ? "播放中" : "未播放")
-            }
-        }
-        .disabledGestures([.pinch])
-    }
-
-    @MainActor
-    @Test func playerDrivenStateUpdatesAreDeferred() async throws {
-        let state = SwiftUIControlOverlayState()
-        let url = try #require(URL(string: "https://example.invalid/video.mp4"))
-        var activeURL: URL?
-        let cancellable = state.$activeURL.dropFirst().sink { value in
-            activeURL = value
-        }
-
-        state.updatePrepareToPlay(url: url)
-
-        #expect(activeURL == nil)
-
-        await Task.yield()
-
-        #expect(activeURL == url)
-        _ = cancellable
-    }
-
-    @MainActor
-    @Test func controlOverlayStateDoesNotRetainPlayer() async {
-        let state = SwiftUIControlOverlayState()
-        weak var weakPlayer: Player?
-
-        do {
-            let player = Player(engine: RetainTestPlaybackEngine(), containerView: UIView())
-            weakPlayer = player
-            state.attach(player: player)
-        }
-
-        await Task.yield()
-
-        #expect(weakPlayer == nil)
-        #expect(state.player == nil)
-    }
-
-    @MainActor
-    private final class RetainTestPlaybackEngine: PlaybackEngine {
+    private final class RenderSurfacePlaybackEngine: PlaybackEngine {
         let renderView = RenderView()
         var playbackState: PlaybackState = .unknown
         var loadState: LoadState = .unknown

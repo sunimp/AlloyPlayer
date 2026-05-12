@@ -1,82 +1,45 @@
 //
-//  AlloySwiftUIControlsTests.swift
-//  AlloySwiftUIControlsTests
+//  EventSinkTests.swift
+//  AlloyCoreTests
 //
-//  Created by Sun on 2026/5/9.
+//  Created by Sun on 2026/5/12.
 //
 
-#if canImport(UIKit) && canImport(SwiftUI)
-    import AlloyCore
-    @testable import AlloySwiftUIControls
-    import Combine
-    import SwiftUI
-    import Testing
+@testable import AlloyCore
+import Combine
+import Testing
+
+#if canImport(UIKit)
     import UIKit
 
-    @Test func moduleImports() {
-        // 验证 SwiftUI 桥接模块可正常导入
+    @MainActor
+    @Test func playbackEventSinkCanObservePlaybackWithoutControlOverlay() {
+        let sink = PlaybackOnlySink()
+        let player = Player(engine: EventSinkPlaybackEngine(), containerView: UIView())
+
+        sink.player(player, didChangePlaybackState: .playing)
+        sink.player(player, didChangeLoadState: .playable)
+
+        #expect(sink.playbackState == .playing)
+        #expect(sink.loadState == .playable)
     }
 
     @MainActor
-    @Test func playerViewSupportsDefaultAndCustomControls() {
-        let url = URL(string: "https://example.invalid/video.mp4")
-        let controller = AlloyPlayerController()
+    private final class PlaybackOnlySink: PlaybackEventSink {
+        var playbackState: PlaybackState = .unknown
+        var loadState: LoadState = .unknown
 
-        _ = AlloyPlayerView(url: url, engineFactory: { RetainTestPlaybackEngine() })
-            .autoPlay(true)
-            .scalingMode(.aspectFit)
-            .controlAutoHideInterval(2.5)
-            .pauseWhenDisappear(true)
-            .configurePlayer { _ in }
-            .onPlaybackStateChange { _ in }
-
-        _ = AlloyPlayerView(url: url, controller: controller, engineFactory: { RetainTestPlaybackEngine() }) { state in
-            VStack {
-                SwiftUIPlaybackProgressBar(state: state)
-                Text(state.isPlaying ? "播放中" : "未播放")
-            }
-        }
-        .disabledGestures([.pinch])
-    }
-
-    @MainActor
-    @Test func playerDrivenStateUpdatesAreDeferred() async throws {
-        let state = SwiftUIControlOverlayState()
-        let url = try #require(URL(string: "https://example.invalid/video.mp4"))
-        var activeURL: URL?
-        let cancellable = state.$activeURL.dropFirst().sink { value in
-            activeURL = value
+        func player(_: Player, didChangePlaybackState state: PlaybackState) {
+            playbackState = state
         }
 
-        state.updatePrepareToPlay(url: url)
-
-        #expect(activeURL == nil)
-
-        await Task.yield()
-
-        #expect(activeURL == url)
-        _ = cancellable
-    }
-
-    @MainActor
-    @Test func controlOverlayStateDoesNotRetainPlayer() async {
-        let state = SwiftUIControlOverlayState()
-        weak var weakPlayer: Player?
-
-        do {
-            let player = Player(engine: RetainTestPlaybackEngine(), containerView: UIView())
-            weakPlayer = player
-            state.attach(player: player)
+        func player(_: Player, didChangeLoadState state: LoadState) {
+            loadState = state
         }
-
-        await Task.yield()
-
-        #expect(weakPlayer == nil)
-        #expect(state.player == nil)
     }
 
     @MainActor
-    private final class RetainTestPlaybackEngine: PlaybackEngine {
+    private final class EventSinkPlaybackEngine: PlaybackEngine {
         let renderView = RenderView()
         var playbackState: PlaybackState = .unknown
         var loadState: LoadState = .unknown

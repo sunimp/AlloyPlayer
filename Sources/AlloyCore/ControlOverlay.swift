@@ -14,7 +14,7 @@
     /// 所有方法均有默认空实现，使用者只需实现关心的回调。
     /// 内置 UIKit 实现为 `DefaultControlOverlay`（AlloyUIKitControls 模块）。
     @MainActor
-    public protocol ControlOverlay: UIView {
+    public protocol ControlOverlay: UIView, PlaybackEventSink, GestureEventSink, OrientationEventSink, ListPlaybackEventSink {
         /// 关联的播放控制器
         var player: Player? { get set }
 

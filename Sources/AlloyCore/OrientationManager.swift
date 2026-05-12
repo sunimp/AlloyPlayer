@@ -210,26 +210,13 @@
                 return
             }
 
-            switch fullScreenMode {
+            switch FullScreenModeResolver.resolve(mode: fullScreenMode, presentationSize: presentationSize) {
             case .landscape:
-                if fullScreen {
-                    await rotate(to: .landscapeRight, animated: animated)
-                } else {
-                    await rotate(to: .portrait, animated: animated)
-                }
+                await rotate(to: .landscapeRight, animated: animated)
             case .portrait:
-                await enterPortraitFullScreen(fullScreen, animated: animated)
+                await enterPortraitFullScreen(true, animated: animated)
             case .automatic:
-                // 根据视频宽高比选择：宽 > 高 → 横屏，否则竖屏
-                if presentationSize.width > presentationSize.height {
-                    if fullScreen {
-                        await rotate(to: .landscapeRight, animated: animated)
-                    } else {
-                        await rotate(to: .portrait, animated: animated)
-                    }
-                } else {
-                    await enterPortraitFullScreen(fullScreen, animated: animated)
-                }
+                break
             }
         }
 

@@ -14,8 +14,7 @@
         /// 停止播放
         func stop() {
             engine.stop()
-            systemEventObserver?.stopObserving()
-            systemEventObserver = nil
+            stopLifecycleObservation()
 
             exitFullScreenIfNeeded()
         }

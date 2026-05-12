@@ -5,6 +5,24 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)，
 版本号遵循[语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [Unreleased]
+
+### 新增
+
+- 新增 `PlayerState` / `PlayerEvent` 统一状态与事件输出。
+- 新增 `AlloyListPlayback` 模块，承接列表播放可见性计算与播放协调。
+- 新增 `FloatingPlaybackCoordinator`，将浮动播放窗口从 `Player` 职责中迁出。
+- 新增 `PlaybackRenderSurface`，为自定义播放引擎提供更稳定的渲染承载抽象。
+
+### 调整
+
+- `ControlOverlay` 拆分为播放、手势、方向和列表播放事件 sink 组合，降低自定义控制层接入成本。
+- `AlloySwiftUIControls` 不再依赖 `AlloyAVPlayer`；默认 AVPlayer 便利入口由 `AlloyPlayer` umbrella 模块提供。
+- `AlloyHTTPMediaCacheSupport` 移除拆散参数重载，统一通过 `AlloyHTTPMediaCacheConfiguration` 承载进阶配置。
+- `Player` 新增 `attach(to:)` 通用挂载入口，列表播放协调器不再依赖旧 ScrollView 扩展挂载方法。
+- 全屏模式选择迁移到 `FullScreenModeResolver`，横屏 scene 缺失时不再触发 `fatalError`。
+- App 生命周期订阅迁移到 `PlayerLifecycleCoordinator`，减少 `Player` 内部职责。
+
 ## [0.2.0] - 2026-05-12
 
 ### 新增

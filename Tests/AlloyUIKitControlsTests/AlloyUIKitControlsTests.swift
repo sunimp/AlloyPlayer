@@ -115,6 +115,14 @@ import Testing
             XCTAssertGreaterThanOrEqual(fromValue, loadingBar.frame.width / 2)
             XCTAssertLessThanOrEqual(toValue, slider.bounds.width - loadingBar.frame.width / 2)
         }
+
+        func testThumbButtonIgnoresHighlightedState() {
+            let slider = ProgressSlider(frame: CGRect(x: 0, y: 0, width: 100, height: 30))
+
+            slider.thumbButton.isHighlighted = true
+
+            XCTAssertFalse(slider.thumbButton.isHighlighted)
+        }
     }
 
     @MainActor
