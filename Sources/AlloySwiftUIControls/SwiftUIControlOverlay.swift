@@ -34,8 +34,14 @@
         private let content: (SwiftUIControlOverlayState) -> Content
         private var hostingController: UIHostingController<Content>?
 
+        public convenience init(
+            @ViewBuilder content: @escaping (SwiftUIControlOverlayState) -> Content
+        ) {
+            self.init(state: SwiftUIControlOverlayState(), content: content)
+        }
+
         public init(
-            state: SwiftUIControlOverlayState = SwiftUIControlOverlayState(),
+            state: SwiftUIControlOverlayState,
             @ViewBuilder content: @escaping (SwiftUIControlOverlayState) -> Content
         ) {
             self.state = state

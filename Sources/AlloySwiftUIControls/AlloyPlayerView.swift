@@ -22,8 +22,14 @@
         private var configuration: AlloyPlayerViewConfiguration
 
         public init(
+            url: URL?
+        ) where Controls == DefaultSwiftUIControlOverlayView {
+            self.init(url: url, controller: AlloyPlayerController())
+        }
+
+        public init(
             url: URL?,
-            controller: AlloyPlayerController = AlloyPlayerController()
+            controller: AlloyPlayerController
         ) where Controls == DefaultSwiftUIControlOverlayView {
             self.url = url
             self.controller = controller
@@ -33,7 +39,14 @@
 
         public init(
             url: URL?,
-            controller: AlloyPlayerController = AlloyPlayerController(),
+            @ViewBuilder controls: @escaping (SwiftUIControlOverlayState) -> Controls
+        ) {
+            self.init(url: url, controller: AlloyPlayerController(), controls: controls)
+        }
+
+        public init(
+            url: URL?,
+            controller: AlloyPlayerController,
             @ViewBuilder controls: @escaping (SwiftUIControlOverlayState) -> Controls
         ) {
             self.url = url

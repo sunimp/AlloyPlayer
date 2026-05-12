@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/sunimp/HTTPMediaCache.git",
       "state" : {
-        "revision" : "0e3971f82ec3ce316b1a5acec212d8e7d0621c9a",
-        "version" : "1.0.0"
+        "revision" : "2c5db600b2e93b9451c57bf5782d14c2bc499c54",
+        "version" : "1.0.1"
       }
     },
     {

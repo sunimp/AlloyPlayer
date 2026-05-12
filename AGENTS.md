@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-AlloyPlayer 是一个现代的纯 Swift 视频播放器框架 — ZFPlayer 的完整功能重写。采用 Swift 6 严格并发、Combine 事件流、UIKit + Auto Layout，仅通过 Swift Package Manager 分发。
+AlloyPlayer 是一个现代的纯 Swift 视频播放器框架 — ZFPlayer 的完整功能重写。采用 SwiftPM 5.10、Combine 事件流、UIKit + Auto Layout，仅通过 Swift Package Manager 分发。
 
 ### 仓库结构
 
@@ -12,12 +12,14 @@ AlloyPlayer/
 ├── Sources/
 │   ├── AlloyCore/           ← 协议、枚举、Player 控制器
 │   ├── AlloyAVPlayer/       ← AVFoundation 播放引擎
+│   ├── AlloyHTTPMediaCacheSupport/ ← HTTPMediaCache 可选支持
 │   ├── AlloyUIKitControls/  ← 默认 UIKit 控制层 UI + 资源
 │   ├── AlloySwiftUIControls/ ← SwiftUI 控制层桥接
 │   └── AlloyPlayer/         ← Umbrella 重新导出模块
 ├── Tests/
 │   ├── AlloyCoreTests/
 │   ├── AlloyAVPlayerTests/
+│   ├── AlloyHTTPMediaCacheSupportTests/
 │   ├── AlloyUIKitControlsTests/
 │   └── AlloySwiftUIControlsTests/
 ├── README.md
@@ -34,13 +36,14 @@ AlloyPlayer/
 AlloyPlayer (umbrella)
 ├── AlloyCore
 ├── AlloyAVPlayer      → 依赖 AlloyCore
+├── AlloyHTTPMediaCacheSupport → 依赖 AlloyCore、HTTPMediaCache
 ├── AlloyUIKitControls   → 依赖 AlloyCore
 └── AlloySwiftUIControls → 依赖 AlloyCore
 ```
 
 ## 技术栈约束
 
-- **语言**：Swift 6.3，严格并发模式（`swiftLanguageModes: [.v6]`）
+- **语言/工具链**：SwiftPM 5.10（不启用 Swift 6 严格并发模式）
 - **最低部署版本**：iOS 15.0，macOS 12.0（macOS 仅用于 SPM 测试宿主）
 - **包管理器**：仅 SPM — 不使用 CocoaPods、不使用 Carthage
 - **事件通信**：Combine（`AnyPublisher`、`PassthroughSubject`）

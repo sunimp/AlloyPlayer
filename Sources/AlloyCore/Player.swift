@@ -24,7 +24,7 @@
 
         /// 播放引擎
         public var engine: PlaybackEngine {
-            didSet { setupEngine() }
+            didSet { setupEngine(replacing: oldValue) }
         }
 
         /// 控制层
@@ -117,7 +117,6 @@
                 engine.assetURL = newValue
                 if newValue != nil {
                     setupNotification()
-                    engine.prepareToPlay()
                 }
             }
         }
@@ -259,7 +258,11 @@
 
         // MARK: - 内部状态
 
-        var cancellables = Set<AnyCancellable>()
+        private var engineCancellables = Set<AnyCancellable>()
+        private var gestureCancellables = Set<AnyCancellable>()
+        private var orientationCancellables = Set<AnyCancellable>()
+        private var reachabilityCancellables = Set<AnyCancellable>()
+        private var systemEventCancellables = Set<AnyCancellable>()
         private var volumeSlider: UISlider?
         private var renderViewConstraints: [NSLayoutConstraint] = []
         private var overlayConstraints: [NSLayoutConstraint] = []
@@ -319,7 +322,7 @@
 
         private func commonInit() {
             // setupEngine() 内部通过 subscribeEngine() 已调用 setupGesture() 和 setupOrientation()
-            setupEngine()
+            setupEngine(replacing: nil)
             configureVolume()
             ReachabilityMonitor.shared.startMonitoring()
             subscribeReachability()
@@ -329,14 +332,18 @@
             MainActor.assumeIsolated {
                 engine.stop()
                 systemEventObserver?.stopObserving()
+                systemEventCancellables.removeAll()
+                reachabilityCancellables.removeAll()
             }
         }
 
         // MARK: - 内部 Setup
 
-        private func setupEngine() {
-            // 移除旧手势
-            gestureManager.detach(from: engine.renderView)
+        private func setupEngine(replacing oldEngine: PlaybackEngine?) {
+            // 移除旧引擎视图上的手势
+            if let oldEngine {
+                gestureManager.detach(from: oldEngine.renderView)
+            }
             // 绑定新手势
             gestureManager.attach(to: engine.renderView)
             // 订阅引擎事件
@@ -346,6 +353,8 @@
         }
 
         private func setupGesture() {
+            gestureCancellables.removeAll()
+
             // 手势回调转发给 controlOverlay
             gestureManager.triggerCondition = { [weak self] type, recognizer, touch in
                 guard let self, let overlay = self.controlOverlay else { return true }
@@ -355,113 +364,118 @@
             gestureManager.singleTapPublisher.sink { [weak self] in
                 guard let self else { return }
                 self.controlOverlay?.gestureSingleTapped(self.gestureManager)
-            }.store(in: &cancellables)
+            }.store(in: &gestureCancellables)
 
             gestureManager.doubleTapPublisher.sink { [weak self] in
                 guard let self else { return }
                 self.controlOverlay?.gestureDoubleTapped(self.gestureManager)
-            }.store(in: &cancellables)
+            }.store(in: &gestureCancellables)
 
             gestureManager.panBeganPublisher.sink { [weak self] event in
                 guard let self else { return }
                 self.controlOverlay?.gestureBeganPan(self.gestureManager, direction: event.direction, location: event.location)
-            }.store(in: &cancellables)
+            }.store(in: &gestureCancellables)
 
             gestureManager.panChangedPublisher.sink { [weak self] event in
                 guard let self else { return }
                 self.controlOverlay?.gestureChangedPan(self.gestureManager, direction: event.direction, location: event.location, velocity: event.velocity)
-            }.store(in: &cancellables)
+            }.store(in: &gestureCancellables)
 
             gestureManager.panEndedPublisher.sink { [weak self] event in
                 guard let self else { return }
                 self.controlOverlay?.gestureEndedPan(self.gestureManager, direction: event.direction, location: event.location)
-            }.store(in: &cancellables)
+            }.store(in: &gestureCancellables)
 
             gestureManager.pinchPublisher.sink { [weak self] scale in
                 guard let self else { return }
                 self.controlOverlay?.gesturePinched(self.gestureManager, scale: scale)
-            }.store(in: &cancellables)
+            }.store(in: &gestureCancellables)
 
             gestureManager.longPressPublisher.sink { [weak self] state in
                 guard let self else { return }
                 self.controlOverlay?.longPressed(self.gestureManager, state: state)
-            }.store(in: &cancellables)
+            }.store(in: &gestureCancellables)
         }
 
         private func setupOrientation() {
+            orientationCancellables.removeAll()
+
             if let containerView {
                 orientationManager.updateViews(renderView: engine.renderView, containerView: containerView)
             }
             orientationManager.orientationWillChangePublisher.sink { [weak self] _ in
                 guard let self else { return }
                 self.controlOverlay?.player(self, willChangeOrientation: self.orientationManager)
-            }.store(in: &cancellables)
+            }.store(in: &orientationCancellables)
 
             orientationManager.orientationDidChangePublisher.sink { [weak self] _ in
                 guard let self else { return }
                 self.controlOverlay?.player(self, didChangeOrientation: self.orientationManager)
                 self.layoutPlayerSubViews()
-            }.store(in: &cancellables)
+            }.store(in: &orientationCancellables)
         }
 
         private func subscribeEngine() {
             // 清理旧订阅
-            cancellables.removeAll()
+            engineCancellables.removeAll()
             setupGesture()
             setupOrientation()
 
             engine.statePublisher.sink { [weak self] state in
                 guard let self else { return }
                 self.controlOverlay?.player(self, didChangePlaybackState: state)
-            }.store(in: &cancellables)
+            }.store(in: &engineCancellables)
 
             engine.loadStatePublisher.sink { [weak self] state in
                 guard let self else { return }
                 self.controlOverlay?.player(self, didChangeLoadState: state)
-            }.store(in: &cancellables)
+            }.store(in: &engineCancellables)
 
             engine.playTimePublisher.sink { [weak self] time in
                 guard let self else { return }
                 self.controlOverlay?.player(self, didUpdateTime: time.current, totalTime: time.total)
-            }.store(in: &cancellables)
+            }.store(in: &engineCancellables)
 
             engine.bufferTimePublisher.sink { [weak self] bufferTime in
                 guard let self else { return }
                 self.controlOverlay?.player(self, didUpdateBufferTime: bufferTime)
-            }.store(in: &cancellables)
+            }.store(in: &engineCancellables)
 
             engine.prepareToPlayPublisher.sink { [weak self] url in
                 guard let self else { return }
                 self.controlOverlay?.player(self, prepareToPlay: url)
-            }.store(in: &cancellables)
+            }.store(in: &engineCancellables)
 
             engine.playFailedPublisher.sink { [weak self] error in
                 guard let self else { return }
                 self.controlOverlay?.player(self, didFailWithError: error)
-            }.store(in: &cancellables)
+            }.store(in: &engineCancellables)
 
             engine.didPlayToEndPublisher.sink { [weak self] in
                 guard let self else { return }
                 self.controlOverlay?.playerDidPlayToEnd(self)
                 self.exitFullScreenIfNeeded()
-            }.store(in: &cancellables)
+            }.store(in: &engineCancellables)
 
             engine.presentationSizePublisher.sink { [weak self] size in
                 guard let self else { return }
                 self.orientationManager.presentationSize = size
                 self.controlOverlay?.player(self, didChangePresentationSize: size)
-            }.store(in: &cancellables)
+            }.store(in: &engineCancellables)
         }
 
         private func subscribeReachability() {
+            reachabilityCancellables.removeAll()
+
             ReachabilityMonitor.shared.statusPublisher.sink { [weak self] status in
                 guard let self else { return }
                 self.controlOverlay?.player(self, didChangeReachability: status)
-            }.store(in: &cancellables)
+            }.store(in: &reachabilityCancellables)
         }
 
         func setupNotification() {
             systemEventObserver?.stopObserving()
+            systemEventCancellables.removeAll()
             let observer = SystemEventObserver()
             systemEventObserver = observer
             observer.startObserving()
@@ -470,7 +484,7 @@
                 guard let self, self.pauseWhenAppResignActive else { return }
                 self.isPausedByEvent = true
                 self.engine.pause()
-            }.store(in: &cancellables)
+            }.store(in: &systemEventCancellables)
 
             observer.didBecomeActivePublisher.sink { [weak self] in
                 guard let self, self.isPausedByEvent else { return }
@@ -478,7 +492,7 @@
                 if self.engine.shouldAutoPlay {
                     self.engine.play()
                 }
-            }.store(in: &cancellables)
+            }.store(in: &systemEventCancellables)
         }
 
         private func configureVolume() {

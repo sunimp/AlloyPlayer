@@ -19,7 +19,7 @@
 
 ### 修复
 
-- 修复 Swift 6 并发检查下的 KVO 与关联对象 key 报警问题。
+- 修复较新 Swift 编译器检查下的 KVO 与关联对象 key 报警问题。
 
 ## [0.1.2] - 2026-05-08
 
@@ -69,4 +69,4 @@
 - **AlloySwiftUIControls**：`AlloyPlayerView`、`AlloyPlayerController`、`DefaultSwiftUIControlOverlayView`、`SwiftUIControlOverlay` 和 `SwiftUIControlOverlayState`，提供开箱即用和自定义 SwiftUI 控制层能力。
 - 所有播放状态、时间更新、缓冲进度、错误和方向变化均提供 Combine 发布者。
 - ScrollView/TableView/CollectionView 列表播放，滚动时自动播放/暂停。
-- Swift 6 严格并发支持，使用 `@MainActor` 隔离和 `Sendable` 一致性。
+- SwiftPM 5.10 支持，UI 相关类型使用 `@MainActor` 隔离。
