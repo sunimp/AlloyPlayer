@@ -1,7 +1,7 @@
 # AlloyPlayer
 
 [![CI](https://github.com/sunimp/AlloyPlayer/actions/workflows/ci.yml/badge.svg)](https://github.com/sunimp/AlloyPlayer/actions/workflows/ci.yml)
-[![Release](https://github.com/sunimp/AlloyPlayer/actions/workflows/release.yml/badge.svg)](https://github.com/sunimp/AlloyPlayer/actions/workflows/release.yml)
+[![Release](https://img.shields.io/github/v/release/sunimp/AlloyPlayer?include_prereleases&sort=semver)](https://github.com/sunimp/AlloyPlayer/releases)
 [![Swift](https://img.shields.io/badge/SwiftPM-5.10+-orange.svg)](Package.swift)
 [![Platforms](https://img.shields.io/badge/platform-iOS%2015%2B%20%7C%20macOS%2012%2B-lightgrey.svg)](Package.swift)
 [![SPM](https://img.shields.io/badge/SPM-compatible-brightgreen.svg)](Package.swift)
