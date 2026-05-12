@@ -5,6 +5,7 @@
 //  Created by Sun on 2026/4/14.
 //
 
+import AlloyHTTPMediaCacheSupport
 import AlloyPlayer
 import Combine
 import UIKit
@@ -47,6 +48,7 @@ final class BasicPlaybackViewController: UIViewController {
     private var player: Player?
     private let controlOverlay = DefaultControlOverlay()
     private var cancellables = Set<AnyCancellable>()
+    private var playbackTask: Task<Void, Never>?
 
     // MARK: - 状态数据
 
@@ -56,6 +58,10 @@ final class BasicPlaybackViewController: UIViewController {
     private var totalTime: TimeInterval = 0
     private var bufferTime: TimeInterval = 0
     private var presentationSize: CGSize = .zero
+    private var isHTTPMediaCacheEnabled = false
+    private var currentPlaybackURL: URL?
+    private var playbackErrorText: String?
+    private var currentVideoIndex = 0
 
     private var selectedSampleGroup: VideoSampleGroup = .hls
     private var videos: [VideoItem] {
@@ -84,6 +90,7 @@ final class BasicPlaybackViewController: UIViewController {
 
     deinit {
         MainActor.assumeIsolated {
+            playbackTask?.cancel()
             player?.stop()
         }
     }
@@ -177,10 +184,41 @@ final class BasicPlaybackViewController: UIViewController {
     }
 
     private func playVideo(at index: Int) {
+        currentVideoIndex = index
+        playbackTask?.cancel()
+
         let video = videos[index]
+        currentPlaybackURL = nil
+        playbackErrorText = nil
         controlOverlay.resetControlView()
         controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
-        player?.assetURL = video.url
+        reloadStatusRow(6)
+
+        guard isHTTPMediaCacheEnabled else {
+            currentPlaybackURL = video.url
+            player?.assetURL = video.url
+            reloadStatusRow(6)
+            return
+        }
+
+        playbackTask = Task { [weak self, weak player] in
+            guard let self, let player else { return }
+            do {
+                let proxyURL = try await AlloyHTTPMediaCacheSupport.prepare(
+                    player: player,
+                    originalURL: video.url,
+                    configuration: .default
+                )
+                guard !Task.isCancelled else { return }
+                currentPlaybackURL = proxyURL
+            } catch {
+                guard !Task.isCancelled else { return }
+                currentPlaybackURL = video.url
+                playbackErrorText = "缓存代理失败，已直连播放：\(error.localizedDescription)"
+                player.assetURL = video.url
+            }
+            reloadStatusRow(6)
+        }
     }
 
     @objc private func sampleGroupChanged(_ sender: UISegmentedControl) {
@@ -188,6 +226,12 @@ final class BasicPlaybackViewController: UIViewController {
         selectedSampleGroup = group
         tableView.reloadSections(IndexSet(integer: 1), with: .automatic)
         playVideo(at: 0)
+    }
+
+    @objc private func httpMediaCacheSwitchChanged(_ sender: UISwitch) {
+        isHTTPMediaCacheEnabled = sender.isOn
+        tableView.reloadRows(at: [IndexPath(row: 5, section: 0)], with: .none)
+        playVideo(at: currentVideoIndex)
     }
 
     // MARK: - 辅助
@@ -210,6 +254,16 @@ final class BasicPlaybackViewController: UIViewController {
         if loadState.contains(.stalled) { parts.append("卡顿") }
         return parts.isEmpty ? "未知" : parts.joined(separator: " | ")
     }
+
+    private func currentPlaybackURLText() -> String {
+        if let playbackErrorText {
+            return playbackErrorText
+        }
+        guard let currentPlaybackURL else {
+            return isHTTPMediaCacheEnabled ? "正在生成缓存代理 URL" : "未开始"
+        }
+        return currentPlaybackURL.absoluteString
+    }
 }
 
 // MARK: - UITableViewDataSource
@@ -224,12 +278,14 @@ extension BasicPlaybackViewController: UITableViewDataSource {
     }
 
     func tableView(_: UITableView, numberOfRowsInSection section: Int) -> Int {
-        section == 0 ? 5 : videos.count
+        section == 0 ? 7 : videos.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         if indexPath.section == 0 {
             let cell = tableView.dequeueReusableCell(withIdentifier: "StatusCell", for: indexPath)
+            cell.accessoryView = nil
+            cell.selectionStyle = .none
             var config = cell.defaultContentConfiguration()
             switch indexPath.row {
             case 0:
@@ -249,15 +305,25 @@ extension BasicPlaybackViewController: UITableViewDataSource {
             case 4:
                 config.text = "视频尺寸"
                 config.secondaryText = "\(Int(presentationSize.width)) × \(Int(presentationSize.height))"
+            case 5:
+                config.text = "HTTPMediaCache"
+                config.secondaryText = isHTTPMediaCacheEnabled ? "开启，播放前转换为本地代理 URL" : "关闭，直接播放原始 URL"
+                let toggle = UISwitch()
+                toggle.isOn = isHTTPMediaCacheEnabled
+                toggle.addTarget(self, action: #selector(httpMediaCacheSwitchChanged(_:)), for: .valueChanged)
+                cell.accessoryView = toggle
+            case 6:
+                config.text = "当前播放 URL"
+                config.secondaryText = currentPlaybackURLText()
             default:
                 break
             }
             config.secondaryTextProperties.color = .secondaryLabel
             cell.contentConfiguration = config
-            cell.selectionStyle = .none
             return cell
         } else {
             let cell = tableView.dequeueReusableCell(withIdentifier: "VideoCell", for: indexPath)
+            cell.accessoryView = nil
             let video = videos[indexPath.row]
             var config = cell.defaultContentConfiguration()
             config.text = video.title

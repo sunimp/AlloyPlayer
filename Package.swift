@@ -1,4 +1,4 @@
-// swift-tools-version: 6.3
+// swift-tools-version: 5.10
 
 import PackageDescription
 
@@ -12,14 +12,25 @@ let package = Package(
         .library(name: "AlloyPlayer", targets: ["AlloyPlayer"]),
         .library(name: "AlloyCore", targets: ["AlloyCore"]),
         .library(name: "AlloyAVPlayer", targets: ["AlloyAVPlayer"]),
+        .library(name: "AlloyHTTPMediaCacheSupport", targets: ["AlloyHTTPMediaCacheSupport"]),
         .library(name: "AlloyUIKitControls", targets: ["AlloyUIKitControls"]),
         .library(name: "AlloySwiftUIControls", targets: ["AlloySwiftUIControls"]),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/sunimp/HTTPMediaCache.git", from: "1.0.0"),
     ],
     targets: [
         .target(name: "AlloyCore"),
         .target(
             name: "AlloyAVPlayer",
             dependencies: ["AlloyCore"]
+        ),
+        .target(
+            name: "AlloyHTTPMediaCacheSupport",
+            dependencies: [
+                "AlloyCore",
+                .product(name: "HTTPMediaCache", package: "HTTPMediaCache"),
+            ]
         ),
         .target(
             name: "AlloyUIKitControls",
@@ -42,6 +53,13 @@ let package = Package(
             dependencies: ["AlloyAVPlayer"]
         ),
         .testTarget(
+            name: "AlloyHTTPMediaCacheSupportTests",
+            dependencies: [
+                "AlloyHTTPMediaCacheSupport",
+                .product(name: "HTTPMediaCache", package: "HTTPMediaCache"),
+            ]
+        ),
+        .testTarget(
             name: "AlloyUIKitControlsTests",
             dependencies: ["AlloyUIKitControls"]
         ),
@@ -49,6 +67,5 @@ let package = Package(
             name: "AlloySwiftUIControlsTests",
             dependencies: ["AlloySwiftUIControls"]
         ),
-    ],
-    swiftLanguageModes: [.v6]
+    ]
 )

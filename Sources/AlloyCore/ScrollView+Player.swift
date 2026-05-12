@@ -15,10 +15,10 @@
         // MARK: - Associated Keys
 
         private enum AssociatedKeys {
-            nonisolated(unsafe) static var scrollViewDirection = "alloy_scrollViewDirection"
-            nonisolated(unsafe) static var lastOffsetY = "alloy_lastOffsetY"
-            nonisolated(unsafe) static var lastOffsetX = "alloy_lastOffsetX"
-            nonisolated(unsafe) static var scrollDirection = "alloy_scrollDirection"
+            nonisolated(unsafe) static var scrollViewDirection: UInt8 = 0
+            nonisolated(unsafe) static var lastOffsetY: UInt8 = 0
+            nonisolated(unsafe) static var lastOffsetX: UInt8 = 0
+            nonisolated(unsafe) static var scrollDirection: UInt8 = 0
         }
 
         // MARK: - 公开属性

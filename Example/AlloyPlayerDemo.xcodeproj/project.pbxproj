@@ -10,6 +10,7 @@
 		0872FB6609812D8CA318BC5C /* CollectionViewPlaybackViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07FDD6AF2EB6E2EFD3812E5D /* CollectionViewPlaybackViewController.swift */; };
 		169AC89463B0C43121465489 /* HomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AE08AF18B115785572E8B03 /* HomeViewController.swift */; };
 		2A70653FA84EA08E2467EF7C /* AlloyPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = 526831B0AF8E71E9F9D796AB /* AlloyPlayer */; };
+		3B29E75B5E8095F5BA0F10CB /* AlloyHTTPMediaCacheSupport in Frameworks */ = {isa = PBXBuildFile; productRef = C6F7C187A70E4269A1B23F9E /* AlloyHTTPMediaCacheSupport */; };
 		487ABEC5150EC9104404A7B2 /* SwiftUIControlsDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF38AD5301120C405DCB35A6 /* SwiftUIControlsDemoView.swift */; };
 		4E548CF0D07EE37D54B2ACEE /* CHTCollectionViewWaterfallLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 055BDAC766745B20E03796EE /* CHTCollectionViewWaterfallLayout.swift */; };
 		576CC73C1BADA9309AFAE5C8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 016A13F4AE1329E2704CE081 /* SceneDelegate.swift */; };
@@ -60,6 +61,7 @@
 			files = (
 				AE9431EBDCBA8D07879EC6A6 /* LookInsideServer in Frameworks */,
 				2A70653FA84EA08E2467EF7C /* AlloyPlayer in Frameworks */,
+				3B29E75B5E8095F5BA0F10CB /* AlloyHTTPMediaCacheSupport in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -239,6 +241,7 @@
 			packageProductDependencies = (
 				01D791FF6030AC7C44AB0E66 /* LookInsideServer */,
 				526831B0AF8E71E9F9D796AB /* AlloyPlayer */,
+				C6F7C187A70E4269A1B23F9E /* AlloyHTTPMediaCacheSupport */,
 			);
 			productName = AlloyPlayerDemo;
 			productReference = A5D39E4BD1348B8DA507E950 /* AlloyPlayerDemo.app */;
@@ -527,6 +530,10 @@
 		526831B0AF8E71E9F9D796AB /* AlloyPlayer */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = AlloyPlayer;
+		};
+		C6F7C187A70E4269A1B23F9E /* AlloyHTTPMediaCacheSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AlloyHTTPMediaCacheSupport;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

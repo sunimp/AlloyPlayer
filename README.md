@@ -1,11 +1,11 @@
 # AlloyPlayer
 
-[![Swift 6.0+](https://img.shields.io/badge/Swift-6.0+-F05138.svg)](https://swift.org)
+[![SwiftPM 5.10+](https://img.shields.io/badge/SwiftPM-5.10+-F05138.svg)](https://swift.org/package-manager/)
 [![Platform iOS 15.0+](https://img.shields.io/badge/Platform-iOS%2015.0+-007AFF.svg)](https://developer.apple.com/ios/)
 [![License MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![SPM Compatible](https://img.shields.io/badge/SPM-Compatible-brightgreen.svg)](https://swift.org/package-manager/)
 
-一个现代的纯 Swift 视频播放器框架。基于 [ZFPlayer](https://github.com/renzifeng/ZFPlayer) 进行重写，采用 Swift 6 并发、Combine 事件流和模块化 SPM 架构。
+一个现代的纯 Swift 视频播放器框架。基于 [ZFPlayer](https://github.com/renzifeng/ZFPlayer) 进行重写，采用并发风格的 Swift 实现、Combine 事件流和模块化 SPM 架构。
 
 ## 特性
 
@@ -18,7 +18,7 @@
 - 网络可达性监控（WiFi / 2G / 3G / 4G / 5G）
 - 列表播放的浮动画中画窗口
 - 所有事件均提供 Combine 发布者
-- Swift 6 严格并发安全
+- 并发隔离和主线程语义明确
 
 ## 截图
 
@@ -33,7 +33,7 @@
 ## 系统要求
 
 - iOS 15.0+
-- Swift 6.0+
+- SwiftPM 5.10+
 - Xcode 16.0+
 
 ## 安装
@@ -81,6 +81,23 @@ dependencies: [
 ])
 ```
 
+**可选模块 — HTTPMediaCache 支持：**
+
+`AlloyHTTPMediaCacheSupport` 是独立可选产品，不会被 `AlloyPlayer` 或 `AlloyAVPlayer` 默认依赖。
+
+```swift
+.package(url: "https://github.com/sunimp/HTTPMediaCache.git", from: "1.0.0")
+```
+
+使用时在业务 target 中显式添加：
+
+```swift
+.target(name: "YourApp", dependencies: [
+    .product(name: "AlloyPlayer", package: "AlloyPlayer"),
+    .product(name: "AlloyHTTPMediaCacheSupport", package: "AlloyPlayer"),
+])
+```
+
 ## 快速开始
 
 ### 基本播放
@@ -120,6 +137,42 @@ class PlayerViewController: UIViewController {
     }
 }
 ```
+
+### HTTPMediaCache 缓存播放
+
+```swift
+import AlloyHTTPMediaCacheSupport
+import AlloyPlayer
+
+let originalURL = URL(string: "https://example.com/video.mp4")!
+
+Task {
+    let configuration = AlloyHTTPMediaCacheConfiguration(
+        requestHeaders: [
+            "Authorization": "Bearer token",
+        ]
+    )
+
+    let proxyURL = try await AlloyHTTPMediaCacheSupport.prepare(
+        player: player,
+        originalURL: originalURL,
+        configuration: configuration
+    )
+    print("使用代理 URL 播放：\(proxyURL)")
+}
+```
+
+如果业务只需要代理 URL，也可以自行赋值：
+
+```swift
+let proxyURL = try await AlloyHTTPMediaCacheSupport.proxyURL(
+    for: originalURL,
+    configuration: .default
+)
+player.assetURL = proxyURL
+```
+
+AVPlayer 访问的是本地代理 URL，源站请求由 HTTPMediaCache 发出。需要鉴权或追踪头时，应通过 `AlloyHTTPMediaCacheConfiguration.requestHeaders` 显式下发到下载链路。`configureRequestHeaders(_:)` 仍保留给需要手动管理全局下载头的场景。
 
 ### SwiftUI 播放
 

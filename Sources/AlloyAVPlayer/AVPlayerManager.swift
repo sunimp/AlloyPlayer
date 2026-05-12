@@ -298,63 +298,73 @@
             kvoManager = KVOManager()
 
             kvoManager.observe(item, keyPath: \.status) { [weak self] _, _ in
-                guard let self else { return }
-                switch item.status {
-                case .readyToPlay:
-                    self.isReadyToPlay = true
-                    self.isPreparedToPlay = true
-                    self.totalTime = CMTimeGetSeconds(item.duration)
-                    self.loadState = .playable
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    switch item.status {
+                    case .readyToPlay:
+                        self.isReadyToPlay = true
+                        self.isPreparedToPlay = true
+                        self.totalTime = CMTimeGetSeconds(item.duration)
+                        self.loadState = .playable
 
-                    if self.seekTime > 0 {
-                        Task { [weak self] in
-                            guard let self else { return }
-                            _ = await self.seek(to: self.seekTime)
-                            self.seekTime = 0
+                        if self.seekTime > 0 {
+                            Task { [weak self] in
+                                guard let self else { return }
+                                _ = await self.seek(to: self.seekTime)
+                                self.seekTime = 0
+                            }
                         }
-                    }
 
-                    if let url = self.assetURL {
-                        self._readyToPlay.send(url)
-                    }
+                        if let url = self.assetURL {
+                            self._readyToPlay.send(url)
+                        }
 
-                    if self.shouldAutoPlay {
-                        self.play()
-                    }
+                        if self.shouldAutoPlay {
+                            self.play()
+                        }
 
-                case .failed:
-                    self.playbackState = .failed
-                    if let error = item.error {
-                        self._playFailed.send(error)
-                    }
+                    case .failed:
+                        self.playbackState = .failed
+                        if let error = item.error {
+                            self._playFailed.send(error)
+                        }
 
-                default:
-                    break
+                    default:
+                        break
+                    }
                 }
             }
 
             kvoManager.observe(item, keyPath: \.isPlaybackBufferEmpty) { [weak self] _, _ in
-                guard let self, item.isPlaybackBufferEmpty else { return }
-                self.loadState = .stalled
-                self.bufferingSomeSecond()
+                MainActor.assumeIsolated {
+                    guard let self, item.isPlaybackBufferEmpty else { return }
+                    self.loadState = .stalled
+                    self.bufferingSomeSecond()
+                }
             }
 
             kvoManager.observe(item, keyPath: \.isPlaybackLikelyToKeepUp) { [weak self] _, _ in
-                guard let self, item.isPlaybackLikelyToKeepUp else { return }
-                self.loadState = [.playable, .playthroughOK]
-                if self.isPlaying {
-                    self.player?.play()
+                MainActor.assumeIsolated {
+                    guard let self, item.isPlaybackLikelyToKeepUp else { return }
+                    self.loadState = [.playable, .playthroughOK]
+                    if self.isPlaying {
+                        self.player?.play()
+                    }
                 }
             }
 
             kvoManager.observe(item, keyPath: \.loadedTimeRanges) { [weak self] _, _ in
-                self?.updateBufferTime()
+                MainActor.assumeIsolated {
+                    self?.updateBufferTime()
+                }
             }
 
             kvoManager.observe(item, keyPath: \.presentationSize) { [weak self] _, _ in
-                guard let self else { return }
-                self.presentationSize = item.presentationSize
-                self.renderView.presentationSize = item.presentationSize
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.presentationSize = item.presentationSize
+                    self.renderView.presentationSize = item.presentationSize
+                }
             }
         }
 

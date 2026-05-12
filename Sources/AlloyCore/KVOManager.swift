@@ -26,7 +26,7 @@ public final class KVOManager {
         _ object: Object,
         keyPath: KeyPath<Object, Value>,
         options: NSKeyValueObservingOptions = [.new],
-        handler: @escaping (Object, NSKeyValueObservedChange<Value>) -> Void
+        handler: @escaping @Sendable (Object, NSKeyValueObservedChange<Value>) -> Void
     ) {
         let observation = object.observe(keyPath, options: options, changeHandler: handler)
         observations.append(observation)

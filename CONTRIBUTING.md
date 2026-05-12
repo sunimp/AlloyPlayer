@@ -71,7 +71,7 @@ swift test
 
 - macOS 13.0+（开发主机）
 - Xcode 16.0+
-- Swift 6.0+
+- SwiftPM 5.10+
 
 ## 模块结构
 
