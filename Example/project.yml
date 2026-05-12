@@ -35,3 +35,6 @@ targets:
       - package: LookInside
         product: LookInsideServer
       - package: AlloyPlayer
+        product: AlloyPlayer
+      - package: AlloyPlayer
+        product: AlloyHTTPMediaCacheSupport

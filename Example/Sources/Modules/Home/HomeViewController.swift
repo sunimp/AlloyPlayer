@@ -46,6 +46,11 @@ final class HomeViewController: UITableViewController {
             viewControllerFactory: { CollectionViewPlaybackViewController() }
         ),
         DemoItem(
+            title: "浮动小窗",
+            subtitle: "播放器渲染面在页面容器与小窗之间迁移",
+            viewControllerFactory: { FloatingPlaybackDemoViewController() }
+        ),
+        DemoItem(
             title: "全屏模式",
             subtitle: "横屏、竖屏、自动全屏与锁屏",
             viewControllerFactory: { FullScreenModesViewController() }

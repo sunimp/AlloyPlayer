@@ -8,9 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		0872FB6609812D8CA318BC5C /* CollectionViewPlaybackViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07FDD6AF2EB6E2EFD3812E5D /* CollectionViewPlaybackViewController.swift */; };
+		1375A876E50577F282BFABD1 /* AlloyHTTPMediaCacheSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 67C972585E6C913568A8FAF1 /* AlloyHTTPMediaCacheSupport */; };
 		169AC89463B0C43121465489 /* HomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AE08AF18B115785572E8B03 /* HomeViewController.swift */; };
 		2A70653FA84EA08E2467EF7C /* AlloyPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = 526831B0AF8E71E9F9D796AB /* AlloyPlayer */; };
-		3B29E75B5E8095F5BA0F10CB /* AlloyHTTPMediaCacheSupport in Frameworks */ = {isa = PBXBuildFile; productRef = C6F7C187A70E4269A1B23F9E /* AlloyHTTPMediaCacheSupport */; };
 		487ABEC5150EC9104404A7B2 /* SwiftUIControlsDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF38AD5301120C405DCB35A6 /* SwiftUIControlsDemoView.swift */; };
 		4E548CF0D07EE37D54B2ACEE /* CHTCollectionViewWaterfallLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 055BDAC766745B20E03796EE /* CHTCollectionViewWaterfallLayout.swift */; };
 		576CC73C1BADA9309AFAE5C8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 016A13F4AE1329E2704CE081 /* SceneDelegate.swift */; };
@@ -24,6 +24,7 @@
 		A0DABFB585DC396FB5B03885 /* CustomControlOverlayViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 576DC5944A78F42717EDB103 /* CustomControlOverlayViewController.swift */; };
 		AE9431EBDCBA8D07879EC6A6 /* LookInsideServer in Frameworks */ = {isa = PBXBuildFile; productRef = 01D791FF6030AC7C44AB0E66 /* LookInsideServer */; };
 		AF205196F5BEE8E2E546F5B6 /* MinimalControlOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA66B7998FE7CBE9B58EC163 /* MinimalControlOverlay.swift */; };
+		B0B733E43BF3D4F4422F5D25 /* FloatingPlaybackDemoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0FC5D6E3794C8DD9772CBC1 /* FloatingPlaybackDemoViewController.swift */; };
 		B4F7673BF47E4F3B95C4FE29 /* FullScreenModesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 339A73F44AA874176CAFE7E3 /* FullScreenModesViewController.swift */; };
 		B81EF358C3CF0CA7FDE2744F /* BasicPlaybackViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59C926FD23ED839DDD9BC823 /* BasicPlaybackViewController.swift */; };
 		D195B1B0B65CEC81B8888BB5 /* SwiftUIControlsDemoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 277DCC8F385336B06DC254AC /* SwiftUIControlsDemoViewController.swift */; };
@@ -43,11 +44,12 @@
 		339A73F44AA874176CAFE7E3 /* FullScreenModesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullScreenModesViewController.swift; sourceTree = "<group>"; };
 		576DC5944A78F42717EDB103 /* CustomControlOverlayViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomControlOverlayViewController.swift; sourceTree = "<group>"; };
 		59C926FD23ED839DDD9BC823 /* BasicPlaybackViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicPlaybackViewController.swift; sourceTree = "<group>"; };
-		5C3549474019250DFCD73531 /* AlloyPlayer */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AlloyPlayer; path = ..; sourceTree = SOURCE_ROOT; };
+		7D07E383B421AE2ECFAC092A /* architecture-optimization */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "architecture-optimization"; path = ..; sourceTree = SOURCE_ROOT; };
 		8F936FE579F5B25987519651 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		97158D5C9586386143867E11 /* VideoCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCollectionViewCell.swift; sourceTree = "<group>"; };
 		9AE08AF18B115785572E8B03 /* HomeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewController.swift; sourceTree = "<group>"; };
 		A5D39E4BD1348B8DA507E950 /* AlloyPlayerDemo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AlloyPlayerDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B0FC5D6E3794C8DD9772CBC1 /* FloatingPlaybackDemoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPlaybackDemoViewController.swift; sourceTree = "<group>"; };
 		B6D8A2ABF32FA8A2B26721E0 /* ShortVideoFeedViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortVideoFeedViewController.swift; sourceTree = "<group>"; };
 		BA66B7998FE7CBE9B58EC163 /* MinimalControlOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinimalControlOverlay.swift; sourceTree = "<group>"; };
 		DE8E4AA58ACF5D20453C0ADD /* VideoResource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoResource.swift; sourceTree = "<group>"; };
@@ -61,7 +63,7 @@
 			files = (
 				AE9431EBDCBA8D07879EC6A6 /* LookInsideServer in Frameworks */,
 				2A70653FA84EA08E2467EF7C /* AlloyPlayer in Frameworks */,
-				3B29E75B5E8095F5BA0F10CB /* AlloyHTTPMediaCacheSupport in Frameworks */,
+				1375A876E50577F282BFABD1 /* AlloyHTTPMediaCacheSupport in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -71,7 +73,7 @@
 		0342BD86EEEED0951A7740BD /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				5C3549474019250DFCD73531 /* AlloyPlayer */,
+				7D07E383B421AE2ECFAC092A /* architecture-optimization */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -111,6 +113,7 @@
 				F6193010AF22FB7E9CE4142E /* BasicPlayback */,
 				B65D2175C3458A6380596D15 /* CollectionViewPlayback */,
 				9B43BAC5E374478999CC362E /* CustomControlOverlay */,
+				41453C5CF3F62E3A181FA1C2 /* FloatingPlayback */,
 				56F6CBD077AE3288F7299DD4 /* FullScreenModes */,
 				F045C119D98FC875CDDCFBA8 /* Home */,
 				AC6D878AFFA65C248413A405 /* PlaybackSettings */,
@@ -127,6 +130,14 @@
 				A5D39E4BD1348B8DA507E950 /* AlloyPlayerDemo.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		41453C5CF3F62E3A181FA1C2 /* FloatingPlayback */ = {
+			isa = PBXGroup;
+			children = (
+				B0FC5D6E3794C8DD9772CBC1 /* FloatingPlaybackDemoViewController.swift */,
+			);
+			path = FloatingPlayback;
 			sourceTree = "<group>";
 		};
 		56F6CBD077AE3288F7299DD4 /* FullScreenModes */ = {
@@ -241,7 +252,7 @@
 			packageProductDependencies = (
 				01D791FF6030AC7C44AB0E66 /* LookInsideServer */,
 				526831B0AF8E71E9F9D796AB /* AlloyPlayer */,
-				C6F7C187A70E4269A1B23F9E /* AlloyHTTPMediaCacheSupport */,
+				67C972585E6C913568A8FAF1 /* AlloyHTTPMediaCacheSupport */,
 			);
 			productName = AlloyPlayerDemo;
 			productReference = A5D39E4BD1348B8DA507E950 /* AlloyPlayerDemo.app */;
@@ -294,6 +305,7 @@
 				4E548CF0D07EE37D54B2ACEE /* CHTCollectionViewWaterfallLayout.swift in Sources */,
 				0872FB6609812D8CA318BC5C /* CollectionViewPlaybackViewController.swift in Sources */,
 				A0DABFB585DC396FB5B03885 /* CustomControlOverlayViewController.swift in Sources */,
+				B0B733E43BF3D4F4422F5D25 /* FloatingPlaybackDemoViewController.swift in Sources */,
 				B4F7673BF47E4F3B95C4FE29 /* FullScreenModesViewController.swift in Sources */,
 				169AC89463B0C43121465489 /* HomeViewController.swift in Sources */,
 				AF205196F5BEE8E2E546F5B6 /* MinimalControlOverlay.swift in Sources */,
@@ -531,7 +543,7 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = AlloyPlayer;
 		};
-		C6F7C187A70E4269A1B23F9E /* AlloyHTTPMediaCacheSupport */ = {
+		67C972585E6C913568A8FAF1 /* AlloyHTTPMediaCacheSupport */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = AlloyHTTPMediaCacheSupport;
 		};
