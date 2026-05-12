@@ -11,6 +11,15 @@ import UIKit
 
 /// 功能列表主页
 final class HomeViewController: UITableViewController {
+    // MARK: - 子视图
+
+    private lazy var httpMediaCacheSwitch: UISwitch = {
+        let toggle = UISwitch()
+        toggle.isOn = DemoPlaybackConfiguration.shared.isHTTPMediaCacheEnabled
+        toggle.addTarget(self, action: #selector(httpMediaCacheSwitchChanged(_:)), for: .valueChanged)
+        return toggle
+    }()
+
     // MARK: - 数据
 
     private struct DemoItem {
@@ -73,6 +82,51 @@ final class HomeViewController: UITableViewController {
         super.viewDidLoad()
         title = "AlloyPlayer Demo"
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
+        setupTableHeader()
+    }
+
+    // MARK: - 配置
+
+    private func setupTableHeader() {
+        let titleLabel = UILabel()
+        titleLabel.text = "HTTPMediaCache"
+        titleLabel.font = .preferredFont(forTextStyle: .headline)
+        titleLabel.textColor = .label
+
+        let subtitleLabel = UILabel()
+        subtitleLabel.text = "开启后，所有 Demo 播放前都会转换为本地缓存代理 URL；关闭则直接播放原始 URL。"
+        subtitleLabel.font = .preferredFont(forTextStyle: .footnote)
+        subtitleLabel.textColor = .secondaryLabel
+        subtitleLabel.numberOfLines = 0
+
+        let textStack = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
+        textStack.axis = .vertical
+        textStack.spacing = 4
+
+        let headerStack = UIStackView(arrangedSubviews: [textStack, httpMediaCacheSwitch])
+        headerStack.axis = .horizontal
+        headerStack.alignment = .center
+        headerStack.spacing = 16
+        headerStack.layoutMargins = UIEdgeInsets(top: 16, left: 20, bottom: 16, right: 20)
+        headerStack.isLayoutMarginsRelativeArrangement = true
+
+        let headerView = UIView()
+        headerView.addSubview(headerStack)
+        headerStack.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            headerStack.topAnchor.constraint(equalTo: headerView.topAnchor),
+            headerStack.leadingAnchor.constraint(equalTo: headerView.leadingAnchor),
+            headerStack.trailingAnchor.constraint(equalTo: headerView.trailingAnchor),
+            headerStack.bottomAnchor.constraint(equalTo: headerView.bottomAnchor),
+        ])
+
+        let fittingSize = CGSize(width: tableView.bounds.width, height: UIView.layoutFittingCompressedSize.height)
+        headerView.frame.size = headerView.systemLayoutSizeFitting(
+            fittingSize,
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel
+        )
+        tableView.tableHeaderView = headerView
     }
 
     // MARK: - UITableViewDataSource
@@ -101,5 +155,11 @@ final class HomeViewController: UITableViewController {
         vc.title = items[indexPath.row].title
         vc.hidesBottomBarWhenPushed = true
         navigationController?.pushViewController(vc, animated: true)
+    }
+
+    // MARK: - Actions
+
+    @objc private func httpMediaCacheSwitchChanged(_ sender: UISwitch) {
+        DemoPlaybackConfiguration.shared.isHTTPMediaCacheEnabled = sender.isOn
     }
 }

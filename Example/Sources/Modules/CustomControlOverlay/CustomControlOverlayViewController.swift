@@ -62,6 +62,7 @@ final class CustomControlOverlayViewController: UIViewController {
 
     private var player: Player?
     private let controlOverlay = MinimalControlOverlay()
+    private var playbackTask: Task<Void, Never>?
     private var selectedSampleGroup: VideoSampleGroup = .hls
     private var currentSampleIndex = 0
     private var currentSamples: [VideoItem] {
@@ -89,6 +90,7 @@ final class CustomControlOverlayViewController: UIViewController {
 
     deinit {
         MainActor.assumeIsolated {
+            playbackTask?.cancel()
             player?.stop()
         }
     }
@@ -134,7 +136,16 @@ final class CustomControlOverlayViewController: UIViewController {
 
     private func playCurrentVideo() {
         guard currentSamples.indices.contains(currentSampleIndex) else { return }
-        player?.assetURL = currentSamples[currentSampleIndex].url
+        let video = currentSamples[currentSampleIndex]
+        playbackTask?.cancel()
+        playbackTask = Task { @MainActor [weak player] in
+            guard let player else { return }
+            do {
+                _ = try await player.prepareDemoPlayback(originalURL: video.url)
+            } catch {
+                player.assetURL = video.url
+            }
+        }
     }
 
     @objc private func sampleGroupChanged(_ sender: UISegmentedControl) {

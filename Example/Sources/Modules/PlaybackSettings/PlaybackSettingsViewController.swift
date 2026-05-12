@@ -44,6 +44,7 @@ final class PlaybackSettingsViewController: UIViewController {
     private var selectedFullScreenMode: FullScreenMode = .automatic
     private var disabledGestureTypes: DisableGestureTypes = []
     private var disabledPanMovingDirection: DisablePanMovingDirection = []
+    private var playbackTask: Task<Void, Never>?
     private var isMuted = false
     private var pauseWhenAppResignActive = true
     private var exitFullScreenWhenStop = true
@@ -72,6 +73,7 @@ final class PlaybackSettingsViewController: UIViewController {
 
     deinit {
         MainActor.assumeIsolated {
+            playbackTask?.cancel()
             player?.stop()
         }
     }
@@ -115,7 +117,16 @@ final class PlaybackSettingsViewController: UIViewController {
         applyPlaybackConfiguration()
         controlOverlay.resetControlView()
         controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: selectedFullScreenMode)
-        player?.assetURL = video.url
+        playbackTask?.cancel()
+        playbackTask = Task { @MainActor [weak self, weak player] in
+            guard let self, let player else { return }
+            do {
+                _ = try await player.prepareDemoPlayback(originalURL: video.url)
+            } catch {
+                player.assetURL = video.url
+            }
+            applyPlaybackConfiguration()
+        }
         applyPlaybackConfiguration()
     }
 

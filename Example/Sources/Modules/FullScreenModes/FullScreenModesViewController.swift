@@ -44,6 +44,7 @@ final class FullScreenModesViewController: UIViewController {
     private var player: Player?
     private let controlOverlay = DefaultControlOverlay()
     private var cancellables = Set<AnyCancellable>()
+    private var playbackTask: Task<Void, Never>?
     private var selectedSampleGroup: VideoSampleGroup = .hls
     private var currentSampleIndex = 0
     private var currentSamples: [VideoItem] {
@@ -72,6 +73,7 @@ final class FullScreenModesViewController: UIViewController {
 
     deinit {
         MainActor.assumeIsolated {
+            playbackTask?.cancel()
             player?.stop()
         }
     }
@@ -137,7 +139,15 @@ final class FullScreenModesViewController: UIViewController {
         let video = currentSamples[currentSampleIndex]
         controlOverlay.resetControlView()
         controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
-        player?.assetURL = video.url
+        playbackTask?.cancel()
+        playbackTask = Task { @MainActor [weak player] in
+            guard let player else { return }
+            do {
+                _ = try await player.prepareDemoPlayback(originalURL: video.url)
+            } catch {
+                player.assetURL = video.url
+            }
+        }
         updateStatusLabel()
     }
 

@@ -60,6 +60,7 @@ final class FloatingPlaybackDemoViewController: UIViewController {
     private var player: Player?
     private var floatingPlayback: FloatingPlaybackCoordinator?
     private let controlOverlay = DefaultControlOverlay()
+    private var playbackTask: Task<Void, Never>?
     private let video = VideoResource.mp4Samples[0]
 
     // MARK: - 生命周期
@@ -84,6 +85,7 @@ final class FloatingPlaybackDemoViewController: UIViewController {
 
     deinit {
         MainActor.assumeIsolated {
+            playbackTask?.cancel()
             floatingPlayback?.hide()
             player?.stop()
         }
@@ -133,10 +135,17 @@ final class FloatingPlaybackDemoViewController: UIViewController {
         let player = Player(engine: engine, containerView: playerContainerView)
         player.controlOverlay = controlOverlay
         player.addDeviceOrientationObserver()
-        player.assetURL = video.url
         self.player = player
 
         controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
+        playbackTask = Task { @MainActor [weak player] in
+            guard let player else { return }
+            do {
+                _ = try await player.prepareDemoPlayback(originalURL: video.url)
+            } catch {
+                player.assetURL = video.url
+            }
+        }
 
         floatingPlayback = FloatingPlaybackCoordinator(
             player: player,

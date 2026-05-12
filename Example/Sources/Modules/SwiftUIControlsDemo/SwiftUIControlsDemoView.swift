@@ -14,6 +14,7 @@ import UIKit
 /// SwiftUI 控制层演示
 struct SwiftUIControlsDemoView: View {
     @State private var selectedIndex = 0
+    @State private var playbackURL: URL?
     @State private var controlMode: SwiftUIControlMode = .defaultControls
     @StateObject private var controller = AlloyPlayerController()
 
@@ -66,19 +67,32 @@ struct SwiftUIControlsDemoView: View {
             }
         }
         .background(Color(uiColor: .systemBackground))
+        .task(id: selectedIndex) {
+            await resolvePlaybackURL()
+        }
     }
 
     @ViewBuilder
     private var playerView: some View {
         switch controlMode {
         case .defaultControls:
-            AlloyPlayerView(url: videos[selectedIndex].url, controller: controller)
+            AlloyPlayerView(url: playbackURL, controller: controller)
                 .scalingMode(.aspectFit)
         case .customControls:
-            AlloyPlayerView(url: videos[selectedIndex].url, controller: controller) { state in
+            AlloyPlayerView(url: playbackURL, controller: controller) { state in
                 CustomSwiftUIPlayerControls(video: videos[selectedIndex], state: state)
             }
             .scalingMode(.aspectFit)
+        }
+    }
+
+    @MainActor
+    private func resolvePlaybackURL() async {
+        let originalURL = videos[selectedIndex].url
+        do {
+            playbackURL = try await DemoPlaybackConfiguration.shared.playbackURL(for: originalURL)
+        } catch {
+            playbackURL = originalURL
         }
     }
 }

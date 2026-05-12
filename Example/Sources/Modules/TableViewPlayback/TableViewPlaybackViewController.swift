@@ -31,6 +31,7 @@ final class TableViewPlaybackViewController: UIViewController {
     private var player: Player?
     private let controlOverlay = DefaultControlOverlay()
     private var cancellables = Set<AnyCancellable>()
+    private var playbackTask: Task<Void, Never>?
 
     private let videos = VideoResource.allSamples
 
@@ -55,6 +56,7 @@ final class TableViewPlaybackViewController: UIViewController {
 
     deinit {
         MainActor.assumeIsolated {
+            playbackTask?.cancel()
             player?.stop()
         }
     }
@@ -125,6 +127,15 @@ extension TableViewPlaybackViewController: UITableViewDelegate {
         let video = videos[indexPath.row]
         controlOverlay.resetControlView()
         controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
-        player?.play(at: indexPath, assetURL: video.url)
+        playbackTask?.cancel()
+        playbackTask = Task { @MainActor [weak player] in
+            guard let player else { return }
+            do {
+                let playbackURL = try await player.prepareDemoPlayback(originalURL: video.url)
+                player.play(at: indexPath, assetURL: playbackURL)
+            } catch {
+                player.play(at: indexPath, assetURL: video.url)
+            }
+        }
     }
 }

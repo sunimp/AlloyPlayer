@@ -58,6 +58,7 @@ final class ShortVideoFeedViewController: UIViewController {
 
     private var engine: AVPlayerManager?
     private var cancellables = Set<AnyCancellable>()
+    private var playbackTask: Task<Void, Never>?
     private var currentPlayingIndex: Int = -1
 
     // MARK: - 生命周期
@@ -102,6 +103,7 @@ final class ShortVideoFeedViewController: UIViewController {
 
     deinit {
         MainActor.assumeIsolated {
+            playbackTask?.cancel()
             engine?.stop()
         }
     }
@@ -166,7 +168,16 @@ final class ShortVideoFeedViewController: UIViewController {
         cell.hideCover()
 
         // 播放
-        engine?.assetURL = videos[index].url
+        playbackTask?.cancel()
+        let video = videos[index]
+        playbackTask = Task { @MainActor [weak self, weak engine] in
+            guard let self, let engine, self.currentPlayingIndex == index else { return }
+            do {
+                _ = try await engine.prepareDemoPlayback(originalURL: video.url)
+            } catch {
+                engine.assetURL = video.url
+            }
+        }
 
         // 订阅进度更新到当前 cell
         cancellables.removeAll()

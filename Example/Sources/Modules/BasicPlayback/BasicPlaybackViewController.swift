@@ -5,7 +5,6 @@
 //  Created by Sun on 2026/4/14.
 //
 
-import AlloyHTTPMediaCacheSupport
 import AlloyPlayer
 import Combine
 import UIKit
@@ -58,7 +57,6 @@ final class BasicPlaybackViewController: UIViewController {
     private var totalTime: TimeInterval = 0
     private var bufferTime: TimeInterval = 0
     private var presentationSize: CGSize = .zero
-    private var isHTTPMediaCacheEnabled = false
     private var currentPlaybackURL: URL?
     private var playbackErrorText: String?
     private var currentVideoIndex = 0
@@ -194,23 +192,12 @@ final class BasicPlaybackViewController: UIViewController {
         controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
         reloadStatusRow(6)
 
-        guard isHTTPMediaCacheEnabled else {
-            currentPlaybackURL = video.url
-            player?.assetURL = video.url
-            reloadStatusRow(6)
-            return
-        }
-
-        playbackTask = Task { [weak self, weak player] in
+        playbackTask = Task { @MainActor [weak self, weak player] in
             guard let self, let player else { return }
             do {
-                let proxyURL = try await AlloyHTTPMediaCacheSupport.prepare(
-                    player: player,
-                    originalURL: video.url,
-                    configuration: .default
-                )
+                let playbackURL = try await player.prepareDemoPlayback(originalURL: video.url)
                 guard !Task.isCancelled else { return }
-                currentPlaybackURL = proxyURL
+                currentPlaybackURL = playbackURL
             } catch {
                 guard !Task.isCancelled else { return }
                 currentPlaybackURL = video.url
@@ -226,12 +213,6 @@ final class BasicPlaybackViewController: UIViewController {
         selectedSampleGroup = group
         tableView.reloadSections(IndexSet(integer: 1), with: .automatic)
         playVideo(at: 0)
-    }
-
-    @objc private func httpMediaCacheSwitchChanged(_ sender: UISwitch) {
-        isHTTPMediaCacheEnabled = sender.isOn
-        tableView.reloadRows(at: [IndexPath(row: 5, section: 0)], with: .none)
-        playVideo(at: currentVideoIndex)
     }
 
     // MARK: - 辅助
@@ -260,7 +241,7 @@ final class BasicPlaybackViewController: UIViewController {
             return playbackErrorText
         }
         guard let currentPlaybackURL else {
-            return isHTTPMediaCacheEnabled ? "正在生成缓存代理 URL" : "未开始"
+            return DemoPlaybackConfiguration.shared.isHTTPMediaCacheEnabled ? "正在生成缓存代理 URL" : "未开始"
         }
         return currentPlaybackURL.absoluteString
     }
@@ -307,11 +288,7 @@ extension BasicPlaybackViewController: UITableViewDataSource {
                 config.secondaryText = "\(Int(presentationSize.width)) × \(Int(presentationSize.height))"
             case 5:
                 config.text = "HTTPMediaCache"
-                config.secondaryText = isHTTPMediaCacheEnabled ? "开启，播放前转换为本地代理 URL" : "关闭，直接播放原始 URL"
-                let toggle = UISwitch()
-                toggle.isOn = isHTTPMediaCacheEnabled
-                toggle.addTarget(self, action: #selector(httpMediaCacheSwitchChanged(_:)), for: .valueChanged)
-                cell.accessoryView = toggle
+                config.secondaryText = DemoPlaybackConfiguration.shared.isHTTPMediaCacheEnabled ? "开启，由首页全局开关控制" : "关闭，由首页全局开关控制"
             case 6:
                 config.text = "当前播放 URL"
                 config.secondaryText = currentPlaybackURLText()
