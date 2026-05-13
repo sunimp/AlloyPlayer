@@ -5,6 +5,7 @@
 //  Created by Sun on 2026/5/11.
 //
 
+import AlloyCore
 @testable import AlloyHTTPMediaCacheSupport
 import Foundation
 import HTTPMediaCache
@@ -83,5 +84,25 @@ struct AlloyHTTPMediaCacheSupportTests {
 
         #expect(await HTTPMediaCache.downloadAdditionalHeaders().isEmpty)
         #expect(await HTTPMediaCache.downloadWhitelistHeaderKeys().isEmpty)
+    }
+
+    @Test("代理播放源会清空交给本地代理的请求头")
+    func proxySourceReturnsProxyURLAndClearsPlaybackHeaders() async throws {
+        await HTTPMediaCache.stop()
+        let originalURL = try #require(URL(string: "https://example.com/source-video.mp4"))
+        let source = PlaybackSource(url: originalURL, headers: ["Authorization": "Bearer source"])
+        let configuration = AlloyHTTPMediaCacheConfiguration(requestHeaders: ["X-Trace-ID": "trace"])
+
+        let proxySource = try await AlloyHTTPMediaCacheSupport.proxySource(
+            for: source,
+            configuration: configuration
+        )
+
+        #expect(HTTPMediaCache.isProxyURL(proxySource.url))
+        #expect(proxySource.headers.isEmpty)
+        #expect(await HTTPMediaCache.downloadAdditionalHeaders() == [
+            "Authorization": "Bearer source",
+            "X-Trace-ID": "trace",
+        ])
     }
 }

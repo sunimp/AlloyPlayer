@@ -15,6 +15,7 @@
         public let session: PlaybackSession
         public let renderHostView: RenderHostView
         public var configuration: AlloyPlayerViewConfiguration
+        public var fullscreenCoordinator: FullscreenCoordinating?
         public var controlOverlay: (UIView & UIKitControlOverlay)? {
             didSet { installControlOverlay() }
         }
@@ -116,7 +117,9 @@
             case let .setScalingMode(scalingMode):
                 session.send(.setScalingMode(scalingMode))
             case .toggleFullscreen:
-                break
+                Task {
+                    await fullscreenCoordinator?.toggle(animated: true)
+                }
             }
         }
     }

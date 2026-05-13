@@ -42,9 +42,6 @@
         /// 手势管理器
         public private(set) var gestureManager = GestureManager()
 
-        /// 挂载模式
-        public private(set) var attachmentMode: AttachmentMode
-
         // MARK: - 播放状态
 
         /// 当前播放时间
@@ -284,54 +281,11 @@
         private let lifecycleCoordinator = PlayerLifecycleCoordinator()
         private static var playRecords: [String: TimeInterval] = [:]
 
-        // MARK: - 列表播放存储属性（供 Player+ScrollView 扩展使用）
-
-        weak var scrollView: UIScrollView?
-        var _containerViewTag: Int = 0
-        var _floatingView: FloatingView?
-        var _isFloatingViewVisible: Bool = false
-        var _shouldAutoPlay: Bool = true
-        var _autoPlayOnWWAN: Bool = false
-        var _playingIndexPath: IndexPath?
-        var _shouldPlayIndexPath: IndexPath?
-        var _stopWhileNotVisible: Bool = true
-        var _disappearPercent: CGFloat = 0.8
-        var _appearPercent: CGFloat = 0.0
-        var _sectionAssetURLs: [[URL]]?
-
-        /// 列表播放事件 Subjects
-        let _playerAppearing = PassthroughSubject<(IndexPath, CGFloat), Never>()
-        let _playerDisappearing = PassthroughSubject<(IndexPath, CGFloat), Never>()
-        let _playerWillAppear = PassthroughSubject<IndexPath, Never>()
-        let _playerDidAppear = PassthroughSubject<IndexPath, Never>()
-        let _playerWillDisappear = PassthroughSubject<IndexPath, Never>()
-        let _playerDidDisappear = PassthroughSubject<IndexPath, Never>()
-        let _scrollViewDidEndScrolling = PassthroughSubject<IndexPath, Never>()
-
         // MARK: - 初始化
 
         /// 普通模式初始化
         public init(engine: PlaybackEngine, containerView: UIView) {
             self.engine = engine
-            attachmentMode = .view
-            self.containerView = containerView
-            commonInit()
-        }
-
-        /// 列表模式初始化（通过 tag 查找容器）
-        public init(scrollView: UIScrollView, engine: PlaybackEngine, containerViewTag: Int) {
-            self.engine = engine
-            attachmentMode = .cell
-            self.scrollView = scrollView
-            _containerViewTag = containerViewTag
-            commonInit()
-        }
-
-        /// 列表模式初始化（直接传入容器）
-        public init(scrollView: UIScrollView, engine: PlaybackEngine, containerView: UIView) {
-            self.engine = engine
-            attachmentMode = .cell
-            self.scrollView = scrollView
             self.containerView = containerView
             commonInit()
         }

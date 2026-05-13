@@ -11,12 +11,10 @@
     import Testing
 
     @MainActor
-    @Test func umbrellaModuleProvidesDefaultSwiftUIAVPlayerEntryPoint() {
-        let url = URL(string: "https://example.invalid/video.mp4")
+    @Test func umbrellaModuleProvidesDefaultSessionFactory() {
+        let session = AlloyPlayerFactory.makeDefaultSession()
 
-        _ = AlloyPlayerView(url: url)
-        _ = AlloyPlayerView(url: url) { state in
-            Text(state.isPlaying ? "播放中" : "未播放")
-        }
+        #expect(session.engine is AVPlaybackEngine)
+        _ = AlloySwiftUIPlayerView(controller: AlloyPlayerController(session: session))
     }
 #endif

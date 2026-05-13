@@ -123,42 +123,6 @@ public struct DisablePortraitGestureTypes: OptionSet, Sendable {
     public static let all: DisablePortraitGestureTypes = [.tap, .pan]
 }
 
-// MARK: - 滚动视图相关
-
-/// 滚动方向
-public enum ScrollDirection: Int, Sendable {
-    case none
-    case up
-    case down
-    case left
-    case right
-}
-
-/// 滚动视图方向
-public enum ScrollViewDirection: Int, Sendable {
-    case vertical
-    case horizontal
-}
-
-/// 播放器挂载模式
-public enum AttachmentMode: Int, Sendable {
-    /// 挂载到普通视图
-    case view
-    /// 挂载到列表 Cell
-    case cell
-}
-
-/// 滚动锚点位置
-public enum ScrollAnchor: Int, Sendable {
-    case none
-    case top
-    case centeredVertically
-    case bottom
-    case left
-    case centeredHorizontally
-    case right
-}
-
 // MARK: - 网络状态
 
 /// 网络可达性状态

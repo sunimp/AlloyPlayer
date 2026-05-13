@@ -335,7 +335,7 @@
             }
         }
 
-        func shouldRespondToGesture(at point: CGPoint, type _: GestureType, touch _: UITouch) -> Bool {
+        func shouldRespondToGesture(at point: CGPoint, type _: AlloyCore.GestureType, touch _: UITouch) -> Bool {
             let bottomRect = bottomToolBar.frame
             let topRect = topToolBar.frame
             // 工具栏区域内的触摸不响应播放器手势

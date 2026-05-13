@@ -46,13 +46,6 @@ struct EnumsTests {
         #expect(ReachabilityStatus.cellular5G.rawValue == 5)
     }
 
-    @Test func scrollAnchorValues() {
-        #expect(ScrollAnchor.none.rawValue == 0)
-        #expect(ScrollAnchor.top.rawValue == 1)
-        #expect(ScrollAnchor.centeredVertically.rawValue == 2)
-        #expect(ScrollAnchor.bottom.rawValue == 3)
-    }
-
     @Test func disablePanMovingDirectionAll() {
         let all: DisablePanMovingDirection = .all
         #expect(all.contains(.vertical))

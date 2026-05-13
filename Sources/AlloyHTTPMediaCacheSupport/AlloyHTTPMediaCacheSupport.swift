@@ -5,12 +5,9 @@
 //  Created by Sun on 2026/5/11.
 //
 
+import AlloyCore
 import Foundation
 import HTTPMediaCache
-
-#if canImport(UIKit)
-    import AlloyCore
-#endif
 
 /// AlloyPlayer 对 HTTPMediaCache 的可选支持入口。
 public enum AlloyHTTPMediaCacheSupport {
@@ -33,6 +30,23 @@ public enum AlloyHTTPMediaCacheSupport {
         )
     }
 
+    /// 按配置为播放源生成 HTTPMediaCache 代理播放源。
+    public static func proxySource(
+        for originalSource: PlaybackSource,
+        configuration: AlloyHTTPMediaCacheConfiguration = .default
+    ) async throws -> PlaybackSource {
+        let downloadHeaders = originalSource.headers.merging(configuration.requestHeaders) { _, new in new }
+        let proxyURL = try await proxyURL(
+            for: originalSource.url,
+            configuration: AlloyHTTPMediaCacheConfiguration(
+                port: configuration.port,
+                bindToLocalhost: configuration.bindToLocalhost,
+                requestHeaders: downloadHeaders
+            )
+        )
+        return PlaybackSource(url: proxyURL, headers: [:])
+    }
+
     /// 配置 HTTPMediaCache 下载源站资源时需要携带的请求头。
     ///
     /// AVPlayer 访问的是本地代理 URL，源站请求由 HTTPMediaCache 发出，因此需要把业务请求头显式下发到下载链路。
@@ -41,22 +55,4 @@ public enum AlloyHTTPMediaCacheSupport {
         await HTTPMediaCache.setDownloadAdditionalHeaders(normalizedHeaders)
         await HTTPMediaCache.setDownloadWhitelistHeaderKeys(Array(normalizedHeaders.keys).sorted())
     }
-
-    #if canImport(UIKit)
-        /// 按配置将原始资源转换为 HTTPMediaCache 代理 URL 后交给播放器准备播放。
-        @discardableResult
-        @MainActor
-        public static func prepare(
-            player: Player,
-            originalURL: URL,
-            configuration: AlloyHTTPMediaCacheConfiguration = .default
-        ) async throws -> URL {
-            let proxyURL = try await proxyURL(
-                for: originalURL,
-                configuration: configuration
-            )
-            player.assetURL = proxyURL
-            return proxyURL
-        }
-    #endif
 }

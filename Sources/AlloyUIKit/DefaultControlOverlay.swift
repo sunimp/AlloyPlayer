@@ -579,13 +579,13 @@
             }
         }
 
-        public func gestureBeganPan(_: GestureManager, direction: PanDirection, location _: PanLocation) {
+        public func gestureBeganPan(_: GestureManager, direction: AlloyCore.PanDirection, location _: AlloyCore.PanLocation) {
             if direction == .horizontal {
                 sumTime = player?.currentTime ?? 0
             }
         }
 
-        public func gestureChangedPan(_: GestureManager, direction: PanDirection, location: PanLocation, velocity: CGPoint) {
+        public func gestureChangedPan(_: GestureManager, direction: AlloyCore.PanDirection, location: AlloyCore.PanLocation, velocity: CGPoint) {
             guard let player else { return }
             switch direction {
             case .horizontal:
@@ -607,7 +607,7 @@
             }
         }
 
-        public func gestureEndedPan(_: GestureManager, direction: PanDirection, location _: PanLocation) {
+        public func gestureEndedPan(_: GestureManager, direction: AlloyCore.PanDirection, location _: AlloyCore.PanLocation) {
             guard direction == .horizontal, let player else { return }
 
             // 锁定 slider 位置
@@ -632,7 +632,7 @@
             player?.engine.scalingMode = scale > 1 ? .aspectFill : .aspectFit
         }
 
-        public func gestureTriggerCondition(_: GestureManager, type: GestureType, recognizer _: UIGestureRecognizer, touch: UITouch) -> Bool {
+        public func gestureTriggerCondition(_: GestureManager, type: AlloyCore.GestureType, recognizer _: UIGestureRecognizer, touch: UITouch) -> Bool {
             let point = touch.location(in: self)
             if player?.isFullScreen == true {
                 return landscapePanel.shouldRespondToGesture(at: point, type: type, touch: touch)

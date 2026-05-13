@@ -14,7 +14,7 @@
     /// 所有方法均有默认空实现，使用者只需实现关心的回调。
     /// 内置 UIKit 实现为 `DefaultControlOverlay`（AlloyUIKit 模块）。
     @MainActor
-    public protocol ControlOverlay: UIView, PlaybackEventSink, GestureEventSink, OrientationEventSink, ListPlaybackEventSink {
+    public protocol ControlOverlay: UIView, PlaybackEventSink, GestureEventSink, OrientationEventSink {
         /// 关联的播放控制器
         var player: Player? { get set }
 
@@ -104,29 +104,6 @@
 
         /// 长按
         func longPressed(_ gesture: GestureManager, state: LongPressPhase)
-
-        // MARK: - 列表播放
-
-        /// 播放器即将出现在滚动视图中
-        func playerWillAppearInScrollView(_ player: Player)
-
-        /// 播放器已出现在滚动视图中
-        func playerDidAppearInScrollView(_ player: Player)
-
-        /// 播放器即将从滚动视图中消失
-        func playerWillDisappearInScrollView(_ player: Player)
-
-        /// 播放器已从滚动视图中消失
-        func playerDidDisappearInScrollView(_ player: Player)
-
-        /// 播放器出现百分比
-        func player(_ player: Player, appearingPercent: CGFloat)
-
-        /// 播放器消失百分比
-        func player(_ player: Player, disappearingPercent: CGFloat)
-
-        /// 小窗显示状态变化
-        func player(_ player: Player, floatViewShow isShow: Bool)
     }
 
     // MARK: - 默认空实现
@@ -156,12 +133,5 @@
         func gestureEndedPan(_: GestureManager, direction _: PanDirection, location _: PanLocation) {}
         func gesturePinched(_: GestureManager, scale _: Float) {}
         func longPressed(_: GestureManager, state _: LongPressPhase) {}
-        func playerWillAppearInScrollView(_: Player) {}
-        func playerDidAppearInScrollView(_: Player) {}
-        func playerWillDisappearInScrollView(_: Player) {}
-        func playerDidDisappearInScrollView(_: Player) {}
-        func player(_: Player, appearingPercent _: CGFloat) {}
-        func player(_: Player, disappearingPercent _: CGFloat) {}
-        func player(_: Player, floatViewShow _: Bool) {}
     }
 #endif

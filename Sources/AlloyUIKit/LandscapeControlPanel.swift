@@ -295,7 +295,7 @@
         public func updatePresentationSize(_: CGSize) {}
         public func updateOrientation(_: OrientationManager) {}
 
-        func shouldRespondToGesture(at point: CGPoint, type _: GestureType, touch _: UITouch) -> Bool {
+        func shouldRespondToGesture(at point: CGPoint, type _: AlloyCore.GestureType, touch _: UITouch) -> Bool {
             if isControlVisible, bottomToolBar.frame.contains(point) || topToolBar.frame.contains(point) { return false }
             return true
         }
