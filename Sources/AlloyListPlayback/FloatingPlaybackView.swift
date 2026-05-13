@@ -6,7 +6,7 @@
 //
 
 #if canImport(UIKit)
-    import AlloyUIKit
+    import AlloyPlayerUIKit
     import UIKit
 
     @MainActor

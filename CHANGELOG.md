@@ -13,10 +13,11 @@
 
 - 重建 1.0.0 架构：`AlloyCore` 收敛为平台无关的播放类型、引擎协议、快照、事件和 `PlaybackSession`。
 - `AlloyAVPlayer` 改为提供 `AVPlaybackEngine`，通过 `PlaybackSource`、`PlaybackEngineSnapshot` 和 `PlaybackEngineEvent` 与核心层交互。
-- `AlloyUIKit` 接管播放器视图、渲染承载、默认控制层、手势和全屏协调；UIKit 控制层改为 `UIKitControlOverlay`。
-- `AlloySwiftUI` 改为围绕 `AlloyPlayerController(session:)` 与 `AlloySwiftUIPlayerView` 构建。
-- `AlloyListPlayback` 改为驱动 `AlloyUIKit.AlloyPlayerView`，不再依赖旧 ScrollView 扩展。
-- `AlloyHTTPMediaCacheSupport` 改为生成代理 `PlaybackSource`，由调用方显式加载。
+- `AlloyPlayerUIKit` 接管播放器视图、渲染承载、默认控制层、手势和全屏协调；UIKit 控制层改为 `UIKitControlOverlay`。
+- `AlloyPlayerSwiftUI` 改为围绕 `AlloyPlayerController(session:)` 与 `AlloySwiftUIPlayerView` 构建。
+- `AlloyListPlayback` 改为驱动 `AlloyPlayerUIKit.AlloyPlayerView`，不再依赖旧 ScrollView 扩展。
+- `AlloyPlayerUIKit` 和 `AlloyPlayerSwiftUI` 成为调用方场景入口，完整播放器能力不再要求调用方理解内部 target 拆分。
+- `AlloyPlayerHTTPMediaCacheSupport` 更名为同仓库可选 product；`AlloyPlayer` umbrella product 不再依赖 HTTPMediaCache。
 - 删除旧 Core 中的 UIKit 控制器、手势、方向、浮窗、事件 sink、兼容渲染视图和 KVO/logging 辅助公开面。
 - 收窄内部渲染宿主、列表可见性计算和浮动播放容器等实现细节；公开入口保留为 `AlloyPlayerView`、`ListPlaybackCoordinator` 与 `FloatingPlaybackCoordinator`。
 
@@ -28,7 +29,7 @@
 
 ### 调整
 
-- 将 `AlloyHTTPMediaCacheSupport` 依赖的 HTTPMediaCache 升级到 `1.0.3`。
+- 将 `AlloyPlayerHTTPMediaCacheSupport` 依赖的 HTTPMediaCache 升级到 `1.0.3`。
 
 ### 修复
 
@@ -47,7 +48,7 @@
 
 - 控制层拆分为播放、手势、方向和列表播放事件 sink 组合，降低自定义控制层接入成本。
 - 旧 SwiftUI 控制模块不再依赖 `AlloyAVPlayer`；默认 AVFoundation 便利入口由 `AlloyPlayer` umbrella 模块提供。
-- `AlloyHTTPMediaCacheSupport` 移除拆散参数重载，统一通过 `AlloyHTTPMediaCacheConfiguration` 承载进阶配置。
+- `AlloyPlayerHTTPMediaCacheSupport` 移除拆散参数重载，统一通过 `AlloyPlayerHTTPMediaCacheConfiguration` 承载进阶配置。
 - 核心控制器新增 `attach(to:)` 通用挂载入口，列表播放协调器不再依赖旧 ScrollView 扩展挂载方法。
 - 全屏模式选择迁移到独立解析器，横屏 scene 缺失时不再触发 `fatalError`。
 - App 生命周期订阅迁移到独立生命周期协调器，减少核心控制器内部职责。
@@ -56,13 +57,13 @@
 
 ### 新增
 
-- 新增 `AlloyHTTPMediaCacheSupport` 可选模块，支持 HTTPMediaCache 代理播放。
+- 新增 `AlloyPlayerHTTPMediaCacheSupport` 可选模块，支持 HTTPMediaCache 代理播放。
 - Demo 增加 HTTPMediaCache 播放开关与代理 URL 展示。
 
 ### 调整
 
 - Package manifest 降至 SwiftPM 5.10 兼容版本。
-- `AlloyHTTPMediaCacheSupport` API 收敛为配置对象入口，便于统一控制端口、localhost 绑定和请求头。
+- `AlloyPlayerHTTPMediaCacheSupport` API 收敛为配置对象入口，便于统一控制端口、localhost 绑定和请求头。
 
 ### 修复
 
@@ -111,9 +112,9 @@
 - **AlloyCore**：渲染视图、KVO 与系统事件工具类。
 - **AlloyCore**：完整的播放状态、加载状态、缩放模式、全屏模式、手势、滑动方向和网络状态类型。
 - **AlloyAVPlayer**：基于 AVFoundation 的 `PlaybackEngine` 实现。
-- **AlloyUIKit**：`DefaultControlOverlay`，包含 `PortraitControlPanel`、`LandscapeControlPanel` 和 `FloatingControlPanel`。
-- **AlloyUIKit**：`ProgressSlider`、`BufferingIndicator`、`LoadingIndicator`、`VolumeAndBrightnessHUD`、`NetworkSpeedMonitor`、`CustomStatusBar`。
-- **AlloySwiftUI**：SwiftUI 播放器视图、控制器和默认控制层，提供开箱即用和自定义 SwiftUI 控制层能力。
+- **AlloyPlayerUIKit**：`DefaultControlOverlay`，包含 `PortraitControlPanel`、`LandscapeControlPanel` 和 `FloatingControlPanel`。
+- **AlloyPlayerUIKit**：`ProgressSlider`、`BufferingIndicator`、`LoadingIndicator`、`VolumeAndBrightnessHUD`、`NetworkSpeedMonitor`、`CustomStatusBar`。
+- **AlloyPlayerSwiftUI**：SwiftUI 播放器视图、控制器和默认控制层，提供开箱即用和自定义 SwiftUI 控制层能力。
 - 所有播放状态、时间更新、缓冲进度、错误和方向变化均提供 Combine 发布者。
 - ScrollView/TableView/CollectionView 列表播放，滚动时自动播放/暂停。
 - SwiftPM 5.10 支持，UI 相关类型使用 `@MainActor` 隔离。

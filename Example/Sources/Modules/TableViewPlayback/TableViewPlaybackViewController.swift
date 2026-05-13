@@ -275,7 +275,7 @@ extension TableViewPlaybackViewController: UITableViewDataSource {
             for: indexPath
         )
         guard let videoCell = cell as? VideoTableViewCell else {
-            assertionFailure("无法复用 VideoTableViewCell")
+            assertionFailure("Failed to reuse VideoTableViewCell")
             return cell
         }
         videoCell.configure(with: videos[indexPath.row])

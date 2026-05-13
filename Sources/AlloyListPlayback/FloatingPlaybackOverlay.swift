@@ -7,7 +7,7 @@
 
 #if canImport(UIKit)
     import AlloyCore
-    import AlloyUIKit
+    import AlloyPlayerUIKit
     import Combine
     import UIKit
 

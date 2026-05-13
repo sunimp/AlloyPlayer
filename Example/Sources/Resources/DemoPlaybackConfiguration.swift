@@ -5,8 +5,8 @@
 //  Created by Sun on 2026/5/12.
 //
 
-import AlloyHTTPMediaCacheSupport
 import AlloyPlayer
+import AlloyPlayerHTTPMediaCacheSupport
 import Foundation
 
 // MARK: - DemoPlaybackConfiguration
@@ -33,7 +33,7 @@ final class DemoPlaybackConfiguration {
             return source
         }
 
-        return try await AlloyHTTPMediaCacheSupport.proxySource(
+        return try await AlloyPlayerHTTPMediaCacheSupport.proxySource(
             for: source,
             configuration: .default
         )

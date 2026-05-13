@@ -10,19 +10,23 @@ import os
 
 // MARK: - 时间格式化
 
+/// 时间格式化配置。
 public struct TimeFormatConfiguration: Equatable, Sendable {
+    /// 零值或无效时间的占位文本。
     public var zeroPlaceholder: String
 
+    /// 创建时间格式化配置。
     public init(zeroPlaceholder: String = "00:00") {
         self.zeroPlaceholder = zeroPlaceholder
     }
 }
 
-/// 将秒数格式化为时间字符串
+/// 将秒数格式化为时间字符串。
 public enum TimeFormatter: Sendable {
+    /// 默认时间格式化配置。
     public static let defaultConfiguration = TimeFormatConfiguration()
 
-    /// 将秒数格式化为 "mm:ss" 或 "HH:mm:ss"
+    /// 将秒数格式化为 "mm:ss" 或 "HH:mm:ss"。
     public static func string(
         from seconds: Int,
         configuration: TimeFormatConfiguration = defaultConfiguration

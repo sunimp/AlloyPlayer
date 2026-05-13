@@ -11,10 +11,10 @@ let package = Package(
     products: [
         .library(name: "AlloyCore", targets: ["AlloyCore"]),
         .library(name: "AlloyAVPlayer", targets: ["AlloyAVPlayer"]),
-        .library(name: "AlloyUIKit", targets: ["AlloyUIKit"]),
-        .library(name: "AlloySwiftUI", targets: ["AlloySwiftUI"]),
+        .library(name: "AlloyPlayerUIKit", targets: ["AlloyPlayerUIKit"]),
+        .library(name: "AlloyPlayerSwiftUI", targets: ["AlloyPlayerSwiftUI"]),
         .library(name: "AlloyListPlayback", targets: ["AlloyListPlayback"]),
-        .library(name: "AlloyHTTPMediaCacheSupport", targets: ["AlloyHTTPMediaCacheSupport"]),
+        .library(name: "AlloyPlayerHTTPMediaCacheSupport", targets: ["AlloyPlayerHTTPMediaCacheSupport"]),
         .library(name: "AlloyPlayer", targets: ["AlloyPlayer"]),
     ],
     dependencies: [
@@ -27,27 +27,27 @@ let package = Package(
             dependencies: ["AlloyCore"]
         ),
         .target(
-            name: "AlloyHTTPMediaCacheSupport",
+            name: "AlloyPlayerUIKit",
+            dependencies: ["AlloyCore", "AlloyAVPlayer"]
+        ),
+        .target(
+            name: "AlloyPlayerSwiftUI",
+            dependencies: ["AlloyCore", "AlloyAVPlayer", "AlloyPlayerUIKit"]
+        ),
+        .target(
+            name: "AlloyListPlayback",
+            dependencies: ["AlloyCore", "AlloyPlayerUIKit"]
+        ),
+        .target(
+            name: "AlloyPlayerHTTPMediaCacheSupport",
             dependencies: [
                 "AlloyCore",
                 .product(name: "HTTPMediaCache", package: "HTTPMediaCache"),
             ]
         ),
         .target(
-            name: "AlloyUIKit",
-            dependencies: ["AlloyCore"]
-        ),
-        .target(
-            name: "AlloySwiftUI",
-            dependencies: ["AlloyCore", "AlloyUIKit"]
-        ),
-        .target(
-            name: "AlloyListPlayback",
-            dependencies: ["AlloyCore", "AlloyUIKit"]
-        ),
-        .target(
             name: "AlloyPlayer",
-            dependencies: ["AlloyCore", "AlloyAVPlayer", "AlloyUIKit", "AlloySwiftUI", "AlloyListPlayback"]
+            dependencies: ["AlloyCore", "AlloyAVPlayer", "AlloyPlayerUIKit", "AlloyPlayerSwiftUI", "AlloyListPlayback"]
         ),
         .testTarget(
             name: "AlloyCoreTests",
@@ -58,19 +58,12 @@ let package = Package(
             dependencies: ["AlloyAVPlayer"]
         ),
         .testTarget(
-            name: "AlloyHTTPMediaCacheSupportTests",
-            dependencies: [
-                "AlloyHTTPMediaCacheSupport",
-                .product(name: "HTTPMediaCache", package: "HTTPMediaCache"),
-            ]
+            name: "AlloyPlayerUIKitTests",
+            dependencies: ["AlloyPlayerUIKit"]
         ),
         .testTarget(
-            name: "AlloyUIKitTests",
-            dependencies: ["AlloyUIKit"]
-        ),
-        .testTarget(
-            name: "AlloySwiftUITests",
-            dependencies: ["AlloySwiftUI"]
+            name: "AlloyPlayerSwiftUITests",
+            dependencies: ["AlloyPlayerSwiftUI"]
         ),
         .testTarget(
             name: "AlloyPlayerTests",
@@ -79,6 +72,13 @@ let package = Package(
         .testTarget(
             name: "AlloyListPlaybackTests",
             dependencies: ["AlloyListPlayback"]
+        ),
+        .testTarget(
+            name: "AlloyPlayerHTTPMediaCacheSupportTests",
+            dependencies: [
+                "AlloyPlayerHTTPMediaCacheSupport",
+                .product(name: "HTTPMediaCache", package: "HTTPMediaCache"),
+            ]
         ),
     ]
 )

@@ -8,9 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		0872FB6609812D8CA318BC5C /* CollectionViewPlaybackViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07FDD6AF2EB6E2EFD3812E5D /* CollectionViewPlaybackViewController.swift */; };
-		1375A876E50577F282BFABD1 /* AlloyHTTPMediaCacheSupport in Frameworks */ = {isa = PBXBuildFile; productRef = 67C972585E6C913568A8FAF1 /* AlloyHTTPMediaCacheSupport */; };
 		169AC89463B0C43121465489 /* HomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AE08AF18B115785572E8B03 /* HomeViewController.swift */; };
 		2A70653FA84EA08E2467EF7C /* AlloyPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = 526831B0AF8E71E9F9D796AB /* AlloyPlayer */; };
+		31B641AD82060505E99D0209 /* AlloyPlayerHTTPMediaCacheSupport in Frameworks */ = {isa = PBXBuildFile; productRef = A82081B91E06CE4684E236B2 /* AlloyPlayerHTTPMediaCacheSupport */; };
 		487ABEC5150EC9104404A7B2 /* SwiftUIControlsDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF38AD5301120C405DCB35A6 /* SwiftUIControlsDemoView.swift */; };
 		4E548CF0D07EE37D54B2ACEE /* CHTCollectionViewWaterfallLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 055BDAC766745B20E03796EE /* CHTCollectionViewWaterfallLayout.swift */; };
 		576CC73C1BADA9309AFAE5C8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 016A13F4AE1329E2704CE081 /* SceneDelegate.swift */; };
@@ -65,7 +65,7 @@
 			files = (
 				AE9431EBDCBA8D07879EC6A6 /* LookinServer in Frameworks */,
 				2A70653FA84EA08E2467EF7C /* AlloyPlayer in Frameworks */,
-				1375A876E50577F282BFABD1 /* AlloyHTTPMediaCacheSupport in Frameworks */,
+				31B641AD82060505E99D0209 /* AlloyPlayerHTTPMediaCacheSupport in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -255,7 +255,7 @@
 			packageProductDependencies = (
 				5F521E3B7989EAD7A7A143F5 /* LookinServer */,
 				526831B0AF8E71E9F9D796AB /* AlloyPlayer */,
-				67C972585E6C913568A8FAF1 /* AlloyHTTPMediaCacheSupport */,
+				A82081B91E06CE4684E236B2 /* AlloyPlayerHTTPMediaCacheSupport */,
 			);
 			productName = AlloyPlayerDemo;
 			productReference = A5D39E4BD1348B8DA507E950 /* AlloyPlayerDemo.app */;
@@ -547,9 +547,10 @@
 			package = 59BEE781C76B70E0014EF72B /* XCRemoteSwiftPackageReference "LookInside" */;
 			productName = LookinServer;
 		};
-		67C972585E6C913568A8FAF1 /* AlloyHTTPMediaCacheSupport */ = {
+		A82081B91E06CE4684E236B2 /* AlloyPlayerHTTPMediaCacheSupport */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = AlloyHTTPMediaCacheSupport;
+			package = 414D4BF0B218DAA5E455DE58 /* XCLocalSwiftPackageReference ".." */;
+			productName = AlloyPlayerHTTPMediaCacheSupport;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

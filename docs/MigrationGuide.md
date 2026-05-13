@@ -1,32 +1,31 @@
 # AlloyPlayer 迁移指南
 
-本文档记录 1.0.0 架构重构后的主要破坏性变更和迁移方式。1.0.0 不保留兼容别名，调用方需要迁移到 `PlaybackSession`、`AlloyUIKit.AlloyPlayerView` 和 `PlaybackSource`。
+本文档记录 1.0.0 架构重构后的主要破坏性变更和迁移方式。1.0.0 不保留兼容别名，调用方需要迁移到 `PlaybackSession`、`AlloyPlayerUIKit.AlloyPlayerView` 和 `PlaybackSource`。
 
 ## 播放入口
 
-旧入口以核心控制器直接绑定容器视图。新入口先创建 session，再交给 UIKit 或 SwiftUI 播放视图承载：
+旧入口以核心控制器直接绑定容器视图。新入口可以直接从播放源创建 UIKit 播放视图：
 
 ```swift
 import AlloyPlayer
 
-let session = AlloyPlayerFactory.makeDefaultSession()
-let playerView = AlloyUIKit.AlloyPlayerView(session: session)
-playerView.controlOverlay = DefaultControlOverlay()
-playerView.load(PlaybackSource(url: videoURL))
+let playerView = AlloyPlayerUIKit.AlloyPlayerView(
+    source: PlaybackSource(url: videoURL)
+)
 ```
 
-自定义播放引擎时直接创建 `PlaybackSession`：
+自定义播放引擎时仍然直接创建 `PlaybackSession`：
 
 ```swift
 let session = PlaybackSession(engine: CustomPlaybackEngine())
-let playerView = AlloyUIKit.AlloyPlayerView(session: session)
+let playerView = AlloyPlayerUIKit.AlloyPlayerView(session: session)
 ```
 
 ## API 对照
 
 | 旧 API / 概念 | 1.0.0 API / 概念 |
 |---------------|----------------|
-| `Player` | `PlaybackSession` + `AlloyUIKit.AlloyPlayerView` |
+| `Player` | `PlaybackSession` + `AlloyPlayerUIKit.AlloyPlayerView` |
 | `AVPlayerManager` | `AVPlaybackEngine` |
 | `assetURL` | `load(PlaybackSource(url:headers:))` |
 | `ControlOverlay` | `UIKitControlOverlay` |
@@ -35,7 +34,7 @@ let playerView = AlloyUIKit.AlloyPlayerView(session: session)
 | 浮窗视图公开操作 | `FloatingPlaybackCoordinator` |
 | `SwiftUIControlOverlayState` | `AlloyPlayerController` |
 | `SwiftUIControlOverlay` | `AlloySwiftUIPlayerView` 的自定义 controls 闭包 |
-| HTTPMediaCache 直接改写播放器 URL | `AlloyHTTPMediaCacheSupport.proxySource(for:configuration:)` |
+| HTTPMediaCache 直接改写播放器 URL | 可选 product 生成代理 `PlaybackSource` 后再 `load` |
 
 1.0.0 不保留兼容别名。调用方应迁移到新的模块入口，避免继续依赖旧类型名或旧回调协议。
 
@@ -86,7 +85,7 @@ SwiftUI 入口改为外部控制句柄和播放器视图：
 
 ```swift
 let controller = AlloyPlayerController(
-    session: AlloyPlayerFactory.makeDefaultSession()
+    source: PlaybackSource(url: videoURL)
 )
 
 AlloySwiftUIPlayerView(controller: controller)
@@ -100,7 +99,7 @@ controller.load(PlaybackSource(url: videoURL))
 
 ## 列表播放
 
-列表播放协调器现在驱动 `AlloyUIKit.AlloyPlayerView`，候选项使用稳定 `id` 和 `PlaybackSource`：
+列表播放协调器现在驱动 `AlloyPlayerUIKit.AlloyPlayerView`，候选项使用稳定 `id` 和 `PlaybackSource`：
 
 ```swift
 let coordinator = ListPlaybackCoordinator(playerView: playerView)
@@ -117,16 +116,7 @@ let selected = coordinator.update(
 
 ## HTTPMediaCache
 
-缓存支持层生成代理播放源，调用方再把播放源加载到播放器视图：
-
-```swift
-let proxySource = try await AlloyHTTPMediaCacheSupport.proxySource(
-    for: PlaybackSource(url: originalURL),
-    configuration: .default
-)
-
-playerView.load(proxySource)
-```
+HTTPMediaCache 支持由 `AlloyPlayerHTTPMediaCacheSupport` 可选 product 提供，不进入 `AlloyPlayer` umbrella product 的依赖图。需要缓存播放时，先通过该 product 生成代理 `PlaybackSource`，再调用 `playerView.load(proxySource)`。
 
 ## 渲染承载
 

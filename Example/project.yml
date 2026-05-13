@@ -37,4 +37,4 @@ targets:
       - package: AlloyPlayer
         product: AlloyPlayer
       - package: AlloyPlayer
-        product: AlloyHTTPMediaCacheSupport
+        product: AlloyPlayerHTTPMediaCacheSupport

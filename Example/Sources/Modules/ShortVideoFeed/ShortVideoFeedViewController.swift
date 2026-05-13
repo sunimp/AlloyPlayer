@@ -243,7 +243,7 @@ extension ShortVideoFeedViewController: UICollectionViewDataSource {
             for: indexPath
         )
         guard let feedCell = cell as? ShortVideoFeedCell else {
-            assertionFailure("无法复用 ShortVideoFeedCell")
+            assertionFailure("Failed to reuse ShortVideoFeedCell")
             return cell
         }
         let video = videos[indexPath.item]

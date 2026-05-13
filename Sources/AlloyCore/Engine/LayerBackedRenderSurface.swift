@@ -9,5 +9,6 @@ import QuartzCore
 
 /// 基于 CALayer 的播放渲染承载面。
 public protocol LayerBackedRenderSurface: PlaybackRenderSurface {
+    /// 用于展示视频内容的 Core Animation 图层。
     var layer: CALayer { get }
 }

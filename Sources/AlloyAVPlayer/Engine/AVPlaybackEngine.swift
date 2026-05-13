@@ -14,13 +14,18 @@ import Foundation
 /// AVFoundation 播放引擎。
 @MainActor
 public final class AVPlaybackEngine: PlaybackEngine {
+    /// 当前播放引擎状态快照。
     public private(set) var snapshot: PlaybackEngineSnapshot
+
+    /// 当前 AVPlayerLayer 渲染承载面。
     public private(set) var renderSurface: PlaybackRenderSurface?
 
+    /// 播放引擎状态快照发布者。
     public var snapshotPublisher: AnyPublisher<PlaybackEngineSnapshot, Never> {
         snapshotSubject.eraseToAnyPublisher()
     }
 
+    /// 播放引擎事件发布者。
     public var eventPublisher: AnyPublisher<PlaybackEngineEvent, Never> {
         eventSubject.eraseToAnyPublisher()
     }
@@ -44,6 +49,7 @@ public final class AVPlaybackEngine: PlaybackEngine {
     private var playbackStalledObserver: NSObjectProtocol?
     private var scalingMode: ScalingMode = .aspectFit
 
+    /// 创建 AVFoundation 播放引擎。
     public init(configuration: AVPlaybackEngineConfiguration = .init()) {
         self.configuration = configuration
         snapshot = PlaybackEngineSnapshot()
@@ -56,6 +62,7 @@ public final class AVPlaybackEngine: PlaybackEngine {
         }
     }
 
+    /// 加载播放源并创建 AVPlayer 播放管线。
     public func load(_ source: PlaybackSource) {
         clearPlayer(sendStopped: false)
         _ = stateMachine.apply(.load(source))
@@ -95,6 +102,7 @@ public final class AVPlaybackEngine: PlaybackEngine {
         addPlaybackStalledObserver(item: newItem)
     }
 
+    /// 开始或恢复播放。
     public func play() {
         switch stateMachine.state {
         case .ready, .paused:
@@ -118,15 +126,18 @@ public final class AVPlaybackEngine: PlaybackEngine {
         }
     }
 
+    /// 暂停播放。
     public func pause() {
         player?.pause()
         transition(.pause)
     }
 
+    /// 停止播放并释放当前 AVPlayer 资源。
     public func stop() {
         clearPlayer(sendStopped: true)
     }
 
+    /// 跳转到指定播放时间。
     public func seek(to time: TimeInterval) async -> Bool {
         guard let player, let playerItem else {
             eventSubject.send(.seekCompleted(time: time, finished: false))
@@ -150,21 +161,25 @@ public final class AVPlaybackEngine: PlaybackEngine {
         return finished
     }
 
+    /// 设置播放速率。
     public func setRate(_ rate: Float) {
         player?.rate = rate
         updateSnapshot { $0.rate = rate }
     }
 
+    /// 设置静音状态。
     public func setMuted(_ isMuted: Bool) {
         player?.isMuted = isMuted
         updateSnapshot { $0.isMuted = isMuted }
     }
 
+    /// 设置音量。
     public func setVolume(_ volume: Float) {
         player?.volume = volume
         updateSnapshot { $0.volume = volume }
     }
 
+    /// 设置视频缩放模式。
     public func setScalingMode(_ scalingMode: ScalingMode) {
         self.scalingMode = scalingMode
         updateVideoGravity()

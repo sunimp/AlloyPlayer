@@ -12,14 +12,14 @@ AlloyPlayer/
 ├── Sources/
 │   ├── AlloyCore/           ← 协议、枚举、Player 控制器
 │   ├── AlloyAVPlayer/       ← AVFoundation 播放引擎
-│   ├── AlloyHTTPMediaCacheSupport/ ← HTTPMediaCache 可选支持
+│   ├── AlloyPlayerHTTPMediaCacheSupport/ ← HTTPMediaCache 可选支持
 │   ├── AlloyUIKitControls/  ← 默认 UIKit 控制层 UI + 资源
 │   ├── AlloySwiftUIControls/ ← SwiftUI 控制层桥接
 │   └── AlloyPlayer/         ← Umbrella 重新导出模块
 ├── Tests/
 │   ├── AlloyCoreTests/
 │   ├── AlloyAVPlayerTests/
-│   ├── AlloyHTTPMediaCacheSupportTests/
+│   ├── AlloyPlayerHTTPMediaCacheSupportTests/
 │   ├── AlloyUIKitControlsTests/
 │   └── AlloySwiftUIControlsTests/
 ├── README.md
@@ -36,7 +36,7 @@ AlloyPlayer/
 AlloyPlayer (umbrella)
 ├── AlloyCore
 ├── AlloyAVPlayer      → 依赖 AlloyCore
-├── AlloyHTTPMediaCacheSupport → 依赖 AlloyCore、HTTPMediaCache
+├── AlloyPlayerHTTPMediaCacheSupport → 依赖 AlloyCore、HTTPMediaCache
 ├── AlloyUIKitControls   → 依赖 AlloyCore
 └── AlloySwiftUIControls → 依赖 AlloyCore
 ```

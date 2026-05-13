@@ -139,7 +139,7 @@ enum VideoResource {
 
     private static func makeURL(_ string: String) -> URL {
         guard let url = URL(string: string) else {
-            preconditionFailure("无效的视频资源 URL: \(string)")
+            preconditionFailure("Invalid video resource URL: \(string)")
         }
         return url
     }

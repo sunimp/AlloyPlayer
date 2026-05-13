@@ -287,7 +287,7 @@ extension CollectionViewPlaybackViewController: UICollectionViewDataSource {
             for: indexPath
         )
         guard let videoCell = cell as? VideoCollectionViewCell else {
-            assertionFailure("无法复用 VideoCollectionViewCell")
+            assertionFailure("Failed to reuse VideoCollectionViewCell")
             return cell
         }
         videoCell.configure(with: videos[indexPath.item])

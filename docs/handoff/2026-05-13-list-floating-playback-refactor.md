@@ -31,8 +31,8 @@ TableView 和 CollectionView 列表播放的旧方案把完整的 `AlloyPlayerVi
 
 ## 关键文件
 
-- `Sources/AlloyUIKit/PlayerView/AlloyPlayerRenderView.swift`
-- `Sources/AlloyUIKit/PlayerView/AlloyPlayerControlView.swift`
+- `Sources/AlloyPlayerUIKit/PlayerView/AlloyPlayerRenderView.swift`
+- `Sources/AlloyPlayerUIKit/PlayerView/AlloyPlayerControlView.swift`
 - `Sources/AlloyListPlayback/ListPlaybackCoordinator.swift`
 - `Sources/AlloyListPlayback/FloatingPlaybackCoordinator.swift`
 - `Sources/AlloyListPlayback/FloatingPlaybackOverlay.swift`

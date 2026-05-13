@@ -39,14 +39,14 @@ import Testing
 }
 
 #if canImport(UIKit)
-    import AlloyUIKit
+    import AlloyPlayerUIKit
     import UIKit
 
     @MainActor
     @Test func listPlaybackCoordinatorLoadsSelectedCandidateInContainer() throws {
         let engine = ListPlaybackMockEngine()
         let session = PlaybackSession(engine: engine)
-        let renderView = AlloyUIKit.AlloyPlayerRenderView(session: session)
+        let renderView = AlloyPlayerUIKit.AlloyPlayerRenderView(session: session)
         let coordinator = ListPlaybackCoordinator(session: session, renderView: renderView)
         let container = UIView()
         let source = try PlaybackSource(url: #require(URL(string: "https://example.com/best.mp4")))
@@ -69,7 +69,7 @@ import Testing
     @Test func listPlaybackCoordinatorReattachesSameCandidateWhenPlayerMovedAway() throws {
         let engine = ListPlaybackMockEngine()
         let session = PlaybackSession(engine: engine)
-        let renderView = AlloyUIKit.AlloyPlayerRenderView(session: session)
+        let renderView = AlloyPlayerUIKit.AlloyPlayerRenderView(session: session)
         let coordinator = ListPlaybackCoordinator(session: session, renderView: renderView)
         let container = UIView()
         let floatingContainer = UIView()
@@ -90,7 +90,7 @@ import Testing
     @Test func listPlaybackCoordinatorStopsWhenNoCandidateVisible() {
         let engine = ListPlaybackMockEngine()
         let session = PlaybackSession(engine: engine)
-        let renderView = AlloyUIKit.AlloyPlayerRenderView(session: session)
+        let renderView = AlloyPlayerUIKit.AlloyPlayerRenderView(session: session)
         let coordinator = ListPlaybackCoordinator(session: session, renderView: renderView)
 
         let selected = coordinator.update(candidates: [], viewport: .zero) { _ in nil }

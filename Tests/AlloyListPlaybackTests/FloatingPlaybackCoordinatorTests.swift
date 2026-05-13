@@ -8,7 +8,7 @@
 #if canImport(UIKit)
     import AlloyCore
     @testable import AlloyListPlayback
-    import AlloyUIKit
+    import AlloyPlayerUIKit
     import Combine
     import Foundation
     import Testing
@@ -20,7 +20,7 @@
         let parentView = UIView(frame: CGRect(x: 0, y: 0, width: 320, height: 240))
         window.addSubview(parentView)
         let session = PlaybackSession(engine: FloatingPlaybackMockEngine())
-        let renderView = AlloyUIKit.AlloyPlayerRenderView(session: session)
+        let renderView = AlloyPlayerUIKit.AlloyPlayerRenderView(session: session)
         let coordinator = FloatingPlaybackCoordinator(session: session, renderView: renderView)
 
         coordinator.show(in: parentView, frame: CGRect(x: 10, y: 20, width: 160, height: 90))
@@ -54,7 +54,7 @@
             )
         )
         let session = PlaybackSession(engine: engine)
-        let renderView = AlloyUIKit.AlloyPlayerRenderView(session: session)
+        let renderView = AlloyPlayerUIKit.AlloyPlayerRenderView(session: session)
         inlineContainer.addSubview(renderView)
         let coordinator = FloatingPlaybackCoordinator(session: session, renderView: renderView)
 
@@ -72,7 +72,7 @@
         let parentView = UIView(frame: CGRect(x: 0, y: 0, width: 320, height: 240))
         window.addSubview(parentView)
         let session = PlaybackSession(engine: FloatingPlaybackMockEngine())
-        let renderView = AlloyUIKit.AlloyPlayerRenderView(session: session)
+        let renderView = AlloyPlayerUIKit.AlloyPlayerRenderView(session: session)
         let coordinator = FloatingPlaybackCoordinator(session: session, renderView: renderView)
 
         coordinator.show(in: parentView, frame: CGRect(x: 10, y: 20, width: 200, height: 112))

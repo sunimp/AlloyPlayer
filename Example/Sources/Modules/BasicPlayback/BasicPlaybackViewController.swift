@@ -215,7 +215,7 @@ final class BasicPlaybackViewController: UIViewController {
             return playbackErrorText
         }
         guard let currentPlaybackURL else {
-            return DemoPlaybackConfiguration.shared.isHTTPMediaCacheEnabled ? "正在生成缓存代理 URL" : "未开始"
+            return "未开始"
         }
         return currentPlaybackURL.absoluteString
     }

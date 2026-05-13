@@ -9,14 +9,19 @@ import AlloyCore
 import CoreGraphics
 
 #if canImport(UIKit)
-    import AlloyUIKit
+    import AlloyPlayerUIKit
     import UIKit
 #endif
 
+/// 列表自动播放配置。
 public struct ListPlaybackConfiguration: Equatable, Sendable {
+    /// 候选项成为播放目标所需的最小可见比例。
     public var minimumVisiblePercent: CGFloat
+
+    /// 没有可见候选项时是否停止播放。
     public var stopsWhenNoCandidateVisible: Bool
 
+    /// 创建列表自动播放配置。
     public init(
         minimumVisiblePercent: CGFloat = 0.5,
         stopsWhenNoCandidateVisible: Bool = true
@@ -26,11 +31,18 @@ public struct ListPlaybackConfiguration: Equatable, Sendable {
     }
 }
 
+/// 列表自动播放候选项。
 public struct ListPlaybackCandidate: Equatable, Sendable {
+    /// 候选项唯一标识。
     public var id: String
+
+    /// 候选项在视口坐标系中的布局区域。
     public var frame: CGRect
+
+    /// 候选项对应的播放源。
     public var source: PlaybackSource
 
+    /// 创建列表自动播放候选项。
     public init(id: String, frame: CGRect, source: PlaybackSource) {
         self.id = id
         self.frame = frame
@@ -38,22 +50,28 @@ public struct ListPlaybackCandidate: Equatable, Sendable {
     }
 }
 
+/// 列表自动播放协调器。
 @MainActor
 public final class ListPlaybackCoordinator {
     #if canImport(UIKit)
+        /// 列表播放使用的播放会话。
         public let session: PlaybackSession
-        public let renderView: AlloyUIKit.AlloyPlayerRenderView
+
+        /// 复用并挂载到当前可见候选项上的渲染视图。
+        public let renderView: AlloyPlayerUIKit.AlloyPlayerRenderView
     #endif
 
+    /// 列表自动播放配置。
     public var configuration = ListPlaybackConfiguration()
     private var selectedID: String?
 
     #if canImport(UIKit)
         private var renderViewConstraints: [NSLayoutConstraint] = []
 
+        /// 使用既有播放会话和渲染视图创建协调器。
         public init(
             session: PlaybackSession,
-            renderView: AlloyUIKit.AlloyPlayerRenderView,
+            renderView: AlloyPlayerUIKit.AlloyPlayerRenderView,
             configuration: ListPlaybackConfiguration = .init()
         ) {
             self.session = session
@@ -61,17 +79,19 @@ public final class ListPlaybackCoordinator {
             self.configuration = configuration
         }
 
+        /// 使用完整播放器视图创建协调器。
         public convenience init(
-            playerView: AlloyUIKit.AlloyPlayerView,
+            playerView: AlloyPlayerUIKit.AlloyPlayerView,
             configuration: ListPlaybackConfiguration = .init()
         ) {
             self.init(
                 session: playerView.session,
-                renderView: AlloyUIKit.AlloyPlayerRenderView(session: playerView.session),
+                renderView: AlloyPlayerUIKit.AlloyPlayerRenderView(session: playerView.session),
                 configuration: configuration
             )
         }
 
+        /// 根据候选项可见比例更新当前播放目标。
         @discardableResult
         public func update(
             candidates: [ListPlaybackCandidate],
@@ -130,6 +150,7 @@ public final class ListPlaybackCoordinator {
         }
     #endif
 
+    /// 从候选项中选择可见比例最高且满足阈值的播放目标。
     public nonisolated static func selectCandidate(
         in candidates: [ListPlaybackCandidate],
         viewport: CGRect,
