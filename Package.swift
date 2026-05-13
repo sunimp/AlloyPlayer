@@ -18,7 +18,7 @@ let package = Package(
         .library(name: "AlloyListPlayback", targets: ["AlloyListPlayback"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/sunimp/HTTPMediaCache.git", from: "1.0.2"),
+        .package(url: "https://github.com/sunimp/HTTPMediaCache.git", from: "1.0.3"),
     ],
     targets: [
         .target(name: "AlloyCore"),

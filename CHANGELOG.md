@@ -7,6 +7,16 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-05-12
+
+### 调整
+
+- 将 `AlloyHTTPMediaCacheSupport` 依赖的 HTTPMediaCache 升级到 `1.0.3`。
+
+### 修复
+
+- 继承 HTTPMediaCache `1.0.3` 的 HLS 代理播放修复：开启缓存后，带 `EXT-X-MEDIA` 音轨或字幕 rendition 的 master playlist 默认保留多个 video variants，避免 AVPlayer 失去 ABR 自适应码率空间。
+
 ## [0.3.0] - 2026-05-12
 
 ### 新增
