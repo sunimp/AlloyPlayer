@@ -41,6 +41,7 @@ public final class AVPlaybackEngine: PlaybackEngine {
     private var likelyToKeepUpObservation: NSKeyValueObservation?
     private var loadedTimeRangesObservation: NSKeyValueObservation?
     private var presentationSizeObservation: NSKeyValueObservation?
+    private var playbackStalledObserver: NSObjectProtocol?
     private var scalingMode: ScalingMode = .aspectFit
 
     public init(configuration: AVPlaybackEngineConfiguration = .init()) {
@@ -91,21 +92,30 @@ public final class AVPlaybackEngine: PlaybackEngine {
         observe(item: newItem)
         addTimeObserver(player: newPlayer)
         addEndObserver(item: newItem)
+        addPlaybackStalledObserver(item: newItem)
     }
 
     public func play() {
         switch stateMachine.state {
         case .ready, .paused:
-            break
+            player?.play()
+            player?.rate = snapshot.rate
+            transition(.play)
         case .ended:
-            player?.seek(to: .zero)
+            guard let player else { return }
+            let rate = snapshot.rate
+            player.seek(to: .zero, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self, weak player] finished in
+                guard finished else { return }
+                Task { @MainActor [weak self, weak player] in
+                    guard let self, let player else { return }
+                    player.play()
+                    player.rate = rate
+                    self.transition(.play)
+                }
+            }
         default:
             return
         }
-
-        player?.play()
-        player?.rate = snapshot.rate
-        transition(.play)
     }
 
     public func pause() {
@@ -123,6 +133,7 @@ public final class AVPlaybackEngine: PlaybackEngine {
             return false
         }
 
+        let shouldResumePlayback = stateMachine.state.shouldResumePlaybackAfterSeek
         transition(.seek(time))
         let timescale = playerItem.asset.duration.timescale
         let targetTime = CMTime(seconds: time, preferredTimescale: timescale)
@@ -132,6 +143,9 @@ public final class AVPlaybackEngine: PlaybackEngine {
             }
         }
         transition(.seekFinished(finished))
+        if finished, shouldResumePlayback {
+            resumePlaybackAfterSeekIfNeeded(item: playerItem)
+        }
         eventSubject.send(.seekCompleted(time: time, finished: finished))
         return finished
     }
@@ -165,13 +179,14 @@ public final class AVPlaybackEngine: PlaybackEngine {
         bufferEmptyObservation = item.observe(\.isPlaybackBufferEmpty, options: [.new]) { [weak self] item, _ in
             guard item.isPlaybackBufferEmpty else { return }
             Task { @MainActor [weak self] in
-                self?.transition(.bufferEmpty)
+                self?.handlePlaybackStalled()
             }
         }
         likelyToKeepUpObservation = item.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { [weak self] item, _ in
             guard item.isPlaybackLikelyToKeepUp else { return }
             Task { @MainActor [weak self] in
                 self?.transition(.likelyToKeepUp)
+                self?.resumePlaybackIfNeeded()
             }
         }
         loadedTimeRangesObservation = item.observe(\.loadedTimeRanges, options: [.new]) { [weak self] _, _ in
@@ -237,10 +252,72 @@ public final class AVPlaybackEngine: PlaybackEngine {
         }
     }
 
+    private func addPlaybackStalledObserver(item: AVPlayerItem) {
+        removePlaybackStalledObserver()
+        playbackStalledObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemPlaybackStalled,
+            object: item,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.handlePlaybackStalled()
+            }
+        }
+    }
+
+    private func handlePlaybackStalled() {
+        transition(.bufferEmpty)
+        resumePlaybackIfNeeded()
+    }
+
+    private func resumePlaybackAfterSeekIfNeeded(item: AVPlayerItem) {
+        guard stateMachine.state.requiresActivePlaybackRate else { return }
+
+        if item.isPlaybackBufferEmpty {
+            handlePlaybackStalled()
+        } else {
+            resumePlaybackIfNeeded()
+        }
+    }
+
+    private func resumePlaybackIfNeeded() {
+        guard stateMachine.state.requiresActivePlaybackRate else { return }
+        player?.play()
+        player?.rate = snapshot.rate
+    }
+
     private func updateBufferTime() {
-        guard let range = playerItem?.loadedTimeRanges.first?.timeRangeValue else { return }
-        let bufferedTime = CMTimeGetSeconds(range.start) + CMTimeGetSeconds(range.duration)
+        guard
+            let playerItem,
+            let bufferedTime = Self.resolvedBufferedTime(
+                from: playerItem.loadedTimeRanges.map(\.timeRangeValue),
+                previousBufferedTime: snapshot.bufferedTime,
+                duration: snapshot.duration
+            )
+        else {
+            return
+        }
         updateSnapshot { $0.bufferedTime = bufferedTime }
+    }
+
+    static func resolvedBufferedTime(
+        from ranges: [CMTimeRange],
+        previousBufferedTime: TimeInterval,
+        duration: TimeInterval
+    ) -> TimeInterval? {
+        let endTimes = ranges.compactMap { range -> TimeInterval? in
+            let start = CMTimeGetSeconds(range.start)
+            let duration = CMTimeGetSeconds(range.duration)
+            guard start.isFinite, duration.isFinite, start >= 0, duration >= 0 else {
+                return nil
+            }
+            return start + duration
+        }
+        guard let endTime = endTimes.max() else { return nil }
+
+        let bufferedTime = max(previousBufferedTime, endTime)
+        guard duration.isFinite, duration > 0 else { return bufferedTime }
+        return min(bufferedTime, duration)
     }
 
     private func updatePresentationSize(_ size: CGSize) {
@@ -253,6 +330,15 @@ public final class AVPlaybackEngine: PlaybackEngine {
         let state = stateMachine.apply(input)
         updateSnapshot { snapshot in
             snapshot.playbackState = playbackState(for: state)
+            switch state {
+            case .playing:
+                snapshot.loadState.insert(.playable)
+                snapshot.loadState.remove(.stalled)
+            case .buffering:
+                snapshot.loadState.insert(.stalled)
+            default:
+                break
+            }
             if case let .failed(_, error) = state {
                 snapshot.error = error
             }
@@ -304,6 +390,7 @@ public final class AVPlaybackEngine: PlaybackEngine {
     private func clearPlayer(sendStopped: Bool) {
         removeTimeObserver()
         removeEndObserver()
+        removePlaybackStalledObserver()
         statusObservation = nil
         bufferEmptyObservation = nil
         likelyToKeepUpObservation = nil
@@ -344,6 +431,33 @@ public final class AVPlaybackEngine: PlaybackEngine {
         if let endObserver {
             NotificationCenter.default.removeObserver(endObserver)
             self.endObserver = nil
+        }
+    }
+
+    private func removePlaybackStalledObserver() {
+        if let playbackStalledObserver {
+            NotificationCenter.default.removeObserver(playbackStalledObserver)
+            self.playbackStalledObserver = nil
+        }
+    }
+}
+
+private extension AVPlaybackStateMachine.State {
+    var shouldResumePlaybackAfterSeek: Bool {
+        switch self {
+        case .playing, .buffering:
+            true
+        case .idle, .loading, .ready, .paused, .seeking, .ended, .failed, .stopped:
+            false
+        }
+    }
+
+    var requiresActivePlaybackRate: Bool {
+        switch self {
+        case .playing, .buffering:
+            true
+        case .idle, .loading, .ready, .paused, .seeking, .ended, .failed, .stopped:
+            false
         }
     }
 }

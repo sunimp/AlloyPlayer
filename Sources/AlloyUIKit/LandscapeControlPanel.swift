@@ -29,6 +29,18 @@
             return v
         }()
 
+        private(set) var topGradientView: UIView = {
+            let v = GradientView()
+            v.translatesAutoresizingMaskIntoConstraints = false
+            return v
+        }()
+
+        private(set) var bottomGradientView: UIView = {
+            let v = GradientView(isTopToBottom: false)
+            v.translatesAutoresizingMaskIntoConstraints = false
+            return v
+        }()
+
         public private(set) var backButton: UIButton = {
             let btn = UIButton(type: .custom)
             let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .medium)
@@ -79,7 +91,12 @@
         public private(set) var lockButton: UIButton = {
             let btn = UIButton(type: .custom)
             let config = UIImage.SymbolConfiguration(pointSize: 18)
-            btn.setImage(UIImage(systemName: "lock.open.fill", withConfiguration: config), for: .normal)
+            let unlockedImage = UIImage(systemName: "lock.open.fill", withConfiguration: config)
+            let lockedImage = UIImage(systemName: "lock.fill", withConfiguration: config)
+            btn.setImage(unlockedImage, for: .normal)
+            btn.setImage(unlockedImage, for: .highlighted)
+            btn.setImage(lockedImage, for: .selected)
+            btn.setImage(lockedImage, for: [.selected, .highlighted])
             btn.tintColor = .white
             btn.translatesAutoresizingMaskIntoConstraints = false
             return btn
@@ -118,7 +135,7 @@
         private var cancellables = Set<AnyCancellable>()
         private var isControlVisible = false
         private var isEnded = false
-        private var isLocked = false
+        private(set) var isLocked = false
 
         override public init(frame: CGRect) {
             super.init(frame: frame)
@@ -133,10 +150,12 @@
         }
 
         private func setupViews() {
-            addSubview(topToolBar)
-            addSubview(bottomToolBar)
+            addSubview(topGradientView)
+            addSubview(bottomGradientView)
             addSubview(lockButton)
 
+            topGradientView.addSubview(topToolBar)
+            bottomGradientView.addSubview(bottomToolBar)
             topToolBar.addSubview(backButton)
             topToolBar.addSubview(titleLabel)
             bottomToolBar.addSubview(playPauseButton)
@@ -145,6 +164,11 @@
             bottomToolBar.addSubview(totalTimeLabel)
 
             NSLayoutConstraint.activate([
+                topGradientView.topAnchor.constraint(equalTo: topAnchor),
+                topGradientView.leadingAnchor.constraint(equalTo: leadingAnchor),
+                topGradientView.trailingAnchor.constraint(equalTo: trailingAnchor),
+                topGradientView.heightAnchor.constraint(equalToConstant: 80),
+
                 topToolBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
                 topToolBar.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor),
                 topToolBar.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor),
@@ -157,6 +181,11 @@
 
                 titleLabel.leadingAnchor.constraint(equalTo: backButton.trailingAnchor, constant: 8),
                 titleLabel.centerYAnchor.constraint(equalTo: topToolBar.centerYAnchor),
+
+                bottomGradientView.bottomAnchor.constraint(equalTo: bottomAnchor),
+                bottomGradientView.leadingAnchor.constraint(equalTo: leadingAnchor),
+                bottomGradientView.trailingAnchor.constraint(equalTo: trailingAnchor),
+                bottomGradientView.heightAnchor.constraint(equalToConstant: 80),
 
                 bottomToolBar.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
                 bottomToolBar.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor),
@@ -217,11 +246,14 @@
         }
 
         @objc private func lockTapped() {
-            isLocked.toggle()
-            let config = UIImage.SymbolConfiguration(pointSize: 18)
-            let name = isLocked ? "lock.fill" : "lock.open.fill"
-            lockButton.setImage(UIImage(systemName: name, withConfiguration: config), for: .normal)
+            setLocked(!isLocked)
             lockToggleAction?(isLocked)
+        }
+
+        private func setLocked(_ locked: Bool) {
+            isLocked = locked
+            lockButton.isSelected = locked
+            lockButton.layoutIfNeeded()
         }
 
         // MARK: - 公开方法（与 PortraitControlPanel 对称）
@@ -236,8 +268,11 @@
         public func showControlView() {
             isControlVisible = true
             UIView.animate(withDuration: 0.25) {
-                self.topToolBar.alpha = 1
-                self.bottomToolBar.alpha = 1
+                let toolbarAlpha: CGFloat = self.isLocked ? 0 : 1
+                self.topGradientView.alpha = toolbarAlpha
+                self.topToolBar.alpha = toolbarAlpha
+                self.bottomGradientView.alpha = toolbarAlpha
+                self.bottomToolBar.alpha = toolbarAlpha
                 self.lockButton.alpha = 1
             }
         }
@@ -245,8 +280,9 @@
         public func hideControlView() {
             isControlVisible = false
             UIView.animate(withDuration: 0.25) {
-                self.topToolBar.alpha = 0
-                self.bottomToolBar.alpha = 0
+                self.topGradientView.alpha = 0
+                self.bottomGradientView.alpha = 0
+                self.lockButton.alpha = 1
             }
         }
 
@@ -309,7 +345,10 @@
         }
 
         func shouldRespondToGesture(at point: CGPoint, type _: GestureType, touch _: UITouch) -> Bool {
-            if isControlVisible, bottomToolBar.frame.contains(point) || topToolBar.frame.contains(point) { return false }
+            if lockButton.frame.contains(point) { return false }
+            let bottomRect = bottomToolBar.convert(bottomToolBar.bounds, to: self)
+            let topRect = topToolBar.convert(topToolBar.bounds, to: self)
+            if isControlVisible, bottomRect.contains(point) || topRect.contains(point) { return false }
             return true
         }
     }

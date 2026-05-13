@@ -10,13 +10,16 @@
     public struct AlloyPlayerViewConfiguration {
         public var attachesRenderSurfaceAutomatically: Bool
         public var pausesWhenDetachedFromWindow: Bool
+        public var exitsFullscreenWhenStopped: Bool
 
         public init(
             attachesRenderSurfaceAutomatically: Bool = true,
-            pausesWhenDetachedFromWindow: Bool = true
+            pausesWhenDetachedFromWindow: Bool = true,
+            exitsFullscreenWhenStopped: Bool = true
         ) {
             self.attachesRenderSurfaceAutomatically = attachesRenderSurfaceAutomatically
             self.pausesWhenDetachedFromWindow = pausesWhenDetachedFromWindow
+            self.exitsFullscreenWhenStopped = exitsFullscreenWhenStopped
         }
     }
 #endif

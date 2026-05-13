@@ -175,7 +175,8 @@ final class MinimalControlOverlay: UIView, UIKitControlOverlay {
 
     // MARK: - UIKitControlOverlay 回调
 
-    func render(state: PlaybackStateSnapshot) {
+    func render(context: PlaybackControlContext) {
+        let state = context.state
         latestState = state
         let engine = state.engine
         let current = TimeFormatter.string(from: Int(engine.currentTime))
@@ -212,9 +213,8 @@ final class MinimalControlOverlay: UIView, UIKitControlOverlay {
         }
     }
 
-    func handle(event _: PlaybackEvent) {}
-
-    func handle(gesture: GestureEvent) {
+    func handle(input: PlaybackControlInput) {
+        guard case let .gesture(gesture) = input else { return }
         switch gesture {
         case .singleTap:
             toggleVisibility()

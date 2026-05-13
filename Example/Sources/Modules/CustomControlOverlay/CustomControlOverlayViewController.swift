@@ -94,11 +94,14 @@ final class CustomControlOverlayViewController: UIViewController {
         view.addSubview(nextSampleButton)
         view.addSubview(descriptionLabel)
 
+        let playerAspectRatioConstraint = playerContainerView.heightAnchor.constraint(equalTo: playerContainerView.widthAnchor, multiplier: 9.0 / 16.0)
+        playerAspectRatioConstraint.priority = .defaultHigh
+
         NSLayoutConstraint.activate([
             playerContainerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             playerContainerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             playerContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            playerContainerView.heightAnchor.constraint(equalTo: playerContainerView.widthAnchor, multiplier: 9.0 / 16.0),
+            playerAspectRatioConstraint,
 
             sampleGroupControl.topAnchor.constraint(equalTo: playerContainerView.bottomAnchor, constant: 16),
             sampleGroupControl.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),

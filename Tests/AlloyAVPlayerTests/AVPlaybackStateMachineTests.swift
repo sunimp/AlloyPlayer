@@ -28,6 +28,15 @@ struct AVPlaybackStateMachineTests {
         #expect(machine.apply(.pause) == .paused(source))
         #expect(machine.apply(.play) == .playing(source))
         #expect(machine.apply(.seek(12)) == .seeking(source, target: 12))
+        #expect(machine.apply(.seekFinished(true)) == .playing(source))
+    }
+
+    @Test func seekFromPausedReturnsToPaused() throws {
+        var machine = try readyPlayingMachine(source: makeSource())
+        let source = try #require(machine.currentSource)
+
+        #expect(machine.apply(.pause) == .paused(source))
+        #expect(machine.apply(.seek(12)) == .seeking(source, target: 12))
         #expect(machine.apply(.seekFinished(true)) == .paused(source))
     }
 
@@ -45,6 +54,15 @@ struct AVPlaybackStateMachineTests {
 
         #expect(machine.apply(.bufferEmpty) == .buffering(source))
         #expect(machine.apply(.likelyToKeepUp) == .playing(source))
+    }
+
+    @Test func seekFromBufferingKeepsPlaybackIntent() throws {
+        var machine = try readyPlayingMachine(source: makeSource())
+        let source = try #require(machine.currentSource)
+
+        #expect(machine.apply(.bufferEmpty) == .buffering(source))
+        #expect(machine.apply(.seek(30)) == .seeking(source, target: 30))
+        #expect(machine.apply(.seekFinished(true)) == .playing(source))
     }
 
     @Test func playToEndTransitions() throws {

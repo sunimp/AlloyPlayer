@@ -14,7 +14,12 @@
     @MainActor
     public final class AlloyPlayerView: UIView {
         public let session: PlaybackSession
-        public var configuration: AlloyPlayerViewConfiguration
+        public var configuration: AlloyPlayerViewConfiguration {
+            didSet {
+                handlePlaybackStateChange(session.state)
+            }
+        }
+
         public var fullscreenCoordinator: FullscreenCoordinating? {
             didSet { bindFullscreenCoordinator() }
         }
@@ -76,6 +81,11 @@
             session.pause()
         }
 
+        override public func layoutSubviews() {
+            super.layoutSubviews()
+            renderControlOverlay()
+        }
+
         private func setupViews() {
             renderHostView.translatesAutoresizingMaskIntoConstraints = false
             addSubview(renderHostView)
@@ -106,8 +116,7 @@
                 controlOverlay.bottomAnchor.constraint(equalTo: bottomAnchor),
             ]
             NSLayoutConstraint.activate(overlayConstraints)
-            controlOverlay.render(state: session.state)
-            controlOverlay.render(fullscreenState: fullscreenCoordinator?.state ?? .inline)
+            renderControlOverlay()
         }
 
         private func installGestureController() {
@@ -118,7 +127,7 @@
                 self?.controlOverlay?.shouldReceiveGesture(type, recognizer: recognizer, touch: touch) ?? true
             }
             gestureCancellable = gestureController.eventPublisher.sink { [weak self] event in
-                self?.controlOverlay?.handle(gesture: event)
+                self?.controlOverlay?.handle(input: .gesture(event))
             }
             gestureController.attach(to: self)
         }
@@ -130,13 +139,80 @@
             }
             bindDeviceOrientationFullscreenController()
             guard let fullscreenCoordinator else {
-                controlOverlay?.render(fullscreenState: .inline)
+                renderControlOverlay(fullscreenState: .inline)
                 return
             }
-            controlOverlay?.render(fullscreenState: fullscreenCoordinator.state)
+            renderControlOverlay(fullscreenState: fullscreenCoordinator.state)
             fullscreenCancellable = fullscreenCoordinator.statePublisher.sink { [weak self] state in
-                self?.controlOverlay?.render(fullscreenState: state)
+                self?.renderControlOverlay(fullscreenState: state)
             }
+            handlePlaybackStateChange(session.state)
+        }
+
+        func renderControlOverlay(state: PlaybackStateSnapshot? = nil, fullscreenState: FullscreenState? = nil) {
+            controlOverlay?.render(context: makeControlContext(state: state, fullscreenState: fullscreenState))
+        }
+
+        func handleControlInput(_ input: PlaybackControlInput) {
+            controlOverlay?.handle(input: input)
+        }
+
+        func handlePlaybackStateChange(_ state: PlaybackStateSnapshot) {
+            guard shouldExitFullscreen(for: state.engine.playbackState),
+                  configuration.exitsFullscreenWhenStopped,
+                  fullscreenCoordinator?.state == .fullscreen
+            else { return }
+            Task { [weak fullscreenCoordinator] in
+                await fullscreenCoordinator?.setFullscreen(false, animated: true)
+            }
+        }
+
+        private func shouldExitFullscreen(for playbackState: PlaybackState) -> Bool {
+            switch playbackState {
+            case .ended, .stopped:
+                true
+            case .idle, .loading, .ready, .playing, .paused, .seeking, .buffering, .failed:
+                false
+            }
+        }
+
+        private func makeControlContext(
+            state: PlaybackStateSnapshot? = nil,
+            fullscreenState: FullscreenState? = nil
+        ) -> PlaybackControlContext {
+            let resolvedState = state ?? session.state
+            let resolvedFullscreenState = fullscreenState ?? fullscreenCoordinator?.state ?? .inline
+            let resolvedFullscreenMode = fullscreenCoordinator?.fullscreenMode ?? .automatic
+            return PlaybackControlContext(
+                state: resolvedState,
+                fullscreenState: resolvedFullscreenState,
+                fullscreenMode: resolvedFullscreenMode,
+                layout: controlLayout(fullscreenState: resolvedFullscreenState, fullscreenMode: resolvedFullscreenMode)
+            )
+        }
+
+        private func controlLayout(
+            fullscreenState: FullscreenState,
+            fullscreenMode: FullscreenMode
+        ) -> PlaybackControlLayout {
+            guard fullscreenState == .fullscreen else { return .inline }
+            switch fullscreenMode {
+            case .portrait:
+                return .fullscreenPortrait
+            case .landscape:
+                return isLandscapeGeometry ? .fullscreenLandscape : .fullscreenPortrait
+            case .automatic:
+                return isLandscapeGeometry ? .fullscreenLandscape : .fullscreenPortrait
+            }
+        }
+
+        private var isLandscapeGeometry: Bool {
+            if let interfaceOrientation = window?.windowScene?.interfaceOrientation,
+               interfaceOrientation != .unknown
+            {
+                return interfaceOrientation.isLandscape
+            }
+            return bounds.width > bounds.height
         }
 
         private func handleControlAction(_ action: PlaybackControlAction) {

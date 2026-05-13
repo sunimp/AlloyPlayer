@@ -22,9 +22,7 @@
             return playerView
         }
 
-        func updateUIView(_ uiView: AlloyUIKit.AlloyPlayerView, context _: Context) {
-            uiView.controlOverlay?.render(state: controller.state)
-        }
+        func updateUIView(_: AlloyUIKit.AlloyPlayerView, context _: Context) {}
     }
 
     private final class SwiftUIHostingControlOverlay<Content: View>: UIView, UIKitControlOverlay {
@@ -50,8 +48,7 @@
             fatalError("init(coder:) has not been implemented")
         }
 
-        func render(state _: PlaybackStateSnapshot) {}
-        func handle(event _: PlaybackEvent) {}
+        func render(context _: PlaybackControlContext) {}
 
         private func installHostedView() {
             let hostedView = hostingController.view!

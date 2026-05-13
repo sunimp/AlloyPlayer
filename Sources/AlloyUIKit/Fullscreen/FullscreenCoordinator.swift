@@ -18,6 +18,7 @@
     public protocol FullscreenCoordinating: AnyObject {
         var state: FullscreenState { get }
         var statePublisher: AnyPublisher<FullscreenState, Never> { get }
+        var fullscreenMode: FullscreenMode { get }
         func setFullscreen(_ isFullscreen: Bool, animated: Bool) async
         func toggle(animated: Bool) async
     }
@@ -47,10 +48,15 @@
 
         public var configuration: FullscreenConfiguration
 
+        public var fullscreenMode: FullscreenMode {
+            configuration.mode
+        }
+
         private let stateSubject = CurrentValueSubject<FullscreenState, Never>(.inline)
         private var presentationSourceProvider: (() -> UIView?)?
         private var presentationContext: PresentationContext?
         private var fullscreenContainerView: FullscreenContainerView?
+        private var fullscreenConstraints: [NSLayoutConstraint] = []
         private var orientationObserver: NSObjectProtocol?
         private var isTransitioningFullscreen = false
         private var hasObservedLandscapeDeviceOrientationInFullscreen = false
@@ -85,7 +91,7 @@
             presentationSourceProvider = provider
         }
 
-        private func enterFullscreen(animated _: Bool) async {
+        private func enterFullscreen(animated: Bool) async {
             guard state == .inline,
                   !isTransitioningFullscreen,
                   let sourceView = presentationSourceProvider?(),
@@ -101,6 +107,7 @@
             let containerView = FullscreenContainerView(frame: window.bounds)
             UIView.performWithoutAnimation {
                 let originalFrame = sourceView.frame
+                let originalFrameInWindow = sourceView.convert(sourceView.bounds, to: window)
                 let originalIndex = originalSuperview.subviews.firstIndex(of: sourceView) ?? originalSuperview.subviews.count
                 let originalConstraints = activeConstraintsAffecting(sourceView, until: window)
                 let originalTranslatesAutoresizingMaskIntoConstraints = sourceView.translatesAutoresizingMaskIntoConstraints
@@ -110,14 +117,9 @@
                 containerView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
                 window.addSubview(containerView)
 
-                sourceView.translatesAutoresizingMaskIntoConstraints = false
+                sourceView.translatesAutoresizingMaskIntoConstraints = true
                 containerView.addSubview(sourceView)
-                NSLayoutConstraint.activate([
-                    sourceView.topAnchor.constraint(equalTo: containerView.topAnchor),
-                    sourceView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-                    sourceView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-                    sourceView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-                ])
+                sourceView.frame = containerView.convert(originalFrameInWindow, from: window)
                 containerView.layoutIfNeeded()
 
                 presentationContext = PresentationContext(
@@ -134,13 +136,18 @@
             startDeviceOrientationObservationIfNeeded()
             await orientationCoordinator.rotate(to: configuration.mode, in: window)
             updateFullscreenContainerFrame()
+            await animateTransition(animated: animated) {
+                sourceView.frame = containerView.bounds
+                sourceView.layoutIfNeeded()
+            }
             UIView.performWithoutAnimation {
+                installFullscreenConstraints(for: sourceView, in: containerView)
                 state = .fullscreen
                 containerView.layoutIfNeeded()
             }
         }
 
-        private func exitFullscreen(animated _: Bool) async {
+        private func exitFullscreen(animated: Bool) async {
             guard state == .fullscreen,
                   !isTransitioningFullscreen,
                   let context = presentationContext,
@@ -152,6 +159,19 @@
             defer { isTransitioningFullscreen = false }
             stopDeviceOrientationObservation()
             await orientationCoordinator.rotate(to: context.originalInterfaceOrientation, in: containerView.window)
+            updateFullscreenContainerFrame()
+
+            let targetFrame = originalSuperview.convert(context.originalFrame, to: containerView)
+            UIView.performWithoutAnimation {
+                NSLayoutConstraint.deactivate(self.fullscreenConstraints)
+                self.fullscreenConstraints.removeAll()
+                sourceView.translatesAutoresizingMaskIntoConstraints = true
+                containerView.layoutIfNeeded()
+            }
+            await animateTransition(animated: animated) {
+                sourceView.frame = targetFrame
+                sourceView.layoutIfNeeded()
+            }
 
             let restore = {
                 let insertIndex = min(context.originalIndex, originalSuperview.subviews.count)
@@ -173,6 +193,24 @@
                 self.hasObservedLandscapeDeviceOrientationInFullscreen = false
             }
             finish()
+        }
+
+        private func animateTransition(animated: Bool, animations: @escaping () -> Void) async {
+            guard animated else {
+                UIView.performWithoutAnimation(animations)
+                return
+            }
+            await withCheckedContinuation { continuation in
+                UIView.animate(
+                    withDuration: 0.25,
+                    delay: 0,
+                    options: [.beginFromCurrentState, .curveEaseInOut, .allowUserInteraction]
+                ) {
+                    animations()
+                } completion: { _ in
+                    continuation.resume()
+                }
+            }
         }
 
         private func activeConstraintsAffecting(_ sourceView: UIView, until window: UIWindow) -> [NSLayoutConstraint] {
@@ -198,6 +236,18 @@
                 fullscreenContainerView.frame = window.bounds
                 fullscreenContainerView.layoutIfNeeded()
             }
+        }
+
+        private func installFullscreenConstraints(for sourceView: UIView, in containerView: UIView) {
+            NSLayoutConstraint.deactivate(fullscreenConstraints)
+            sourceView.translatesAutoresizingMaskIntoConstraints = false
+            fullscreenConstraints = [
+                sourceView.topAnchor.constraint(equalTo: containerView.topAnchor),
+                sourceView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                sourceView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                sourceView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+            ]
+            NSLayoutConstraint.activate(fullscreenConstraints)
         }
 
         private func startDeviceOrientationObservationIfNeeded() {

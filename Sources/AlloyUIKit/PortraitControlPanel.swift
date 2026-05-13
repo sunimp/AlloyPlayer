@@ -27,6 +27,18 @@
             return v
         }()
 
+        private(set) var topGradientView: UIView = {
+            let v = GradientView()
+            v.translatesAutoresizingMaskIntoConstraints = false
+            return v
+        }()
+
+        private(set) var bottomGradientView: UIView = {
+            let v = GradientView(isTopToBottom: false)
+            v.translatesAutoresizingMaskIntoConstraints = false
+            return v
+        }()
+
         public private(set) var backButton: UIButton = {
             let btn = UIButton(type: .custom)
             let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .medium)
@@ -137,18 +149,14 @@
 
         private func setupViews() {
             // 顶部工具栏
-            let topGradient = GradientView()
-            topGradient.translatesAutoresizingMaskIntoConstraints = false
-            addSubview(topGradient)
-            addSubview(topToolBar)
+            addSubview(topGradientView)
+            topGradientView.addSubview(topToolBar)
             topToolBar.addSubview(backButton)
             topToolBar.addSubview(titleLabel)
 
             // 底部工具栏
-            let bottomGradient = GradientView(isTopToBottom: false)
-            bottomGradient.translatesAutoresizingMaskIntoConstraints = false
-            addSubview(bottomGradient)
-            addSubview(bottomToolBar)
+            addSubview(bottomGradientView)
+            bottomGradientView.addSubview(bottomToolBar)
             bottomToolBar.addSubview(playPauseButton)
             bottomToolBar.addSubview(currentTimeLabel)
             bottomToolBar.addSubview(slider)
@@ -158,14 +166,14 @@
             titleLeadingWithoutBackButtonConstraint.isActive = true
 
             NSLayoutConstraint.activate([
-                topGradient.topAnchor.constraint(equalTo: topAnchor),
-                topGradient.leadingAnchor.constraint(equalTo: leadingAnchor),
-                topGradient.trailingAnchor.constraint(equalTo: trailingAnchor),
-                topGradient.heightAnchor.constraint(equalToConstant: 80),
+                topGradientView.topAnchor.constraint(equalTo: topAnchor),
+                topGradientView.leadingAnchor.constraint(equalTo: leadingAnchor),
+                topGradientView.trailingAnchor.constraint(equalTo: trailingAnchor),
+                topGradientView.heightAnchor.constraint(equalToConstant: 80),
 
                 topToolBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
-                topToolBar.leadingAnchor.constraint(equalTo: leadingAnchor),
-                topToolBar.trailingAnchor.constraint(equalTo: trailingAnchor),
+                topToolBar.leadingAnchor.constraint(equalTo: topGradientView.leadingAnchor),
+                topToolBar.trailingAnchor.constraint(equalTo: topGradientView.trailingAnchor),
                 topToolBar.heightAnchor.constraint(equalToConstant: 44),
 
                 backButton.leadingAnchor.constraint(equalTo: topToolBar.leadingAnchor, constant: 12),
@@ -175,14 +183,14 @@
 
                 titleLabel.centerYAnchor.constraint(equalTo: topToolBar.centerYAnchor),
 
-                bottomGradient.bottomAnchor.constraint(equalTo: bottomAnchor),
-                bottomGradient.leadingAnchor.constraint(equalTo: leadingAnchor),
-                bottomGradient.trailingAnchor.constraint(equalTo: trailingAnchor),
-                bottomGradient.heightAnchor.constraint(equalToConstant: 80),
+                bottomGradientView.bottomAnchor.constraint(equalTo: bottomAnchor),
+                bottomGradientView.leadingAnchor.constraint(equalTo: leadingAnchor),
+                bottomGradientView.trailingAnchor.constraint(equalTo: trailingAnchor),
+                bottomGradientView.heightAnchor.constraint(equalToConstant: 80),
 
                 bottomToolBar.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
-                bottomToolBar.leadingAnchor.constraint(equalTo: leadingAnchor),
-                bottomToolBar.trailingAnchor.constraint(equalTo: trailingAnchor),
+                bottomToolBar.leadingAnchor.constraint(equalTo: bottomGradientView.leadingAnchor),
+                bottomToolBar.trailingAnchor.constraint(equalTo: bottomGradientView.trailingAnchor),
                 bottomToolBar.heightAnchor.constraint(equalToConstant: 44),
 
                 playPauseButton.leadingAnchor.constraint(equalTo: bottomToolBar.leadingAnchor, constant: 12),
@@ -256,7 +264,9 @@
         public func showControlView() {
             isControlVisible = true
             UIView.animate(withDuration: 0.25) {
+                self.topGradientView.alpha = 1
                 self.topToolBar.alpha = 1
+                self.bottomGradientView.alpha = 1
                 self.bottomToolBar.alpha = 1
             }
         }
@@ -264,8 +274,8 @@
         public func hideControlView() {
             isControlVisible = false
             UIView.animate(withDuration: 0.25) {
-                self.topToolBar.alpha = 0
-                self.bottomToolBar.alpha = 0
+                self.topGradientView.alpha = 0
+                self.bottomGradientView.alpha = 0
             }
         }
 
@@ -284,8 +294,13 @@
         }
 
         private func updateTitleLeadingConstraint(isBackButtonVisible: Bool) {
-            titleLeadingWithoutBackButtonConstraint.isActive = !isBackButtonVisible
-            titleLeadingWithBackButtonConstraint.isActive = isBackButtonVisible
+            NSLayoutConstraint.deactivate([
+                titleLeadingWithBackButtonConstraint,
+                titleLeadingWithoutBackButtonConstraint,
+            ])
+            NSLayoutConstraint.activate([
+                isBackButtonVisible ? titleLeadingWithBackButtonConstraint : titleLeadingWithoutBackButtonConstraint,
+            ])
         }
 
         public func updatePlayButtonState(isPlaying: Bool) {
@@ -344,43 +359,13 @@
         }
 
         func shouldRespondToGesture(at point: CGPoint, type _: GestureType, touch _: UITouch) -> Bool {
-            let bottomRect = bottomToolBar.frame
-            let topRect = topToolBar.frame
+            let bottomRect = bottomToolBar.convert(bottomToolBar.bounds, to: self)
+            let topRect = topToolBar.convert(topToolBar.bounds, to: self)
             // 工具栏区域内的触摸不响应播放器手势
             if isControlVisible, bottomRect.contains(point) || topRect.contains(point) {
                 return false
             }
             return true
-        }
-    }
-
-    // MARK: - GradientView（内部辅助）
-
-    private final class GradientView: UIView {
-        private let gradientLayer = CAGradientLayer()
-        private let isTopToBottom: Bool
-
-        init(isTopToBottom: Bool = true) {
-            self.isTopToBottom = isTopToBottom
-            super.init(frame: .zero)
-            layer.addSublayer(gradientLayer)
-            gradientLayer.colors = [
-                UIColor.black.withAlphaComponent(isTopToBottom ? 0.6 : 0).cgColor,
-                UIColor.black.withAlphaComponent(isTopToBottom ? 0 : 0.6).cgColor,
-            ]
-        }
-
-        @available(*, unavailable)
-        required init?(coder _: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-
-        override func layoutSubviews() {
-            super.layoutSubviews()
-            CATransaction.begin()
-            CATransaction.setDisableActions(true)
-            gradientLayer.frame = bounds
-            CATransaction.commit()
         }
     }
 #endif

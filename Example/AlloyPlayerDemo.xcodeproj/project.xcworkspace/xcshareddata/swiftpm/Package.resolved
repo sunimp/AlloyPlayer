@@ -1,5 +1,5 @@
 {
-  "originHash" : "7be5bd1bebb76d2fea8ac251290c2f258868841da271acc085c7f0e5c630f609",
+  "originHash" : "399490e86b8afb1ede89837c9cf7521072e8ce9d6d268033b0de125757c9964f",
   "pins" : [
     {
       "identity" : "httpmediacache",
@@ -11,12 +11,21 @@
       }
     },
     {
-      "identity" : "lookinside-release",
+      "identity" : "lookinside",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/LookInsideApp/LookInside-Release",
+      "location" : "https://github.com/LookInsideApp/LookInside",
       "state" : {
-        "revision" : "35f0e15bf9ab2206ee6c521c736cab793bc26209",
-        "version" : "0.2.0"
+        "revision" : "0e029f00e5e4b52db80537d68ae6d57525b5250c",
+        "version" : "2.2.6"
+      }
+    },
+    {
+      "identity" : "swift-argument-parser",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-argument-parser.git",
+      "state" : {
+        "revision" : "626b5b7b2f45e1b0b1c6f4a309296d1d21d7311b",
+        "version" : "1.7.1"
       }
     },
     {

@@ -97,9 +97,9 @@
         let overlay = FloatingPlaybackOverlay(frame: CGRect(x: 0, y: 0, width: 200, height: 112))
         var actions: [PlaybackControlAction] = []
         overlay.actionHandler = { actions.append($0) }
-        overlay.render(state: PlaybackStateSnapshot(
+        overlay.render(context: PlaybackControlContext(state: PlaybackStateSnapshot(
             engine: PlaybackEngineSnapshot(playbackState: .playing, currentTime: 10, duration: 100)
-        ))
+        )))
 
         let slider = try #require(overlay.allProgressSliders().first)
         slider.beginTrackInteraction(at: CGPoint(x: 100, y: 9))

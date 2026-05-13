@@ -92,11 +92,14 @@ final class FullScreenModesViewController: UIViewController {
             buttonStack.addArrangedSubview(item)
         }
 
+        let playerAspectRatioConstraint = playerContainerView.heightAnchor.constraint(equalTo: playerContainerView.widthAnchor, multiplier: 9.0 / 16.0)
+        playerAspectRatioConstraint.priority = .defaultHigh
+
         NSLayoutConstraint.activate([
             playerContainerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             playerContainerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             playerContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            playerContainerView.heightAnchor.constraint(equalTo: playerContainerView.widthAnchor, multiplier: 9.0 / 16.0),
+            playerAspectRatioConstraint,
 
             buttonStack.topAnchor.constraint(equalTo: playerContainerView.bottomAnchor, constant: 24),
             buttonStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),

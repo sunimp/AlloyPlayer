@@ -92,7 +92,8 @@
             updatePlayButton(isPlaying: false)
         }
 
-        func render(state: PlaybackStateSnapshot) {
+        func render(context: PlaybackControlContext) {
+            let state = context.state
             latestState = state
             let engine = state.engine
             updatePlayButton(isPlaying: engine.playbackState == .playing)
@@ -112,16 +113,14 @@
             }
         }
 
-        func render(fullscreenState _: FullscreenState) {}
-
-        func handle(event: PlaybackEvent) {
-            guard case let .engine(engineEvent) = event else { return }
+        func handle(input: PlaybackControlInput) {
+            guard case let .playbackEvent(event) = input,
+                  case let .engine(engineEvent) = event
+            else { return }
             if case .didPlayToEnd = engineEvent {
                 updatePlayButton(imageName: "arrow.counterclockwise")
             }
         }
-
-        func handle(gesture _: GestureEvent) {}
 
         func shouldReceiveGesture(_: GestureType, recognizer _: UIGestureRecognizer, touch: UITouch) -> Bool {
             var view = touch.view

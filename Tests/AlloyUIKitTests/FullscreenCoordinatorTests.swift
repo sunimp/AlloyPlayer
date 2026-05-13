@@ -83,6 +83,24 @@
             #expect(orientationCoordinator.didSourceReachFullscreenContainerBeforeRotation == true)
         }
 
+        @Test func fullscreenKeepsSourceFrameUntilRotationCompletes() async {
+            let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+            let parentView = UIView(frame: CGRect(x: 20, y: 30, width: 200, height: 120))
+            let sourceView = UIView(frame: parentView.bounds)
+            window.addSubview(parentView)
+            parentView.addSubview(sourceView)
+
+            let orientationCoordinator = CapturingOrientationCoordinator {
+                sourceView.frame == CGRect(x: 20, y: 30, width: 200, height: 120)
+            }
+            let coordinator = FullscreenCoordinator(orientationCoordinator: orientationCoordinator)
+            coordinator.setPresentationSourceProvider { sourceView }
+
+            await coordinator.setFullscreen(true, animated: false)
+
+            #expect(orientationCoordinator.didSourceKeepWindowFrameBeforeRotation == true)
+        }
+
         @Test func portraitFullscreenUsesWindowBoundsWithoutRotation() async throws {
             let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
             let parentView = UIView(frame: CGRect(x: 20, y: 30, width: 200, height: 120))
@@ -130,6 +148,7 @@
     private final class CapturingOrientationCoordinator: InterfaceOrientationCoordinating {
         private let captureSourceContainerState: () -> Bool
         var didSourceReachFullscreenContainerBeforeRotation = false
+        var didSourceKeepWindowFrameBeforeRotation = false
 
         init(captureSourceContainerState: @escaping () -> Bool) {
             self.captureSourceContainerState = captureSourceContainerState
@@ -137,6 +156,7 @@
 
         func rotate(to _: FullscreenMode, in _: UIWindow?) async {
             didSourceReachFullscreenContainerBeforeRotation = captureSourceContainerState()
+            didSourceKeepWindowFrameBeforeRotation = captureSourceContainerState()
         }
 
         func rotate(to _: UIInterfaceOrientation, in _: UIWindow?) async {}

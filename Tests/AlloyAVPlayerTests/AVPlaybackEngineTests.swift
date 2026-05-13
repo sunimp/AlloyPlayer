@@ -7,6 +7,7 @@
 
 @testable import AlloyAVPlayer
 import AlloyCore
+import CoreMedia
 import Foundation
 import Testing
 
@@ -33,6 +34,37 @@ struct AVPlaybackEngineTests {
 
         #expect(engine.snapshot.playbackState == .stopped)
         #expect(engine.renderSurface == nil)
+    }
+
+    @Test func resolvedBufferedTimeUsesFarthestLoadedRange() {
+        let bufferedTime = AVPlaybackEngine.resolvedBufferedTime(
+            from: [
+                CMTimeRange(start: .zero, duration: CMTime(seconds: 30, preferredTimescale: 600)),
+                CMTimeRange(
+                    start: CMTime(seconds: 60, preferredTimescale: 600),
+                    duration: CMTime(seconds: 20, preferredTimescale: 600)
+                ),
+            ],
+            previousBufferedTime: 0,
+            duration: 100
+        )
+
+        #expect(bufferedTime == 80)
+    }
+
+    @Test func resolvedBufferedTimeDoesNotRegressWithinLoadedSource() {
+        let bufferedTime = AVPlaybackEngine.resolvedBufferedTime(
+            from: [
+                CMTimeRange(
+                    start: CMTime(seconds: 50, preferredTimescale: 600),
+                    duration: CMTime(seconds: 5, preferredTimescale: 600)
+                ),
+            ],
+            previousBufferedTime: 98,
+            duration: 98
+        )
+
+        #expect(bufferedTime == 98)
     }
 }
 

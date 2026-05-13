@@ -26,13 +26,14 @@
                     if playerView.configuration.attachesRenderSurfaceAutomatically {
                         playerView.renderHostView.attach(surface: session.engine.renderSurface)
                     }
-                    playerView.controlOverlay?.render(state: state)
+                    playerView.renderControlOverlay(state: state)
+                    playerView.handlePlaybackStateChange(state)
                 }
                 .store(in: &cancellables)
 
             session.eventPublisher
                 .sink { [weak playerView] event in
-                    playerView?.controlOverlay?.handle(event: event)
+                    playerView?.handleControlInput(.playbackEvent(event))
                 }
                 .store(in: &cancellables)
         }

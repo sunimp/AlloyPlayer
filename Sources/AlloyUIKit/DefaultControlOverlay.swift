@@ -126,10 +126,14 @@
         private var sumTime: TimeInterval = 0
         private var latestState = PlaybackStateSnapshot(engine: PlaybackEngineSnapshot())
         private var isFullscreen = false
+        private var currentLayout: PlaybackControlLayout = .inline
         private var isScreenLocked = false
         private var autoHideWorkItem: DispatchWorkItem?
         private var cancellables = Set<AnyCancellable>()
         private var volumeBrightnessHUD = VolumeAndBrightnessHUD()
+        private var isLandscapeLocked: Bool {
+            currentLayout == .fullscreenLandscape && isScreenLocked
+        }
 
         // MARK: - 初始化
 
@@ -234,7 +238,13 @@
                 self?.togglePlayPause()
             }
             landscapePanel.lockToggleAction = { [weak self] isLocked in
-                self?.isScreenLocked = isLocked
+                guard let self else { return }
+                self.isScreenLocked = isLocked
+                if isLocked {
+                    self.hideControlView()
+                } else {
+                    self.showControlView()
+                }
             }
 
             // 横屏返回按钮
@@ -332,9 +342,14 @@
         }
 
         private func togglePlayPause() {
-            latestState.engine.playbackState == .playing
-                ? actionHandler?(.pause)
-                : actionHandler?(.play)
+            switch latestState.engine.playbackState {
+            case .playing:
+                actionHandler?(.pause)
+            case .ended:
+                actionHandler?(.replay)
+            default:
+                actionHandler?(.play)
+            }
         }
 
         // MARK: - 公开方法
@@ -368,7 +383,13 @@
             bufferingIndicator.stopAnimating()
         }
 
-        public func render(state: PlaybackStateSnapshot) {
+        public func render(context: PlaybackControlContext) {
+            let didLayoutChange = currentLayout != context.layout
+            let shouldUpdateLayoutWithoutAnimations = didLayoutChange || isFullscreen != (context.fullscreenState == .fullscreen)
+            currentLayout = context.layout
+            isFullscreen = context.fullscreenState == .fullscreen
+            fullScreenMode = context.fullscreenMode
+            let state = context.state
             latestState = state
             let engine = state.engine
             render(playbackState: engine.playbackState)
@@ -379,14 +400,19 @@
                 portraitPanel.updateBufferTime(engine.bufferedTime, total: engine.duration)
                 landscapePanel.updateBufferTime(engine.bufferedTime, total: engine.duration)
             }
+            updateControlPanelVisibility(removingAnimations: shouldUpdateLayoutWithoutAnimations)
+            if didLayoutChange {
+                showControlView()
+            }
         }
 
-        public func render(fullscreenState: FullscreenState) {
-            isFullscreen = fullscreenState == .fullscreen
-            updateControlPanelVisibility(removingAnimations: true)
-        }
-
-        public func handle(event: PlaybackEvent) {
+        public func handle(input: PlaybackControlInput) {
+            guard case let .playbackEvent(event) = input else {
+                if case let .gesture(gesture) = input {
+                    handleGesture(gesture)
+                }
+                return
+            }
             guard case let .engine(engineEvent) = event else { return }
             switch engineEvent {
             case .didPlayToEnd:
@@ -452,7 +478,7 @@
             isShowing = true
             _controlVisibility.send(true)
             bottomProgress.isHidden = true
-            if isFullscreen {
+            if currentLayout == .fullscreenLandscape {
                 landscapePanel.showControlView()
             } else {
                 portraitPanel.showControlView()
@@ -463,7 +489,7 @@
         private func hideControlView() {
             isShowing = false
             _controlVisibility.send(false)
-            bottomProgress.isHidden = false
+            bottomProgress.isHidden = isLandscapeLocked
             portraitPanel.hideControlView()
             landscapePanel.hideControlView()
             cancelAutoHide()
@@ -471,6 +497,7 @@
 
         private func scheduleAutoHide() {
             cancelAutoHide()
+            guard autoHideInterval > 0 else { return }
             let work = DispatchWorkItem { [weak self] in self?.hideControlView() }
             autoHideWorkItem = work
             DispatchQueue.main.asyncAfter(deadline: .now() + autoHideInterval, execute: work)
@@ -483,8 +510,8 @@
 
         // MARK: - 手势回调
 
-        public func handle(gesture: GestureEvent) {
-            guard !isScreenLocked else { return }
+        private func handleGesture(_ gesture: GestureEvent) {
+            guard !isLandscapeLocked else { return }
             switch gesture {
             case .singleTap:
                 handleSingleTapGesture()
@@ -505,7 +532,7 @@
 
         public func shouldReceiveGesture(_ type: GestureType, recognizer _: UIGestureRecognizer, touch: UITouch) -> Bool {
             let point = touch.location(in: self)
-            if isFullscreen {
+            if currentLayout == .fullscreenLandscape {
                 return landscapePanel.shouldRespondToGesture(at: point, type: type, touch: touch)
             }
             return portraitPanel.shouldRespondToGesture(at: point, type: type, touch: touch)
@@ -516,7 +543,7 @@
         }
 
         private func handleDoubleTapGesture() {
-            if isFullscreen {
+            if currentLayout == .fullscreenLandscape {
                 landscapePanel.playOrPause()
             } else {
                 portraitPanel.playOrPause()
@@ -587,7 +614,7 @@
 
         private func updateControlPanelVisibility(removingAnimations: Bool) {
             guard failButton.isHidden else { return }
-            let isLandscape = isFullscreen && fullScreenMode != .portrait && bounds.width > bounds.height
+            let isLandscape = currentLayout == .fullscreenLandscape
             UIView.performWithoutAnimation {
                 if removingAnimations {
                     removeAnimationsRecursively(from: portraitPanel)

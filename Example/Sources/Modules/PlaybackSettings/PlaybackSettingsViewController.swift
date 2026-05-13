@@ -67,7 +67,7 @@ final class PlaybackSettingsViewController: UIViewController {
     deinit {
         MainActor.assumeIsolated {
             playbackTask?.cancel()
-            playerView.stop()
+            stopPlayback()
         }
     }
 
@@ -77,11 +77,14 @@ final class PlaybackSettingsViewController: UIViewController {
         view.addSubview(playerContainerView)
         view.addSubview(tableView)
 
+        let playerAspectRatioConstraint = playerContainerView.heightAnchor.constraint(equalTo: playerContainerView.widthAnchor, multiplier: 3.0 / 4.0)
+        playerAspectRatioConstraint.priority = .defaultHigh
+
         NSLayoutConstraint.activate([
             playerContainerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             playerContainerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             playerContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            playerContainerView.heightAnchor.constraint(equalTo: playerContainerView.widthAnchor, multiplier: 3.0 / 4.0),
+            playerAspectRatioConstraint,
 
             tableView.topAnchor.constraint(equalTo: playerContainerView.bottomAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -109,7 +112,7 @@ final class PlaybackSettingsViewController: UIViewController {
     private func playCurrentVideo() {
         guard currentSamples.indices.contains(currentSampleIndex) else { return }
         let video = currentSamples[currentSampleIndex]
-        playerView.stop()
+        stopPlayback()
         applyPlaybackConfiguration()
         controlOverlay.resetControlView()
         controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: selectedFullScreenMode)
@@ -126,6 +129,10 @@ final class PlaybackSettingsViewController: UIViewController {
         applyPlaybackConfiguration()
     }
 
+    private func stopPlayback() {
+        playerView.stop()
+    }
+
     private func applyPlaybackConfiguration() {
         session.send(.setRate(selectedRate))
         session.send(.setScalingMode(selectedScalingMode))
@@ -134,6 +141,7 @@ final class PlaybackSettingsViewController: UIViewController {
         playerView.gestureController?.configuration.disabledPanDirections = disabledPanMovingDirection
         fullscreenCoordinator.configuration.mode = selectedFullScreenMode
         fullscreenCoordinator.configuration.isDeviceOrientationFullscreenEnabled = isDeviceOrientationFullscreenEnabled
+        playerView.configuration.exitsFullscreenWhenStopped = exitFullScreenWhenStop
         controlOverlay.fullScreenMode = selectedFullScreenMode
     }
 

@@ -37,14 +37,17 @@ struct AVPlaybackStateMachine {
     }
 
     private(set) var state: State = .idle
+    private var stateBeforeSeeking: State?
 
     @discardableResult
     mutating func apply(_ input: Input) -> State {
         switch input {
         case let .load(source):
+            stateBeforeSeeking = nil
             state = .loading(source)
 
         case .stop:
+            stateBeforeSeeking = nil
             state = .stopped
 
         case .itemReady:
@@ -53,6 +56,7 @@ struct AVPlaybackStateMachine {
             }
 
         case let .itemFailed(error):
+            stateBeforeSeeking = nil
             state = .failed(source, error)
 
         case .play:
@@ -66,15 +70,19 @@ struct AVPlaybackStateMachine {
             }
 
         case let .seek(time):
-            if let source, case .playing = state {
+            if let source, state.canSeek {
+                stateBeforeSeeking = state
                 state = .seeking(source, target: time)
             }
 
         case let .seekFinished(finished):
             guard case let .seeking(source, _) = state else { break }
-            state = finished
-                ? .paused(source)
-                : .failed(source, PlaybackError(code: .seekFailed, message: "seek failed"))
+            if finished {
+                state = stateBeforeSeeking?.stateAfterSuccessfulSeek(source: source) ?? .paused(source)
+            } else {
+                state = .failed(source, PlaybackError(code: .seekFailed, message: "seek failed"))
+            }
+            stateBeforeSeeking = nil
 
         case .bufferEmpty:
             if let source, case .playing = state {
@@ -109,6 +117,30 @@ struct AVPlaybackStateMachine {
             source
         case .idle, .stopped:
             nil
+        }
+    }
+}
+
+private extension AVPlaybackStateMachine.State {
+    var canSeek: Bool {
+        switch self {
+        case .ready, .playing, .paused, .buffering, .ended:
+            true
+        case .idle, .loading, .seeking, .failed, .stopped:
+            false
+        }
+    }
+
+    func stateAfterSuccessfulSeek(source: PlaybackSource) -> AVPlaybackStateMachine.State {
+        switch self {
+        case .playing, .buffering:
+            .playing(source)
+        case .ready:
+            .ready(source)
+        case .ended, .paused:
+            .paused(source)
+        case .idle, .loading, .seeking, .failed, .stopped:
+            .paused(source)
         }
     }
 }
