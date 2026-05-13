@@ -10,12 +10,12 @@ import Combine
 import Foundation
 import Testing
 
-@Test func playerStateDefaultValueRepresentsUnknownPlayback() {
+@Test func playerStateDefaultValueRepresentsIdlePlayback() {
     let state = PlayerState()
 
     #expect(state.assetURL == nil)
-    #expect(state.playbackState == .unknown)
-    #expect(state.loadState == .unknown)
+    #expect(state.playbackState == .idle)
+    #expect(state.loadState.isEmpty)
     #expect(state.currentTime == 0)
     #expect(state.totalTime == 0)
     #expect(state.bufferTime == 0)
@@ -50,7 +50,7 @@ import Testing
         engine.sendBufferTime(30)
         engine.sendPresentationSize(CGSize(width: 1920, height: 1080))
 
-        #expect(states.first?.playbackState == .unknown)
+        #expect(states.first?.playbackState == .idle)
         #expect(states.last?.assetURL == url)
         #expect(states.last?.playbackState == .playing)
         #expect(states.last?.loadState == .playable)
@@ -84,8 +84,8 @@ import Testing
     @MainActor
     private final class ObservablePlaybackEngine: PlaybackEngine {
         let renderView = RenderView()
-        var playbackState: PlaybackState = .unknown
-        var loadState: LoadState = .unknown
+        var playbackState: PlaybackState = .idle
+        var loadState: LoadState = []
         var isPlaying = false
         var isPreparedToPlay = true
         var volume: Float = 1

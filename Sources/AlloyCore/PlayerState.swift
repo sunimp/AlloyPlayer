@@ -22,8 +22,8 @@ public struct PlayerState: Equatable {
 
     public init(
         assetURL: URL? = nil,
-        playbackState: PlaybackState = .unknown,
-        loadState: LoadState = .unknown,
+        playbackState: PlaybackState = .idle,
+        loadState: LoadState = [],
         currentTime: TimeInterval = 0,
         totalTime: TimeInterval = 0,
         bufferTime: TimeInterval = 0,

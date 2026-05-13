@@ -9,13 +9,13 @@ let package = Package(
         .macOS(.v12),
     ],
     products: [
-        .library(name: "AlloyPlayer", targets: ["AlloyPlayer"]),
         .library(name: "AlloyCore", targets: ["AlloyCore"]),
         .library(name: "AlloyAVPlayer", targets: ["AlloyAVPlayer"]),
-        .library(name: "AlloyHTTPMediaCacheSupport", targets: ["AlloyHTTPMediaCacheSupport"]),
-        .library(name: "AlloyUIKitControls", targets: ["AlloyUIKitControls"]),
-        .library(name: "AlloySwiftUIControls", targets: ["AlloySwiftUIControls"]),
+        .library(name: "AlloyUIKit", targets: ["AlloyUIKit"]),
+        .library(name: "AlloySwiftUI", targets: ["AlloySwiftUI"]),
         .library(name: "AlloyListPlayback", targets: ["AlloyListPlayback"]),
+        .library(name: "AlloyHTTPMediaCacheSupport", targets: ["AlloyHTTPMediaCacheSupport"]),
+        .library(name: "AlloyPlayer", targets: ["AlloyPlayer"]),
     ],
     dependencies: [
         .package(url: "https://github.com/sunimp/HTTPMediaCache.git", from: "1.0.3"),
@@ -34,20 +34,20 @@ let package = Package(
             ]
         ),
         .target(
-            name: "AlloyUIKitControls",
+            name: "AlloyUIKit",
             dependencies: ["AlloyCore"]
         ),
         .target(
-            name: "AlloySwiftUIControls",
-            dependencies: ["AlloyCore"]
+            name: "AlloySwiftUI",
+            dependencies: ["AlloyCore", "AlloyUIKit"]
         ),
         .target(
             name: "AlloyListPlayback",
-            dependencies: ["AlloyCore"]
+            dependencies: ["AlloyCore", "AlloyUIKit"]
         ),
         .target(
             name: "AlloyPlayer",
-            dependencies: ["AlloyCore", "AlloyAVPlayer", "AlloyUIKitControls", "AlloySwiftUIControls", "AlloyListPlayback"]
+            dependencies: ["AlloyCore", "AlloyAVPlayer", "AlloyUIKit", "AlloySwiftUI", "AlloyListPlayback"]
         ),
         .testTarget(
             name: "AlloyCoreTests",
@@ -65,12 +65,12 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "AlloyUIKitControlsTests",
-            dependencies: ["AlloyUIKitControls"]
+            name: "AlloyUIKitTests",
+            dependencies: ["AlloyUIKit"]
         ),
         .testTarget(
-            name: "AlloySwiftUIControlsTests",
-            dependencies: ["AlloySwiftUIControls"]
+            name: "AlloySwiftUITests",
+            dependencies: ["AlloySwiftUI"]
         ),
         .testTarget(
             name: "AlloyPlayerTests",

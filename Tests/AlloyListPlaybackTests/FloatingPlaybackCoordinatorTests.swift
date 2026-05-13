@@ -37,8 +37,8 @@ import Testing
     @MainActor
     private final class FloatingPlaybackMockEngine: PlaybackEngine {
         let renderView = RenderView()
-        var playbackState: PlaybackState = .unknown
-        var loadState: LoadState = .unknown
+        var playbackState: PlaybackState = .idle
+        var loadState: LoadState = []
         var isPlaying = false
         var isPreparedToPlay = true
         var volume: Float = 1

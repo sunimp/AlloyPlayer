@@ -8,17 +8,17 @@
 #if canImport(UIKit) && canImport(SwiftUI)
     import AlloyAVPlayer
     import AlloyCore
-    import AlloySwiftUIControls
+    import AlloySwiftUI
     import SwiftUI
     import UIKit
 
     public extension AlloyPlayerView where Controls == DefaultSwiftUIControlOverlayView {
         init(url: URL?) {
-            self.init(url: url, engineFactory: { AVPlayerManager() })
+            self.init(url: url, engineFactory: { AVPlaybackEngine() })
         }
 
         init(url: URL?, controller: AlloyPlayerController) {
-            self.init(url: url, controller: controller, engineFactory: { AVPlayerManager() })
+            self.init(url: url, controller: controller, engineFactory: { AVPlaybackEngine() })
         }
     }
 
@@ -27,7 +27,7 @@
             url: URL?,
             @ViewBuilder controls: @escaping (SwiftUIControlOverlayState) -> Controls
         ) {
-            self.init(url: url, engineFactory: { AVPlayerManager() }, controls: controls)
+            self.init(url: url, engineFactory: { AVPlaybackEngine() }, controls: controls)
         }
 
         init(
@@ -35,7 +35,7 @@
             controller: AlloyPlayerController,
             @ViewBuilder controls: @escaping (SwiftUIControlOverlayState) -> Controls
         ) {
-            self.init(url: url, controller: controller, engineFactory: { AVPlayerManager() }, controls: controls)
+            self.init(url: url, controller: controller, engineFactory: { AVPlaybackEngine() }, controls: controls)
         }
     }
 #endif

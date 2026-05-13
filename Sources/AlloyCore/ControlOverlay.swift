@@ -12,7 +12,7 @@
     ///
     /// 定义控制层 UI 与播放器之间的通信接口。
     /// 所有方法均有默认空实现，使用者只需实现关心的回调。
-    /// 内置 UIKit 实现为 `DefaultControlOverlay`（AlloyUIKitControls 模块）。
+    /// 内置 UIKit 实现为 `DefaultControlOverlay`（AlloyUIKit 模块）。
     @MainActor
     public protocol ControlOverlay: UIView, PlaybackEventSink, GestureEventSink, OrientationEventSink, ListPlaybackEventSink {
         /// 关联的播放控制器

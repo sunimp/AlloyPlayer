@@ -5,54 +5,6 @@
 //  Created by Sun on 2026/4/14.
 //
 
-import Foundation
-
-// MARK: - 播放状态
-
-/// 播放状态枚举
-public enum PlaybackState: Int, Sendable {
-    /// 未知
-    case unknown
-    /// 播放中
-    case playing
-    /// 已暂停
-    case paused
-    /// 播放失败
-    case failed
-    /// 已停止
-    case stopped
-}
-
-// MARK: - 加载状态
-
-/// 加载状态（支持组合）
-public struct LoadState: OptionSet, Sendable {
-    public let rawValue: UInt
-    public init(rawValue: UInt) {
-        self.rawValue = rawValue
-    }
-
-    public static let unknown = LoadState([])
-    public static let prepare = LoadState(rawValue: 1 << 0)
-    public static let playable = LoadState(rawValue: 1 << 1)
-    public static let playthroughOK = LoadState(rawValue: 1 << 2)
-    public static let stalled = LoadState(rawValue: 1 << 3)
-}
-
-// MARK: - 缩放模式
-
-/// 视频缩放模式
-public enum ScalingMode: Int, Sendable {
-    /// 无缩放
-    case none
-    /// 等比缩放适配（留黑边）
-    case aspectFit
-    /// 等比缩放填充（裁剪）
-    case aspectFill
-    /// 拉伸填充
-    case fill
-}
-
 // MARK: - 全屏模式
 
 /// 全屏模式

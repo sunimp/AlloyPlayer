@@ -10,17 +10,9 @@ import Testing
 
 @Suite("Enums & OptionSet Tests")
 struct EnumsTests {
-    @Test func playbackStateRawValues() {
-        #expect(PlaybackState.unknown.rawValue == 0)
-        #expect(PlaybackState.playing.rawValue == 1)
-        #expect(PlaybackState.paused.rawValue == 2)
-        #expect(PlaybackState.failed.rawValue == 3)
-        #expect(PlaybackState.stopped.rawValue == 4)
-    }
-
     @Test func loadStateOptionSet() {
-        let state: LoadState = [.prepare, .playable]
-        #expect(state.contains(.prepare))
+        let state: LoadState = [.preparing, .playable]
+        #expect(state.contains(.preparing))
         #expect(state.contains(.playable))
         #expect(!state.contains(.stalled))
     }

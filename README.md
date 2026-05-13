@@ -56,8 +56,8 @@ AlloyPlayer 是一个 Swift-only 的现代视频播放器框架。它基于 AVFo
     dependencies: [
         .product(name: "AlloyCore", package: "AlloyPlayer"),
         .product(name: "AlloyAVPlayer", package: "AlloyPlayer"),
-        .product(name: "AlloyUIKitControls", package: "AlloyPlayer"),
-        .product(name: "AlloySwiftUIControls", package: "AlloyPlayer"),
+        .product(name: "AlloyUIKit", package: "AlloyPlayer"),
+        .product(name: "AlloySwiftUI", package: "AlloyPlayer"),
     ]
 )
 ```
@@ -95,7 +95,7 @@ final class PlayerViewController: UIViewController {
         let containerView = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 220))
         view.addSubview(containerView)
 
-        let engine = AVPlayerManager()
+        let engine = AVPlaybackEngine()
         engine.shouldAutoPlay = true
 
         player = Player(engine: engine, containerView: containerView)
@@ -224,7 +224,7 @@ final class ListPlayerViewController: UIViewController, UITableViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        let engine = AVPlayerManager()
+        let engine = AVPlaybackEngine()
         player = Player(engine: engine, containerView: UIView())
         player.controlOverlay = DefaultControlOverlay()
         listPlayback = ListPlaybackCoordinator(player: player)
@@ -274,8 +274,8 @@ flowchart LR
 
     Umbrella --> Core
     Umbrella --> AV[AlloyAVPlayer]
-    Umbrella --> UIKitControls[AlloyUIKitControls]
-    Umbrella --> SwiftUIControls[AlloySwiftUIControls]
+    Umbrella --> UIKitControls[AlloyUIKit]
+    Umbrella --> SwiftUIControls[AlloySwiftUI]
     Umbrella --> ListPlayback[AlloyListPlayback]
 
     AV --> Core
@@ -294,8 +294,8 @@ flowchart LR
 |------|------|
 | `AlloyCore` | 协议、枚举、`Player` 控制器、手势、方向、列表播放和基础工具 |
 | `AlloyAVPlayer` | 基于 AVFoundation 的 `PlaybackEngine` 实现 |
-| `AlloyUIKitControls` | 默认 UIKit 控制层、进度条、缓冲视图、音量/亮度 HUD 等 |
-| `AlloySwiftUIControls` | SwiftUI 播放器视图、控制层桥接和外部控制句柄；只依赖 `AlloyCore`，自定义引擎通过 `engineFactory` 注入 |
+| `AlloyUIKit` | 默认 UIKit 控制层、进度条、缓冲视图、音量/亮度 HUD 等 |
+| `AlloySwiftUI` | SwiftUI 播放器视图、控制层桥接和外部控制句柄；只依赖 `AlloyCore`，自定义引擎通过 `engineFactory` 注入 |
 | `AlloyListPlayback` | 列表播放协调器和可见性计算，供 TableView、CollectionView、ScrollView 场景复用 |
 | `AlloyHTTPMediaCacheSupport` | HTTPMediaCache 可选支持，负责代理 URL 生成和播放器准备 |
 | `AlloyPlayer` | Umbrella 模块，重新导出核心播放能力和默认控制层 |

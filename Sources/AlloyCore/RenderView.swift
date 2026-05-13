@@ -13,7 +13,7 @@
     /// 承载播放引擎的渲染层（如 AVPlayerLayer），并提供封面图视图。
     /// 通过 `scalingMode` 控制视频缩放方式。
     @MainActor
-    public class RenderView: UIView {
+    public class RenderView: UIView, PlaybackRenderSurface {
         // MARK: - 子视图
 
         /// 播放引擎的实际渲染视图（由引擎设置）
