@@ -13,7 +13,7 @@ import UIKit
 final class VideoCollectionViewCell: UICollectionViewCell {
     static let reuseIdentifier = "VideoCollectionViewCell"
 
-    /// 视频容器 (tag = 200，供 Player 通过 tag 查找)
+    /// 视频容器。
     let videoContainerView: UIView = {
         let v = UIView()
         v.backgroundColor = .black

@@ -57,10 +57,12 @@ final class FloatingPlaybackDemoViewController: UIViewController {
 
     // MARK: - 播放器
 
-    private var player: Player?
+    private let session = AlloyPlayerFactory.makeDefaultSession()
+    private lazy var playerView = AlloyPlayerView(session: session)
     private var floatingPlayback: FloatingPlaybackCoordinator?
     private let controlOverlay = DefaultControlOverlay()
     private var playbackTask: Task<Void, Never>?
+    private var playerViewConstraints: [NSLayoutConstraint] = []
     private let video = VideoResource.mp4Samples[0]
 
     // MARK: - 生命周期
@@ -73,21 +75,11 @@ final class FloatingPlaybackDemoViewController: UIViewController {
         updateStatus("播放器已挂载在页面容器")
     }
 
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        player?.isViewControllerDisappear = false
-    }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        player?.isViewControllerDisappear = true
-    }
-
     deinit {
         MainActor.assumeIsolated {
             playbackTask?.cancel()
             floatingPlayback?.hide()
-            player?.stop()
+            playerView.stop()
         }
     }
 
@@ -129,28 +121,34 @@ final class FloatingPlaybackDemoViewController: UIViewController {
     }
 
     private func setupPlayer() {
-        let engine = AVPlayerManager()
-        engine.shouldAutoPlay = true
-
-        let player = Player(engine: engine, containerView: playerContainerView)
-        player.controlOverlay = controlOverlay
-        player.addDeviceOrientationObserver()
-        self.player = player
+        playerView.controlOverlay = controlOverlay
+        attachPlayerViewToPageContainer()
 
         controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
-        playbackTask = Task { @MainActor [weak player] in
-            guard let player else { return }
+        playbackTask = Task { @MainActor [weak playerView] in
+            guard let playerView else { return }
             do {
-                _ = try await player.prepareDemoPlayback(originalURL: video.url)
+                _ = try await playerView.prepareDemoPlayback(originalURL: video.url)
             } catch {
-                player.assetURL = video.url
+                playerView.load(PlaybackSource(url: video.url))
             }
         }
 
-        floatingPlayback = FloatingPlaybackCoordinator(
-            player: player,
-            parentView: view
-        )
+        floatingPlayback = FloatingPlaybackCoordinator(playerView: playerView)
+    }
+
+    private func attachPlayerViewToPageContainer() {
+        NSLayoutConstraint.deactivate(playerViewConstraints)
+        playerView.removeFromSuperview()
+        playerView.translatesAutoresizingMaskIntoConstraints = false
+        playerContainerView.addSubview(playerView)
+        playerViewConstraints = [
+            playerView.topAnchor.constraint(equalTo: playerContainerView.topAnchor),
+            playerView.leadingAnchor.constraint(equalTo: playerContainerView.leadingAnchor),
+            playerView.trailingAnchor.constraint(equalTo: playerContainerView.trailingAnchor),
+            playerView.bottomAnchor.constraint(equalTo: playerContainerView.bottomAnchor),
+        ]
+        NSLayoutConstraint.activate(playerViewConstraints)
     }
 
     private func makeActionButton(title: String, action: Selector) -> UIButton {
@@ -170,7 +168,9 @@ final class FloatingPlaybackDemoViewController: UIViewController {
     // MARK: - Actions
 
     @objc private func showFloatingButtonTapped() {
-        floatingPlayback?.show()
+        NSLayoutConstraint.deactivate(playerViewConstraints)
+        let frame = CGRect(x: view.bounds.width - 180, y: view.safeAreaInsets.top + 16, width: 160, height: 90)
+        floatingPlayback?.show(in: view, frame: frame)
         updateStatus("播放器已迁移到浮动小窗")
     }
 
@@ -181,7 +181,7 @@ final class FloatingPlaybackDemoViewController: UIViewController {
 
     @objc private func attachBackButtonTapped() {
         floatingPlayback?.hide()
-        player?.attach(to: playerContainerView)
+        attachPlayerViewToPageContainer()
         updateStatus("播放器已回到页面容器")
     }
 }

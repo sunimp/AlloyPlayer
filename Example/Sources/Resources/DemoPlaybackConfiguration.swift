@@ -27,50 +27,27 @@ final class DemoPlaybackConfiguration {
 
     private init() {}
 
-    func playbackURL(for originalURL: URL) async throws -> URL {
+    func playbackSource(for originalURL: URL) async throws -> PlaybackSource {
+        let source = PlaybackSource(url: originalURL)
         guard isHTTPMediaCacheEnabled else {
-            return originalURL
+            return source
         }
 
-        return try await AlloyHTTPMediaCacheSupport.proxyURL(
-            for: originalURL,
+        return try await AlloyHTTPMediaCacheSupport.proxySource(
+            for: source,
             configuration: .default
         )
     }
 }
 
-// MARK: - Player
+// MARK: - AlloyPlayerView
 
-extension Player {
+extension AlloyPlayerView {
     @discardableResult
     @MainActor
-    func prepareDemoPlayback(originalURL: URL) async throws -> URL {
-        guard DemoPlaybackConfiguration.shared.isHTTPMediaCacheEnabled else {
-            assetURL = originalURL
-            return originalURL
-        }
-
-        return try await AlloyHTTPMediaCacheSupport.prepare(
-            player: self,
-            originalURL: originalURL,
-            configuration: .default
-        )
-    }
-}
-
-// MARK: - AVPlayerManager
-
-extension AVPlayerManager {
-    @discardableResult
-    @MainActor
-    func prepareDemoPlayback(originalURL: URL) async throws -> URL {
-        guard DemoPlaybackConfiguration.shared.isHTTPMediaCacheEnabled else {
-            assetURL = originalURL
-            return originalURL
-        }
-
-        let proxyURL = try await DemoPlaybackConfiguration.shared.playbackURL(for: originalURL)
-        assetURL = proxyURL
-        return proxyURL
+    func prepareDemoPlayback(originalURL: URL) async throws -> PlaybackSource {
+        let source = try await DemoPlaybackConfiguration.shared.playbackSource(for: originalURL)
+        load(source)
+        return source
     }
 }

@@ -56,10 +56,12 @@ final class ShortVideoFeedViewController: UIViewController {
 
     // MARK: - 播放器
 
-    private var engine: AVPlayerManager?
+    private let session = AlloyPlayerFactory.makeDefaultSession()
+    private lazy var playerView = AlloyPlayerView(session: session)
     private var cancellables = Set<AnyCancellable>()
     private var playbackTask: Task<Void, Never>?
     private var currentPlayingIndex: Int = -1
+    private var playerViewConstraints: [NSLayoutConstraint] = []
 
     // MARK: - 生命周期
 
@@ -68,7 +70,7 @@ final class ShortVideoFeedViewController: UIViewController {
         view.backgroundColor = .black
         setupCollectionView()
         setupBackButton()
-        setupEngine()
+        setupPlayerView()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -90,7 +92,7 @@ final class ShortVideoFeedViewController: UIViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         navigationController?.setNavigationBarHidden(false, animated: animated)
-        engine?.pause()
+        playerView.pause()
     }
 
     override var prefersStatusBarHidden: Bool {
@@ -104,7 +106,7 @@ final class ShortVideoFeedViewController: UIViewController {
     deinit {
         MainActor.assumeIsolated {
             playbackTask?.cancel()
-            engine?.stop()
+            playerView.stop()
         }
     }
 
@@ -131,10 +133,8 @@ final class ShortVideoFeedViewController: UIViewController {
         ])
     }
 
-    private func setupEngine() {
-        let avEngine = AVPlayerManager()
-        avEngine.shouldAutoPlay = true
-        engine = avEngine
+    private func setupPlayerView() {
+        playerView.configuration.pausesWhenDetachedFromWindow = false
     }
 
     // MARK: - 播放
@@ -150,15 +150,17 @@ final class ShortVideoFeedViewController: UIViewController {
         cell.layoutIfNeeded()
 
         // 将播放器视图移到当前 cell
-        guard let renderView = engine?.renderView else { return }
-        renderView.translatesAutoresizingMaskIntoConstraints = false
-        cell.videoContainerView.addSubview(renderView)
-        NSLayoutConstraint.activate([
-            renderView.topAnchor.constraint(equalTo: cell.videoContainerView.topAnchor),
-            renderView.leadingAnchor.constraint(equalTo: cell.videoContainerView.leadingAnchor),
-            renderView.trailingAnchor.constraint(equalTo: cell.videoContainerView.trailingAnchor),
-            renderView.bottomAnchor.constraint(equalTo: cell.videoContainerView.bottomAnchor),
-        ])
+        NSLayoutConstraint.deactivate(playerViewConstraints)
+        playerView.removeFromSuperview()
+        playerView.translatesAutoresizingMaskIntoConstraints = false
+        cell.videoContainerView.addSubview(playerView)
+        playerViewConstraints = [
+            playerView.topAnchor.constraint(equalTo: cell.videoContainerView.topAnchor),
+            playerView.leadingAnchor.constraint(equalTo: cell.videoContainerView.leadingAnchor),
+            playerView.trailingAnchor.constraint(equalTo: cell.videoContainerView.trailingAnchor),
+            playerView.bottomAnchor.constraint(equalTo: cell.videoContainerView.bottomAnchor),
+        ]
+        NSLayoutConstraint.activate(playerViewConstraints)
 
         // 重置进度并隐藏封面
         cell.updateProgress(0)
@@ -170,58 +172,51 @@ final class ShortVideoFeedViewController: UIViewController {
         // 播放
         playbackTask?.cancel()
         let video = videos[index]
-        playbackTask = Task { @MainActor [weak self, weak engine] in
-            guard let self, let engine, self.currentPlayingIndex == index else { return }
+        playbackTask = Task { @MainActor [weak self, weak playerView] in
+            guard let self, let playerView, self.currentPlayingIndex == index else { return }
             do {
-                _ = try await engine.prepareDemoPlayback(originalURL: video.url)
+                _ = try await playerView.prepareDemoPlayback(originalURL: video.url)
             } catch {
-                engine.assetURL = video.url
+                playerView.load(PlaybackSource(url: video.url))
             }
         }
 
         // 订阅进度更新到当前 cell
         cancellables.removeAll()
-        engine?.playTimePublisher.sink { [weak cell] time in
-            guard let cell, time.total > 0 else { return }
-            cell.syncPlaybackProgress(Float(time.current / time.total))
-        }.store(in: &cancellables)
-
-        engine?.bufferTimePublisher.sink { [weak cell, weak self] bufferTime in
-            guard let cell, let totalTime = self?.engine?.totalTime, totalTime > 0 else { return }
-            cell.updateBufferProgress(Float(bufferTime / totalTime))
-        }.store(in: &cancellables)
-
-        engine?.loadStatePublisher.sink { [weak cell, weak self] state in
-            guard let cell, let self else { return }
-            if state.contains(.playable) || state.contains(.playthroughOK) {
+        session.statePublisher.sink { [weak cell] snapshot in
+            guard let cell else { return }
+            let engine = snapshot.engine
+            if engine.duration > 0 {
+                cell.syncPlaybackProgress(Float(engine.currentTime / engine.duration))
+                cell.updateBufferProgress(Float(engine.bufferedTime / engine.duration))
+            }
+            if engine.loadState.contains(.playable) || engine.loadState.contains(.playthroughOK) {
                 cell.setBuffering(false)
             }
-            if state.contains(.stalled), self.engine?.isPlaying == true {
+            if engine.loadState.contains(.stalled), engine.playbackState == .playing {
                 cell.setPausedIndicatorVisible(false)
                 cell.setBuffering(true)
             }
-            if state.contains(.prepare) {
+            if engine.loadState.contains(.preparing) {
                 cell.setPausedIndicatorVisible(false)
                 cell.setBuffering(true)
             }
-        }.store(in: &cancellables)
 
-        engine?.statePublisher.sink { [weak cell] state in
-            switch state {
+            switch engine.playbackState {
             case .paused:
-                cell?.setPausedIndicatorVisible(true)
+                cell.setPausedIndicatorVisible(true)
             default:
-                cell?.setPausedIndicatorVisible(false)
+                cell.setPausedIndicatorVisible(false)
             }
         }.store(in: &cancellables)
     }
 
     private func seekCurrentVideo(to progress: Float) {
-        guard let engine, engine.totalTime > 0 else { return }
-        let seekTime = engine.totalTime * TimeInterval(progress)
+        guard session.state.engine.duration > 0 else { return }
+        let seekTime = session.state.engine.duration * TimeInterval(progress)
         Task {
-            _ = await engine.seek(to: seekTime)
-            engine.play()
+            _ = await session.seek(to: seekTime)
+            session.play()
         }
     }
 
@@ -254,12 +249,12 @@ extension ShortVideoFeedViewController: UICollectionViewDataSource {
         let video = videos[indexPath.item]
         feedCell.configure(title: video.title, description: video.description, coverColor: video.coverColor)
         feedCell.onTap = { [weak self, weak feedCell] in
-            guard let self, let engine = self.engine else { return }
-            if engine.isPlaying {
-                engine.pause()
+            guard let self else { return }
+            if session.state.engine.playbackState == .playing {
+                session.pause()
             } else {
                 feedCell?.setPausedIndicatorVisible(false)
-                engine.play()
+                session.play()
             }
         }
         feedCell.onSeek = { [weak self] progress in

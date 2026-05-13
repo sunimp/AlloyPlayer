@@ -41,7 +41,9 @@ final class FullScreenModesViewController: UIViewController {
 
     // MARK: - 播放器
 
-    private var player: Player?
+    private let session = AlloyPlayerFactory.makeDefaultSession()
+    private lazy var playerView = AlloyPlayerView(session: session)
+    private let fullscreenCoordinator = FullscreenCoordinator()
     private let controlOverlay = DefaultControlOverlay()
     private var cancellables = Set<AnyCancellable>()
     private var playbackTask: Task<Void, Never>?
@@ -50,6 +52,8 @@ final class FullScreenModesViewController: UIViewController {
     private var currentSamples: [VideoItem] {
         selectedSampleGroup.samples
     }
+
+    private var isScreenLocked = false
 
     // MARK: - 生命周期
 
@@ -61,20 +65,10 @@ final class FullScreenModesViewController: UIViewController {
         updateStatusLabel()
     }
 
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        player?.isViewControllerDisappear = true
-    }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        player?.isViewControllerDisappear = false
-    }
-
     deinit {
         MainActor.assumeIsolated {
             playbackTask?.cancel()
-            player?.stop()
+            playerView.stop()
         }
     }
 
@@ -115,18 +109,20 @@ final class FullScreenModesViewController: UIViewController {
     }
 
     private func setupPlayer() {
-        let engine = AVPlayerManager()
-        engine.shouldAutoPlay = true
-
-        let player = Player(engine: engine, containerView: playerContainerView)
-        player.controlOverlay = controlOverlay
-        player.addDeviceOrientationObserver()
-        self.player = player
+        playerView.controlOverlay = controlOverlay
+        playerView.fullscreenCoordinator = fullscreenCoordinator
+        playerView.translatesAutoresizingMaskIntoConstraints = false
+        playerContainerView.addSubview(playerView)
+        NSLayoutConstraint.activate([
+            playerView.topAnchor.constraint(equalTo: playerContainerView.topAnchor),
+            playerView.leadingAnchor.constraint(equalTo: playerContainerView.leadingAnchor),
+            playerView.trailingAnchor.constraint(equalTo: playerContainerView.trailingAnchor),
+            playerView.bottomAnchor.constraint(equalTo: playerContainerView.bottomAnchor),
+        ])
 
         playCurrentVideo()
 
-        // 监听旋转事件
-        player.orientationDidChangePublisher
+        fullscreenCoordinator.statePublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.updateStatusLabel()
@@ -140,12 +136,12 @@ final class FullScreenModesViewController: UIViewController {
         controlOverlay.resetControlView()
         controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
         playbackTask?.cancel()
-        playbackTask = Task { @MainActor [weak player] in
-            guard let player else { return }
+        playbackTask = Task { @MainActor [weak playerView] in
+            guard let playerView else { return }
             do {
-                _ = try await player.prepareDemoPlayback(originalURL: video.url)
+                _ = try await playerView.prepareDemoPlayback(originalURL: video.url)
             } catch {
-                player.assetURL = video.url
+                playerView.load(PlaybackSource(url: video.url))
             }
         }
         updateStatusLabel()
@@ -167,39 +163,40 @@ final class FullScreenModesViewController: UIViewController {
     }
 
     @objc private func enterLandscapeFullScreen() {
-        guard let player else { return }
         Task {
-            await player.rotate(to: .landscapeRight, animated: true)
+            fullscreenCoordinator.configuration.mode = .landscape
+            controlOverlay.fullScreenMode = .landscape
+            await fullscreenCoordinator.setFullscreen(true, animated: true)
             updateStatusLabel()
         }
     }
 
     @objc private func enterPortraitFullScreen() {
-        guard let player else { return }
         Task {
-            await player.enterPortraitFullScreen(true, animated: true)
+            fullscreenCoordinator.configuration.mode = .portrait
+            controlOverlay.fullScreenMode = .portrait
+            await fullscreenCoordinator.setFullscreen(true, animated: true)
             updateStatusLabel()
         }
     }
 
     @objc private func enterAutoFullScreen() {
-        guard let player else { return }
         Task {
-            await player.enterFullScreen(true, animated: true)
+            fullscreenCoordinator.configuration.mode = .automatic
+            controlOverlay.fullScreenMode = .automatic
+            await fullscreenCoordinator.setFullscreen(true, animated: true)
             updateStatusLabel()
         }
     }
 
     @objc private func toggleLockScreen() {
-        guard let player else { return }
-        player.isScreenLocked.toggle()
+        isScreenLocked.toggle()
         updateStatusLabel()
     }
 
     @objc private func exitFullScreen() {
-        guard let player else { return }
         Task {
-            await player.enterFullScreen(false, animated: true)
+            await fullscreenCoordinator.setFullscreen(false, animated: true)
             updateStatusLabel()
         }
     }
@@ -207,23 +204,22 @@ final class FullScreenModesViewController: UIViewController {
     // MARK: - 辅助
 
     private func updateStatusLabel() {
-        guard let player, currentSamples.indices.contains(currentSampleIndex) else { return }
-        let orientation = player.orientationManager.currentOrientation
-        let orientationText: String
-        switch orientation {
-        case .portrait: orientationText = "竖屏"
-        case .portraitUpsideDown: orientationText = "倒置竖屏"
-        case .landscapeLeft: orientationText = "横屏左"
-        case .landscapeRight: orientationText = "横屏右"
-        default: orientationText = "未知"
-        }
+        guard currentSamples.indices.contains(currentSampleIndex) else { return }
 
         statusLabel.text = """
-        当前方向: \(orientationText)
-        是否全屏: \(player.isFullScreen ? "是" : "否")
-        是否锁屏: \(player.isScreenLocked ? "是" : "否")
+        全屏模式: \(fullscreenModeText(fullscreenCoordinator.configuration.mode))
+        是否全屏: \(fullscreenCoordinator.state == .fullscreen ? "是" : "否")
+        是否锁屏: \(isScreenLocked ? "是" : "否")
         当前素材: \(currentSamples[currentSampleIndex].title)
         """
+    }
+
+    private func fullscreenModeText(_ mode: FullscreenMode) -> String {
+        switch mode {
+        case .automatic: return "自动"
+        case .landscape: return "横屏"
+        case .portrait: return "竖屏"
+        }
     }
 
     private func makeSegmentedControl(action: Selector) -> UISegmentedControl {

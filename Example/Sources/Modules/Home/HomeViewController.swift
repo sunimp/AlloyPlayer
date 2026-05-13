@@ -66,12 +66,12 @@ final class HomeViewController: UITableViewController {
         ),
         DemoItem(
             title: "自定义控制层",
-            subtitle: "实现 ControlOverlay 协议的极简控制层",
+            subtitle: "实现 UIKitControlOverlay 协议的极简控制层",
             viewControllerFactory: { CustomControlOverlayViewController() }
         ),
         DemoItem(
             title: "SwiftUI 控制层",
-            subtitle: "使用 SwiftUIControlOverlay 构建自定义控制层",
+            subtitle: "使用 AlloySwiftUIPlayerView 构建自定义控制层",
             viewControllerFactory: { SwiftUIControlsDemoViewController() }
         ),
     ]

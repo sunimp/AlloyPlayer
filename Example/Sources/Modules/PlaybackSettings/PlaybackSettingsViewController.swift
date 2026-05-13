@@ -32,18 +32,20 @@ final class PlaybackSettingsViewController: UIViewController {
 
     // MARK: - 播放器
 
-    private var player: Player?
+    private let session = AlloyPlayerFactory.makeDefaultSession()
+    private lazy var playerView = AlloyPlayerView(session: session)
+    private let fullscreenCoordinator = FullscreenCoordinator()
     private let controlOverlay = DefaultControlOverlay()
     private var selectedSampleGroup: VideoSampleGroup = .hls
     private var currentSampleIndex = 0
     private let rates: [Float] = [0.5, 1.0, 1.5, 2.0]
     private let scalingModes: [ScalingMode] = [.aspectFit, .aspectFill, .fill]
-    private let fullScreenModes: [FullScreenMode] = [.automatic, .landscape, .portrait]
+    private let fullScreenModes: [FullscreenMode] = [.automatic, .landscape, .portrait]
     private var selectedRate: Float = 1.0
     private var selectedScalingMode: ScalingMode = .aspectFit
-    private var selectedFullScreenMode: FullScreenMode = .automatic
-    private var disabledGestureTypes: DisableGestureTypes = []
-    private var disabledPanMovingDirection: DisablePanMovingDirection = []
+    private var selectedFullScreenMode: FullscreenMode = .automatic
+    private var disabledGestureTypes: Set<GestureType> = []
+    private var disabledPanMovingDirection: Set<PanDirection> = []
     private var playbackTask: Task<Void, Never>?
     private var isMuted = false
     private var pauseWhenAppResignActive = true
@@ -61,20 +63,10 @@ final class PlaybackSettingsViewController: UIViewController {
         setupPlayer()
     }
 
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        player?.isViewControllerDisappear = true
-    }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        player?.isViewControllerDisappear = false
-    }
-
     deinit {
         MainActor.assumeIsolated {
             playbackTask?.cancel()
-            player?.stop()
+            playerView.stop()
         }
     }
 
@@ -98,13 +90,16 @@ final class PlaybackSettingsViewController: UIViewController {
     }
 
     private func setupPlayer() {
-        let engine = AVPlayerManager()
-        engine.shouldAutoPlay = true
-
-        let player = Player(engine: engine, containerView: playerContainerView)
-        player.controlOverlay = controlOverlay
-        player.addDeviceOrientationObserver()
-        self.player = player
+        playerView.controlOverlay = controlOverlay
+        playerView.fullscreenCoordinator = fullscreenCoordinator
+        playerView.translatesAutoresizingMaskIntoConstraints = false
+        playerContainerView.addSubview(playerView)
+        NSLayoutConstraint.activate([
+            playerView.topAnchor.constraint(equalTo: playerContainerView.topAnchor),
+            playerView.leadingAnchor.constraint(equalTo: playerContainerView.leadingAnchor),
+            playerView.trailingAnchor.constraint(equalTo: playerContainerView.trailingAnchor),
+            playerView.bottomAnchor.constraint(equalTo: playerContainerView.bottomAnchor),
+        ])
         applyPlaybackConfiguration()
 
         playCurrentVideo()
@@ -113,17 +108,17 @@ final class PlaybackSettingsViewController: UIViewController {
     private func playCurrentVideo() {
         guard currentSamples.indices.contains(currentSampleIndex) else { return }
         let video = currentSamples[currentSampleIndex]
-        player?.stop()
+        playerView.stop()
         applyPlaybackConfiguration()
         controlOverlay.resetControlView()
         controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: selectedFullScreenMode)
         playbackTask?.cancel()
-        playbackTask = Task { @MainActor [weak self, weak player] in
-            guard let self, let player else { return }
+        playbackTask = Task { @MainActor [weak self, weak playerView] in
+            guard let self, let playerView else { return }
             do {
-                _ = try await player.prepareDemoPlayback(originalURL: video.url)
+                _ = try await playerView.prepareDemoPlayback(originalURL: video.url)
             } catch {
-                player.assetURL = video.url
+                playerView.load(PlaybackSource(url: video.url))
             }
             applyPlaybackConfiguration()
         }
@@ -131,14 +126,12 @@ final class PlaybackSettingsViewController: UIViewController {
     }
 
     private func applyPlaybackConfiguration() {
-        player?.rate = selectedRate
-        player?.engine.scalingMode = selectedScalingMode
-        player?.orientationManager.fullScreenMode = selectedFullScreenMode
-        player?.disabledGestureTypes = disabledGestureTypes
-        player?.disabledPanMovingDirection = disabledPanMovingDirection
-        player?.isMuted = isMuted
-        player?.pauseWhenAppResignActive = pauseWhenAppResignActive
-        player?.exitFullScreenWhenStop = exitFullScreenWhenStop
+        session.send(.setRate(selectedRate))
+        session.send(.setScalingMode(selectedScalingMode))
+        session.send(.setMuted(isMuted))
+        playerView.gestureController?.configuration.disabledTypes = disabledGestureTypes
+        playerView.gestureController?.configuration.disabledPanDirections = disabledPanMovingDirection
+        fullscreenCoordinator.configuration.mode = selectedFullScreenMode
         controlOverlay.fullScreenMode = selectedFullScreenMode
     }
 
@@ -233,7 +226,7 @@ final class PlaybackSettingsViewController: UIViewController {
         applyPlaybackConfiguration()
     }
 
-    private func toggleGesture(_ type: DisableGestureTypes, enabled: Bool) {
+    private func toggleGesture(_ type: GestureType, enabled: Bool) {
         if enabled {
             disabledGestureTypes.remove(type)
         } else {
@@ -242,7 +235,7 @@ final class PlaybackSettingsViewController: UIViewController {
         applyPlaybackConfiguration()
     }
 
-    private func togglePanDirection(_ direction: DisablePanMovingDirection, enabled: Bool) {
+    private func togglePanDirection(_ direction: PanDirection, enabled: Bool) {
         if enabled {
             disabledPanMovingDirection.remove(direction)
         } else {
@@ -373,7 +366,7 @@ extension PlaybackSettingsViewController: UITableViewDataSource {
             ]
             config.text = titles[indexPath.row]
             cell.contentConfiguration = config
-            let gestureTypes: [DisableGestureTypes] = [.singleTap, .doubleTap, .pan, .pinch, .longPress]
+            let gestureTypes: [GestureType] = [.singleTap, .doubleTap, .pan, .pinch, .longPress]
             let isEnabled = !disabledGestureTypes.contains(gestureTypes[indexPath.row])
             cell.accessoryView = makeSwitch(isOn: isEnabled, action: actions[indexPath.row])
 
@@ -385,7 +378,7 @@ extension PlaybackSettingsViewController: UITableViewDataSource {
             ]
             config.text = titles[indexPath.row]
             cell.contentConfiguration = config
-            let directions: [DisablePanMovingDirection] = [.vertical, .horizontal]
+            let directions: [PanDirection] = [.vertical, .horizontal]
             let isEnabled = !disabledPanMovingDirection.contains(directions[indexPath.row])
             cell.accessoryView = makeSwitch(isOn: isEnabled, action: actions[indexPath.row])
 

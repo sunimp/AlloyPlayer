@@ -44,15 +44,16 @@ final class BasicPlaybackViewController: UIViewController {
 
     // MARK: - 播放器
 
-    private var player: Player?
+    private let session = AlloyPlayerFactory.makeDefaultSession()
+    private lazy var playerView = AlloyPlayerView(session: session)
     private let controlOverlay = DefaultControlOverlay()
     private var cancellables = Set<AnyCancellable>()
     private var playbackTask: Task<Void, Never>?
 
     // MARK: - 状态数据
 
-    private var playbackState: PlaybackState = .unknown
-    private var loadState: LoadState = .unknown
+    private var playbackState: PlaybackState = .idle
+    private var loadState: LoadState = []
     private var currentTime: TimeInterval = 0
     private var totalTime: TimeInterval = 0
     private var bufferTime: TimeInterval = 0
@@ -76,20 +77,10 @@ final class BasicPlaybackViewController: UIViewController {
         playVideo(at: 0)
     }
 
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        player?.isViewControllerDisappear = true
-    }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        player?.isViewControllerDisappear = false
-    }
-
     deinit {
         MainActor.assumeIsolated {
             playbackTask?.cancel()
-            player?.stop()
+            playerView.stop()
         }
     }
 
@@ -118,58 +109,31 @@ final class BasicPlaybackViewController: UIViewController {
     }
 
     private func setupPlayer() {
-        let engine = AVPlayerManager()
-        engine.shouldAutoPlay = true
-
-        let player = Player(engine: engine, containerView: playerContainerView)
-        player.controlOverlay = controlOverlay
-        player.addDeviceOrientationObserver()
-        self.player = player
-
+        playerView.controlOverlay = controlOverlay
+        playerView.translatesAutoresizingMaskIntoConstraints = false
+        playerContainerView.addSubview(playerView)
+        NSLayoutConstraint.activate([
+            playerView.topAnchor.constraint(equalTo: playerContainerView.topAnchor),
+            playerView.leadingAnchor.constraint(equalTo: playerContainerView.leadingAnchor),
+            playerView.trailingAnchor.constraint(equalTo: playerContainerView.trailingAnchor),
+            playerView.bottomAnchor.constraint(equalTo: playerContainerView.bottomAnchor),
+        ])
         subscribePlayerEvents()
     }
 
     private func subscribePlayerEvents() {
-        guard let player else { return }
-
-        player.playbackStatePublisher
+        session.statePublisher
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] state in
-                self?.playbackState = state
-                self?.tableView.reloadSections(IndexSet(integer: 0), with: .none)
-            }
-            .store(in: &cancellables)
-
-        player.loadStatePublisher
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] state in
-                self?.loadState = state
-                self?.tableView.reloadSections(IndexSet(integer: 0), with: .none)
-            }
-            .store(in: &cancellables)
-
-        player.playTimePublisher
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] time in
-                self?.currentTime = time.current
-                self?.totalTime = time.total
-                self?.reloadStatusRow(2)
-            }
-            .store(in: &cancellables)
-
-        player.bufferTimePublisher
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] buffer in
-                self?.bufferTime = buffer
-                self?.reloadStatusRow(3)
-            }
-            .store(in: &cancellables)
-
-        player.presentationSizePublisher
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] size in
-                self?.presentationSize = size
-                self?.reloadStatusRow(4)
+            .sink { [weak self] snapshot in
+                guard let self else { return }
+                let engine = snapshot.engine
+                playbackState = engine.playbackState
+                loadState = engine.loadState
+                currentTime = engine.currentTime
+                totalTime = engine.duration
+                bufferTime = engine.bufferedTime
+                presentationSize = engine.presentationSize
+                tableView.reloadSections(IndexSet(integer: 0), with: .none)
             }
             .store(in: &cancellables)
     }
@@ -192,17 +156,17 @@ final class BasicPlaybackViewController: UIViewController {
         controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
         reloadStatusRow(6)
 
-        playbackTask = Task { @MainActor [weak self, weak player] in
-            guard let self, let player else { return }
+        playbackTask = Task { @MainActor [weak self, weak playerView] in
+            guard let self, let playerView else { return }
             do {
-                let playbackURL = try await player.prepareDemoPlayback(originalURL: video.url)
+                let source = try await playerView.prepareDemoPlayback(originalURL: video.url)
                 guard !Task.isCancelled else { return }
-                currentPlaybackURL = playbackURL
+                currentPlaybackURL = source.url
             } catch {
                 guard !Task.isCancelled else { return }
                 currentPlaybackURL = video.url
                 playbackErrorText = "缓存代理失败，已直连播放：\(error.localizedDescription)"
-                player.assetURL = video.url
+                playerView.load(PlaybackSource(url: video.url))
             }
             reloadStatusRow(6)
         }
@@ -219,9 +183,14 @@ final class BasicPlaybackViewController: UIViewController {
 
     private func playbackStateText() -> String {
         switch playbackState {
-        case .unknown: return "未知"
+        case .idle: return "空闲"
+        case .loading: return "加载中"
+        case .ready: return "就绪"
         case .playing: return "播放中"
         case .paused: return "已暂停"
+        case .seeking: return "跳转中"
+        case .buffering: return "缓冲中"
+        case .ended: return "已结束"
         case .failed: return "失败"
         case .stopped: return "已停止"
         }
@@ -229,7 +198,7 @@ final class BasicPlaybackViewController: UIViewController {
 
     private func loadStateText() -> String {
         var parts = [String]()
-        if loadState.contains(.prepare) { parts.append("准备中") }
+        if loadState.contains(.preparing) { parts.append("准备中") }
         if loadState.contains(.playable) { parts.append("可播放") }
         if loadState.contains(.playthroughOK) { parts.append("缓冲充足") }
         if loadState.contains(.stalled) { parts.append("卡顿") }

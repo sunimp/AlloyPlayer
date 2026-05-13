@@ -32,7 +32,9 @@ final class CollectionViewPlaybackViewController: UIViewController {
 
     // MARK: - 播放器
 
-    private var player: Player?
+    private let session = AlloyPlayerFactory.makeDefaultSession()
+    private lazy var playerView = AlloyPlayerView(session: session)
+    private lazy var listPlayback = ListPlaybackCoordinator(playerView: playerView)
     private let controlOverlay = DefaultControlOverlay()
     private var playbackTask: Task<Void, Never>?
 
@@ -51,20 +53,10 @@ final class CollectionViewPlaybackViewController: UIViewController {
         setupPlayer()
     }
 
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        player?.isViewControllerDisappear = true
-    }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        player?.isViewControllerDisappear = false
-    }
-
     deinit {
         MainActor.assumeIsolated {
             playbackTask?.cancel()
-            player?.stop()
+            playerView.stop()
         }
     }
 
@@ -82,18 +74,8 @@ final class CollectionViewPlaybackViewController: UIViewController {
     }
 
     private func setupPlayer() {
-        let engine = AVPlayerManager()
-        engine.shouldAutoPlay = true
-
-        let player = Player(scrollView: collectionView, engine: engine, containerViewTag: 200)
-        player.controlOverlay = controlOverlay
-        player.shouldAutoPlay = true
-        player.addDeviceOrientationObserver()
-
-        // 配置列表 URL 数据源
-        player.sectionAssetURLs = [videos.map(\.url)]
-
-        self.player = player
+        playerView.controlOverlay = controlOverlay
+        listPlayback.configuration.minimumVisiblePercent = 0.4
     }
 }
 
@@ -142,13 +124,25 @@ extension CollectionViewPlaybackViewController: CHTCollectionViewDelegateWaterfa
         controlOverlay.resetControlView()
         controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
         playbackTask?.cancel()
-        playbackTask = Task { @MainActor [weak player] in
-            guard let player else { return }
+        playbackTask = Task { @MainActor [weak self] in
+            guard let self,
+                  let cell = collectionView.cellForItem(at: indexPath) as? VideoCollectionViewCell
+            else { return }
             do {
-                let playbackURL = try await player.prepareDemoPlayback(originalURL: video.url)
-                player.play(at: indexPath, assetURL: playbackURL)
+                let source = try await DemoPlaybackConfiguration.shared.playbackSource(for: video.url)
+                let candidate = ListPlaybackCandidate(id: indexPath.description, frame: cell.frame, source: source)
+                _ = listPlayback.update(
+                    candidates: [candidate],
+                    viewport: collectionView.bounds,
+                    containerProvider: { _ in cell.videoContainerView }
+                )
             } catch {
-                player.play(at: indexPath, assetURL: video.url)
+                let candidate = ListPlaybackCandidate(id: indexPath.description, frame: cell.frame, source: PlaybackSource(url: video.url))
+                _ = listPlayback.update(
+                    candidates: [candidate],
+                    viewport: collectionView.bounds,
+                    containerProvider: { _ in cell.videoContainerView }
+                )
             }
         }
     }

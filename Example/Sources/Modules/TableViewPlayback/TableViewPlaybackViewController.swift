@@ -6,7 +6,6 @@
 //
 
 import AlloyPlayer
-import Combine
 import UIKit
 
 // MARK: - TableViewPlaybackViewController
@@ -28,9 +27,10 @@ final class TableViewPlaybackViewController: UIViewController {
 
     // MARK: - 播放器
 
-    private var player: Player?
+    private let session = AlloyPlayerFactory.makeDefaultSession()
+    private lazy var playerView = AlloyPlayerView(session: session)
+    private lazy var listPlayback = ListPlaybackCoordinator(playerView: playerView)
     private let controlOverlay = DefaultControlOverlay()
-    private var cancellables = Set<AnyCancellable>()
     private var playbackTask: Task<Void, Never>?
 
     private let videos = VideoResource.allSamples
@@ -44,20 +44,10 @@ final class TableViewPlaybackViewController: UIViewController {
         setupPlayer()
     }
 
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        player?.isViewControllerDisappear = true
-    }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        player?.isViewControllerDisappear = false
-    }
-
     deinit {
         MainActor.assumeIsolated {
             playbackTask?.cancel()
-            player?.stop()
+            playerView.stop()
         }
     }
 
@@ -75,27 +65,8 @@ final class TableViewPlaybackViewController: UIViewController {
     }
 
     private func setupPlayer() {
-        let engine = AVPlayerManager()
-        engine.shouldAutoPlay = true
-
-        let player = Player(scrollView: tableView, engine: engine, containerViewTag: 100)
-        player.controlOverlay = controlOverlay
-        player.shouldAutoPlay = true
-        player.disappearPercent = 0.8
-        player.addDeviceOrientationObserver()
-
-        // 配置列表 URL 数据源
-        player.sectionAssetURLs = [videos.map(\.url)]
-
-        self.player = player
-
-        // 监听播放器消失事件，展示小窗
-        player.playerDidDisappearPublisher
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.player?.addPlayerViewToFloatingView()
-            }
-            .store(in: &cancellables)
+        playerView.controlOverlay = controlOverlay
+        listPlayback.configuration.minimumVisiblePercent = 0.5
     }
 }
 
@@ -128,13 +99,25 @@ extension TableViewPlaybackViewController: UITableViewDelegate {
         controlOverlay.resetControlView()
         controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
         playbackTask?.cancel()
-        playbackTask = Task { @MainActor [weak player] in
-            guard let player else { return }
+        playbackTask = Task { @MainActor [weak self] in
+            guard let self,
+                  let cell = tableView.cellForRow(at: indexPath) as? VideoTableViewCell
+            else { return }
             do {
-                let playbackURL = try await player.prepareDemoPlayback(originalURL: video.url)
-                player.play(at: indexPath, assetURL: playbackURL)
+                let source = try await DemoPlaybackConfiguration.shared.playbackSource(for: video.url)
+                let candidate = ListPlaybackCandidate(id: indexPath.description, frame: cell.frame, source: source)
+                _ = listPlayback.update(
+                    candidates: [candidate],
+                    viewport: tableView.bounds,
+                    containerProvider: { _ in cell.videoContainerView }
+                )
             } catch {
-                player.play(at: indexPath, assetURL: video.url)
+                let candidate = ListPlaybackCandidate(id: indexPath.description, frame: cell.frame, source: PlaybackSource(url: video.url))
+                _ = listPlayback.update(
+                    candidates: [candidate],
+                    viewport: tableView.bounds,
+                    containerProvider: { _ in cell.videoContainerView }
+                )
             }
         }
     }

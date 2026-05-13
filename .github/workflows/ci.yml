@@ -17,3 +17,28 @@ jobs:
 
       - name: Run tests
         run: swift test
+
+  ios-build:
+    name: iOS Build
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build package for iOS
+        run: |
+          xcodebuild \
+            -scheme AlloyPlayer \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath .build/xcodebuild \
+            build
+
+      - name: Build demo for iOS Simulator
+        run: |
+          xcodebuild \
+            -project Example/AlloyPlayerDemo.xcodeproj \
+            -scheme AlloyPlayerDemo \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath .build/example-xcodebuild \
+            CODE_SIGNING_ALLOWED=NO \
+            build

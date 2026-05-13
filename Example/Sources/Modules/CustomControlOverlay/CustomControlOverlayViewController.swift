@@ -44,9 +44,9 @@ final class CustomControlOverlayViewController: UIViewController {
         l.font = .systemFont(ofSize: 14)
         l.textColor = .secondaryLabel
         l.text = """
-        此页面展示如何自定义 ControlOverlay：
+        此页面展示如何自定义 UIKitControlOverlay：
 
-        • MinimalControlOverlay 实现了 ControlOverlay 协议
+        • MinimalControlOverlay 实现了 UIKitControlOverlay 协议
         • 仅包含播放/暂停按钮、进度条和时间标签
         • 单击切换控制层可见性
         • 双击播放/暂停
@@ -60,7 +60,8 @@ final class CustomControlOverlayViewController: UIViewController {
 
     // MARK: - 播放器
 
-    private var player: Player?
+    private let session = AlloyPlayerFactory.makeDefaultSession()
+    private lazy var playerView = AlloyPlayerView(session: session)
     private let controlOverlay = MinimalControlOverlay()
     private var playbackTask: Task<Void, Never>?
     private var selectedSampleGroup: VideoSampleGroup = .hls
@@ -78,20 +79,10 @@ final class CustomControlOverlayViewController: UIViewController {
         setupPlayer()
     }
 
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        player?.isViewControllerDisappear = true
-    }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        player?.isViewControllerDisappear = false
-    }
-
     deinit {
         MainActor.assumeIsolated {
             playbackTask?.cancel()
-            player?.stop()
+            playerView.stop()
         }
     }
 
@@ -123,13 +114,15 @@ final class CustomControlOverlayViewController: UIViewController {
     }
 
     private func setupPlayer() {
-        let engine = AVPlayerManager()
-        engine.shouldAutoPlay = true
-
-        let player = Player(engine: engine, containerView: playerContainerView)
-        player.controlOverlay = controlOverlay
-        player.addDeviceOrientationObserver()
-        self.player = player
+        playerView.controlOverlay = controlOverlay
+        playerView.translatesAutoresizingMaskIntoConstraints = false
+        playerContainerView.addSubview(playerView)
+        NSLayoutConstraint.activate([
+            playerView.topAnchor.constraint(equalTo: playerContainerView.topAnchor),
+            playerView.leadingAnchor.constraint(equalTo: playerContainerView.leadingAnchor),
+            playerView.trailingAnchor.constraint(equalTo: playerContainerView.trailingAnchor),
+            playerView.bottomAnchor.constraint(equalTo: playerContainerView.bottomAnchor),
+        ])
 
         playCurrentVideo()
     }
@@ -138,12 +131,12 @@ final class CustomControlOverlayViewController: UIViewController {
         guard currentSamples.indices.contains(currentSampleIndex) else { return }
         let video = currentSamples[currentSampleIndex]
         playbackTask?.cancel()
-        playbackTask = Task { @MainActor [weak player] in
-            guard let player else { return }
+        playbackTask = Task { @MainActor [weak playerView] in
+            guard let playerView else { return }
             do {
-                _ = try await player.prepareDemoPlayback(originalURL: video.url)
+                _ = try await playerView.prepareDemoPlayback(originalURL: video.url)
             } catch {
-                player.assetURL = video.url
+                playerView.load(PlaybackSource(url: video.url))
             }
         }
     }
