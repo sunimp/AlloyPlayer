@@ -15,21 +15,34 @@
         private weak var hostedLayer: CALayer?
 
         func attach(surface: PlaybackRenderSurface?) {
-            detachSurface()
-            guard let layerBackedSurface = surface as? LayerBackedRenderSurface else { return }
-            hostedLayer = layerBackedSurface.layer
-            layer.insertSublayer(layerBackedSurface.layer, at: 0)
-            setNeedsLayout()
+            performWithoutImplicitLayerAnimations {
+                detachSurface()
+                guard let layerBackedSurface = surface as? LayerBackedRenderSurface else { return }
+                hostedLayer = layerBackedSurface.layer
+                layerBackedSurface.layer.frame = bounds
+                layer.insertSublayer(layerBackedSurface.layer, at: 0)
+            }
         }
 
         func detachSurface() {
-            hostedLayer?.removeFromSuperlayer()
-            hostedLayer = nil
+            performWithoutImplicitLayerAnimations {
+                hostedLayer?.removeFromSuperlayer()
+                hostedLayer = nil
+            }
         }
 
         override func layoutSubviews() {
             super.layoutSubviews()
-            hostedLayer?.frame = bounds
+            performWithoutImplicitLayerAnimations {
+                hostedLayer?.frame = bounds
+            }
+        }
+
+        private func performWithoutImplicitLayerAnimations(_ updates: () -> Void) {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            updates()
+            CATransaction.commit()
         }
     }
 #endif

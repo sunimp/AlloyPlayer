@@ -29,6 +29,7 @@
 
         let renderHostView: RenderHostView
         private let binder = PlaybackSessionBinder()
+        private let deviceOrientationFullscreenController = DeviceOrientationFullscreenController()
         private var overlayConstraints: [NSLayoutConstraint] = []
         private var fullscreenCancellable: AnyCancellable?
         private var gestureCancellable: AnyCancellable?
@@ -45,6 +46,7 @@
             setupViews()
             binder.bind(session: session, playerView: self)
             installGestureController()
+            bindDeviceOrientationFullscreenController()
         }
 
         @available(*, unavailable)
@@ -123,6 +125,10 @@
 
         private func bindFullscreenCoordinator() {
             fullscreenCancellable = nil
+            (fullscreenCoordinator as? FullscreenCoordinator)?.setPresentationSourceProvider { [weak self] in
+                self
+            }
+            bindDeviceOrientationFullscreenController()
             guard let fullscreenCoordinator else {
                 controlOverlay?.render(fullscreenState: .inline)
                 return
@@ -159,6 +165,13 @@
                     await fullscreenCoordinator?.toggle(animated: true)
                 }
             }
+        }
+
+        private func bindDeviceOrientationFullscreenController() {
+            deviceOrientationFullscreenController.bind(
+                session: session,
+                fullscreenCoordinator: fullscreenCoordinator
+            )
         }
     }
 #endif

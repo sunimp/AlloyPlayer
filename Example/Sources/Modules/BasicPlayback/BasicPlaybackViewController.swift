@@ -46,6 +46,7 @@ final class BasicPlaybackViewController: UIViewController {
 
     private let session = AlloyPlayerFactory.makeDefaultSession()
     private lazy var playerView = AlloyPlayerView(session: session)
+    private let fullscreenCoordinator = FullscreenCoordinator()
     private let controlOverlay = DefaultControlOverlay()
     private var cancellables = Set<AnyCancellable>()
     private var playbackTask: Task<Void, Never>?
@@ -110,6 +111,7 @@ final class BasicPlaybackViewController: UIViewController {
 
     private func setupPlayer() {
         playerView.controlOverlay = controlOverlay
+        playerView.fullscreenCoordinator = fullscreenCoordinator
         playerView.translatesAutoresizingMaskIntoConstraints = false
         playerContainerView.addSubview(playerView)
         NSLayoutConstraint.activate([

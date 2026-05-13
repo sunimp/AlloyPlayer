@@ -12,9 +12,14 @@
     /// 默认 SwiftUI 控制层。
     public struct DefaultSwiftUIControlOverlayView: View {
         @ObservedObject private var controller: AlloyPlayerController
+        private let timeFormatterConfiguration: TimeFormatConfiguration
 
-        public init(controller: AlloyPlayerController) {
+        public init(
+            controller: AlloyPlayerController,
+            timeFormatterConfiguration: TimeFormatConfiguration = TimeFormatter.defaultConfiguration
+        ) {
             self.controller = controller
+            self.timeFormatterConfiguration = timeFormatterConfiguration
         }
 
         public var body: some View {
@@ -51,12 +56,9 @@
 
         private var timeText: String {
             let engine = controller.state.engine
-            return "\(format(engine.currentTime)) / \(format(engine.duration))"
-        }
-
-        private func format(_ time: TimeInterval) -> String {
-            let seconds = max(Int(time), 0)
-            return String(format: "%02d:%02d", seconds / 60, seconds % 60)
+            let current = TimeFormatter.string(from: Int(engine.currentTime), configuration: timeFormatterConfiguration)
+            let duration = TimeFormatter.string(from: Int(engine.duration), configuration: timeFormatterConfiguration)
+            return "\(current) / \(duration)"
         }
     }
 #endif

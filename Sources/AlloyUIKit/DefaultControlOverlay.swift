@@ -56,7 +56,6 @@
         public private(set) var floatingPanel = FloatingControlPanel()
         public private(set) var failButton: UIButton = {
             let btn = UIButton(type: .system)
-            btn.setTitle("加载失败，点击重试", for: .normal)
             btn.setTitleColor(.white, for: .normal)
             btn.isHidden = true
             btn.translatesAutoresizingMaskIntoConstraints = false
@@ -81,7 +80,7 @@
 
         public var isSeekHUDAnimated = true
         public var isBackgroundEffectVisible = false
-        public var shouldSeekToPlay = true
+        public var shouldSeekToPlay = false
         public var isControlViewVisible: Bool {
             isShowing
         }
@@ -94,6 +93,18 @@
         public var isCustomDisablePanMovingDirection = false
         public var shouldShowCustomStatusBar = false
         public var fullScreenMode: FullscreenMode = .automatic
+        public var failureRetryTitle: String = "Failed to load, tap to retry" {
+            didSet {
+                failButton.setTitle(failureRetryTitle, for: .normal)
+            }
+        }
+
+        public var timeFormatterConfiguration = TimeFormatter.defaultConfiguration {
+            didSet {
+                portraitPanel.timeFormatterConfiguration = timeFormatterConfiguration
+                landscapePanel.timeFormatterConfiguration = timeFormatterConfiguration
+            }
+        }
 
         // MARK: - Combine
 
@@ -124,6 +135,7 @@
 
         override public init(frame: CGRect) {
             super.init(frame: frame)
+            failButton.setTitle(failureRetryTitle, for: .normal)
             setupViews()
             setupBindings()
         }
@@ -131,6 +143,11 @@
         @available(*, unavailable)
         public required init?(coder _: NSCoder) {
             fatalError("init(coder:) has not been implemented")
+        }
+
+        override public func layoutSubviews() {
+            super.layoutSubviews()
+            updateControlPanelVisibility(removingAnimations: false)
         }
 
         private func setupViews() {
@@ -274,7 +291,7 @@
             let totalTime = latestState.engine.duration
             guard totalTime > 0 else { return }
             let currentTime = totalTime * TimeInterval(value)
-            let currentTimeString = TimeFormatter.string(from: Int(currentTime))
+            let currentTimeString = TimeFormatter.string(from: Int(currentTime), configuration: timeFormatterConfiguration)
             portraitPanel.updateSlider(value: value, currentTimeString: currentTimeString)
             landscapePanel.updateSlider(value: value, currentTimeString: currentTimeString)
         }
@@ -366,10 +383,7 @@
 
         public func render(fullscreenState: FullscreenState) {
             isFullscreen = fullscreenState == .fullscreen
-            let isLandscape = isFullscreen && fullScreenMode != .portrait
-            portraitPanel.isHidden = isLandscape
-            landscapePanel.isHidden = !isLandscape
-            portraitPanel.updateFullScreenState(isFullScreen: isFullscreen)
+            updateControlPanelVisibility(removingAnimations: true)
         }
 
         public func handle(event: PlaybackEvent) {
@@ -521,7 +535,7 @@
                 sumTime += TimeInterval(velocity.x) / 200
                 sumTime = max(0, min(sumTime, latestState.engine.duration))
                 let progress = latestState.engine.duration > 0 ? CGFloat(sumTime / latestState.engine.duration) : 0
-                let timeString = TimeFormatter.string(from: Int(sumTime))
+                let timeString = TimeFormatter.string(from: Int(sumTime), configuration: timeFormatterConfiguration)
                 portraitPanel.updateSlider(value: progress, currentTimeString: timeString)
                 landscapePanel.updateSlider(value: progress, currentTimeString: timeString)
             case .vertical:
@@ -568,9 +582,29 @@
 
         private func restoreControlPanels() {
             failButton.isHidden = true
-            let isLandscape = isFullscreen && fullScreenMode != .portrait
-            portraitPanel.isHidden = isLandscape
-            landscapePanel.isHidden = !isLandscape
+            updateControlPanelVisibility(removingAnimations: false)
+        }
+
+        private func updateControlPanelVisibility(removingAnimations: Bool) {
+            guard failButton.isHidden else { return }
+            let isLandscape = isFullscreen && fullScreenMode != .portrait && bounds.width > bounds.height
+            UIView.performWithoutAnimation {
+                if removingAnimations {
+                    removeAnimationsRecursively(from: portraitPanel)
+                    removeAnimationsRecursively(from: landscapePanel)
+                    removeAnimationsRecursively(from: bottomProgress)
+                }
+                portraitPanel.isHidden = isLandscape
+                landscapePanel.isHidden = !isLandscape
+                portraitPanel.updateFullScreenState(isFullScreen: isFullscreen)
+                if removingAnimations { layoutIfNeeded() }
+            }
+        }
+
+        private func removeAnimationsRecursively(from view: UIView) {
+            view.layer.removeAllAnimations()
+            view.layer.sublayers?.forEach { $0.removeAllAnimations() }
+            view.subviews.forEach { removeAnimationsRecursively(from: $0) }
         }
     }
 #endif

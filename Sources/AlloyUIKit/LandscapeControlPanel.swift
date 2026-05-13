@@ -56,7 +56,7 @@
             let l = UILabel()
             l.textColor = .white
             l.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular)
-            l.text = "00:00"
+            l.text = TimeFormatter.defaultConfiguration.zeroPlaceholder
             l.translatesAutoresizingMaskIntoConstraints = false
             return l
         }()
@@ -71,7 +71,7 @@
             let l = UILabel()
             l.textColor = .white
             l.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular)
-            l.text = "00:00"
+            l.text = TimeFormatter.defaultConfiguration.zeroPlaceholder
             l.translatesAutoresizingMaskIntoConstraints = false
             return l
         }()
@@ -92,6 +92,11 @@
         public var shouldSeekToPlay = false
         public var shouldShowCustomStatusBar = false
         public var fullScreenMode: FullscreenMode = .automatic
+        public var timeFormatterConfiguration = TimeFormatter.defaultConfiguration {
+            didSet {
+                resetTimeLabels()
+            }
+        }
 
         // MARK: - Combine
 
@@ -224,8 +229,7 @@
         public func resetControlView() {
             slider.value = 0
             slider.bufferValue = 0
-            currentTimeLabel.text = "00:00"
-            totalTimeLabel.text = "00:00"
+            resetTimeLabels()
             titleLabel.text = nil
         }
 
@@ -272,8 +276,8 @@
         }
 
         public func updateTime(current: TimeInterval, total: TimeInterval) {
-            currentTimeLabel.text = TimeFormatter.string(from: Int(current))
-            totalTimeLabel.text = TimeFormatter.string(from: Int(total))
+            currentTimeLabel.text = TimeFormatter.string(from: Int(current), configuration: timeFormatterConfiguration)
+            totalTimeLabel.text = TimeFormatter.string(from: Int(total), configuration: timeFormatterConfiguration)
             if !slider.isDragging, total > 0 { slider.value = Float(current / total) }
         }
 
@@ -298,6 +302,12 @@
         public func sliderDidEndChanging() {}
 
         public func updatePresentationSize(_: CGSize) {}
+
+        private func resetTimeLabels() {
+            currentTimeLabel.text = timeFormatterConfiguration.zeroPlaceholder
+            totalTimeLabel.text = timeFormatterConfiguration.zeroPlaceholder
+        }
+
         func shouldRespondToGesture(at point: CGPoint, type _: GestureType, touch _: UITouch) -> Bool {
             if isControlVisible, bottomToolBar.frame.contains(point) || topToolBar.frame.contains(point) { return false }
             return true

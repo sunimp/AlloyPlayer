@@ -16,9 +16,17 @@
     @Test func swiftUIPlayerViewInitializesWithDefaultControls() {
         let controller = AlloyPlayerController(session: PlaybackSession(engine: ViewTestEngine()))
         _ = AlloySwiftUIPlayerView(controller: controller)
+        _ = AlloySwiftUIPlayerView(
+            controller: controller,
+            timeFormatterConfiguration: TimeFormatConfiguration(zeroPlaceholder: "--:--")
+        )
         _ = AlloySwiftUIPlayerView(controller: controller) { controller in
             DefaultSwiftUIControlOverlayView(controller: controller)
         }
+        _ = DefaultSwiftUIControlOverlayView(
+            controller: controller,
+            timeFormatterConfiguration: TimeFormatConfiguration(zeroPlaceholder: "--:--")
+        )
     }
 
     @MainActor

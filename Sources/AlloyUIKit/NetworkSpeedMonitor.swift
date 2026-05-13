@@ -8,13 +8,51 @@
 import Combine
 import Foundation
 
-/// 网速监控器
+/// 网速显示格式配置。
+public struct NetworkSpeedFormattingConfiguration: Equatable, Sendable {
+    public var bytesPerSecondUnit: String
+    public var kilobytesPerSecondUnit: String
+    public var megabytesPerSecondUnit: String
+
+    public init(
+        bytesPerSecondUnit: String = "B/s",
+        kilobytesPerSecondUnit: String = "KB/s",
+        megabytesPerSecondUnit: String = "MB/s"
+    ) {
+        self.bytesPerSecondUnit = bytesPerSecondUnit
+        self.kilobytesPerSecondUnit = kilobytesPerSecondUnit
+        self.megabytesPerSecondUnit = megabytesPerSecondUnit
+    }
+}
+
+public enum NetworkSpeedFormatter: Sendable {
+    public static let defaultConfiguration = NetworkSpeedFormattingConfiguration()
+
+    public static func string(
+        fromBytesPerSecond bytes: UInt64,
+        configuration: NetworkSpeedFormattingConfiguration = defaultConfiguration
+    ) -> String {
+        if bytes < 1024 { return "\(bytes) \(configuration.bytesPerSecondUnit)" }
+        if bytes < 1024 * 1024 {
+            return String(format: "%.1f %@", Double(bytes) / 1024, configuration.kilobytesPerSecondUnit)
+        }
+        return String(format: "%.1f %@", Double(bytes) / 1024 / 1024, configuration.megabytesPerSecondUnit)
+    }
+}
+
+/// 网速监控器。
 ///
 /// 通过读取系统网络接口统计数据计算上传/下载速度。
 @MainActor
 public final class NetworkSpeedMonitor {
-    public private(set) var downloadSpeed: String = "0 KB/s"
-    public private(set) var uploadSpeed: String = "0 KB/s"
+    public private(set) var downloadSpeed: String
+    public private(set) var uploadSpeed: String
+    public var formattingConfiguration: NetworkSpeedFormattingConfiguration {
+        didSet {
+            downloadSpeed = NetworkSpeedFormatter.string(fromBytesPerSecond: 0, configuration: formattingConfiguration)
+            uploadSpeed = NetworkSpeedFormatter.string(fromBytesPerSecond: 0, configuration: formattingConfiguration)
+        }
+    }
 
     private let _speed = PassthroughSubject<(download: String, upload: String), Never>()
     public var speedPublisher: AnyPublisher<(download: String, upload: String), Never> {
@@ -25,7 +63,11 @@ public final class NetworkSpeedMonitor {
     private var lastBytesReceived: UInt64 = 0
     private var lastBytesSent: UInt64 = 0
 
-    public init() {}
+    public init(formattingConfiguration: NetworkSpeedFormattingConfiguration = NetworkSpeedFormatter.defaultConfiguration) {
+        self.formattingConfiguration = formattingConfiguration
+        downloadSpeed = NetworkSpeedFormatter.string(fromBytesPerSecond: 0, configuration: formattingConfiguration)
+        uploadSpeed = NetworkSpeedFormatter.string(fromBytesPerSecond: 0, configuration: formattingConfiguration)
+    }
 
     public func startMonitoring() {
         let (rx, tx) = getNetworkBytes()
@@ -47,8 +89,8 @@ public final class NetworkSpeedMonitor {
         let txDiff = tx > lastBytesSent ? tx - lastBytesSent : 0
         lastBytesReceived = rx
         lastBytesSent = tx
-        downloadSpeed = formatBytes(rxDiff)
-        uploadSpeed = formatBytes(txDiff)
+        downloadSpeed = NetworkSpeedFormatter.string(fromBytesPerSecond: rxDiff, configuration: formattingConfiguration)
+        uploadSpeed = NetworkSpeedFormatter.string(fromBytesPerSecond: txDiff, configuration: formattingConfiguration)
         _speed.send((download: downloadSpeed, upload: uploadSpeed))
     }
 
@@ -73,10 +115,4 @@ public final class NetworkSpeedMonitor {
             (0, 0)
         }
     #endif
-
-    private func formatBytes(_ bytes: UInt64) -> String {
-        if bytes < 1024 { return "\(bytes) B/s" }
-        if bytes < 1024 * 1024 { return String(format: "%.1f KB/s", Double(bytes) / 1024) }
-        return String(format: "%.1f MB/s", Double(bytes) / 1024 / 1024)
-    }
 }

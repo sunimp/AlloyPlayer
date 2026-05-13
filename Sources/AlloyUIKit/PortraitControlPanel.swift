@@ -55,7 +55,7 @@
             let label = UILabel()
             label.textColor = .white
             label.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular)
-            label.text = "00:00"
+            label.text = TimeFormatter.defaultConfiguration.zeroPlaceholder
             label.translatesAutoresizingMaskIntoConstraints = false
             return label
         }()
@@ -70,7 +70,7 @@
             let label = UILabel()
             label.textColor = .white
             label.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular)
-            label.text = "00:00"
+            label.text = TimeFormatter.defaultConfiguration.zeroPlaceholder
             label.translatesAutoresizingMaskIntoConstraints = false
             return label
         }()
@@ -90,6 +90,11 @@
         public var fullscreenAction: (() -> Void)?
         public var shouldSeekToPlay = false
         public var fullScreenMode: FullscreenMode = .automatic
+        public var timeFormatterConfiguration = TimeFormatter.defaultConfiguration {
+            didSet {
+                resetTimeLabels()
+            }
+        }
 
         // MARK: - Combine
 
@@ -244,8 +249,7 @@
         public func resetControlView() {
             slider.value = 0
             slider.bufferValue = 0
-            currentTimeLabel.text = "00:00"
-            totalTimeLabel.text = "00:00"
+            resetTimeLabels()
             titleLabel.text = nil
         }
 
@@ -305,8 +309,8 @@
         }
 
         public func updateTime(current: TimeInterval, total: TimeInterval) {
-            currentTimeLabel.text = TimeFormatter.string(from: Int(current))
-            totalTimeLabel.text = TimeFormatter.string(from: Int(total))
+            currentTimeLabel.text = TimeFormatter.string(from: Int(current), configuration: timeFormatterConfiguration)
+            totalTimeLabel.text = TimeFormatter.string(from: Int(total), configuration: timeFormatterConfiguration)
             if !slider.isDragging, total > 0 {
                 slider.value = Float(current / total)
             }
@@ -328,6 +332,11 @@
 
         public func sliderDidEndChanging() {
             // 恢复定时隐藏等
+        }
+
+        private func resetTimeLabels() {
+            currentTimeLabel.text = timeFormatterConfiguration.zeroPlaceholder
+            totalTimeLabel.text = timeFormatterConfiguration.zeroPlaceholder
         }
 
         public func playOrPause() {
@@ -368,7 +377,10 @@
 
         override func layoutSubviews() {
             super.layoutSubviews()
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
             gradientLayer.frame = bounds
+            CATransaction.commit()
         }
     }
 #endif

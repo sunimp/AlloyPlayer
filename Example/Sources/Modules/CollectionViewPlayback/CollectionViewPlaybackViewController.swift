@@ -33,6 +33,7 @@ final class CollectionViewPlaybackViewController: UIViewController {
     // MARK: - 播放器
 
     private let session = AlloyPlayerFactory.makeDefaultSession()
+    private let fullscreenCoordinator = FullscreenCoordinator()
     private let controlOverlay = DefaultControlOverlay()
     private lazy var renderView = AlloyPlayerRenderView(session: session)
     private lazy var inlineControlView = AlloyPlayerControlView(session: session, controlOverlay: controlOverlay)
@@ -92,7 +93,7 @@ final class CollectionViewPlaybackViewController: UIViewController {
     }
 
     private func setupPlayer() {
-        controlOverlay.autoHideInterval = 8
+        inlineControlView.fullscreenCoordinator = fullscreenCoordinator
         listPlayback.configuration.minimumVisiblePercent = 0.4
         floatingPlayback.setCloseHandler { [weak self] in
             guard let self else { return }
@@ -118,6 +119,8 @@ final class CollectionViewPlaybackViewController: UIViewController {
     }
 
     private func startPlayback(at indexPath: IndexPath) {
+        guard selectedIndexPath != indexPath || selectedSource == nil else { return }
+
         let video = videos[indexPath.item]
         selectedIndexPath = indexPath
         isFloatingSuppressedForCurrentItem = false
@@ -204,13 +207,13 @@ final class CollectionViewPlaybackViewController: UIViewController {
     }
 
     private func attachInlineControls(to container: UIView) {
+        guard inlineControlView.superview !== container else { return }
+
         NSLayoutConstraint.deactivate(inlineControlConstraints)
         inlineControlConstraints.removeAll()
-        if inlineControlView.superview !== container {
-            inlineControlView.removeFromSuperview()
-            inlineControlView.translatesAutoresizingMaskIntoConstraints = false
-            container.addSubview(inlineControlView)
-        }
+        inlineControlView.removeFromSuperview()
+        inlineControlView.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(inlineControlView)
         inlineControlConstraints = [
             inlineControlView.topAnchor.constraint(equalTo: container.topAnchor),
             inlineControlView.leadingAnchor.constraint(equalTo: container.leadingAnchor),

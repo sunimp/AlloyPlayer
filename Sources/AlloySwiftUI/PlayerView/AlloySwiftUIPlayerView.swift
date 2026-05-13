@@ -6,6 +6,7 @@
 //
 
 #if canImport(UIKit) && canImport(SwiftUI)
+    import AlloyCore
     import SwiftUI
 
     /// SwiftUI 播放器视图。
@@ -27,8 +28,16 @@
     }
 
     public extension AlloySwiftUIPlayerView where Controls == DefaultSwiftUIControlOverlayView {
-        init(controller: AlloyPlayerController) {
-            self.init(controller: controller) { DefaultSwiftUIControlOverlayView(controller: $0) }
+        init(
+            controller: AlloyPlayerController,
+            timeFormatterConfiguration: TimeFormatConfiguration = TimeFormatter.defaultConfiguration
+        ) {
+            self.init(controller: controller) {
+                DefaultSwiftUIControlOverlayView(
+                    controller: $0,
+                    timeFormatterConfiguration: timeFormatterConfiguration
+                )
+            }
         }
     }
 #endif

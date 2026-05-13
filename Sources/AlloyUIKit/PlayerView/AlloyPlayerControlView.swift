@@ -28,6 +28,7 @@
         }
 
         private var overlayConstraints: [NSLayoutConstraint] = []
+        private let deviceOrientationFullscreenController = DeviceOrientationFullscreenController()
         private var sessionCancellables = Set<AnyCancellable>()
         private var fullscreenCancellable: AnyCancellable?
         private var gestureCancellable: AnyCancellable?
@@ -44,6 +45,7 @@
             bindSession()
             installControlOverlay()
             installGestureController()
+            bindDeviceOrientationFullscreenController()
         }
 
         public convenience init(
@@ -65,6 +67,7 @@
         public func bind(session: PlaybackSession) {
             self.session = session
             bindSession()
+            bindDeviceOrientationFullscreenController()
             controlOverlay?.render(state: session.state)
         }
 
@@ -126,6 +129,10 @@
 
         private func bindFullscreenCoordinator() {
             fullscreenCancellable = nil
+            (fullscreenCoordinator as? FullscreenCoordinator)?.setPresentationSourceProvider { [weak self] in
+                self?.superview ?? self
+            }
+            bindDeviceOrientationFullscreenController()
             guard let fullscreenCoordinator else {
                 controlOverlay?.render(fullscreenState: .inline)
                 return
@@ -162,6 +169,13 @@
                     await fullscreenCoordinator?.toggle(animated: true)
                 }
             }
+        }
+
+        private func bindDeviceOrientationFullscreenController() {
+            deviceOrientationFullscreenController.bind(
+                session: session,
+                fullscreenCoordinator: fullscreenCoordinator
+            )
         }
     }
 #endif

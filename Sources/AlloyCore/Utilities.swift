@@ -10,11 +10,24 @@ import os
 
 // MARK: - 时间格式化
 
+public struct TimeFormatConfiguration: Equatable, Sendable {
+    public var zeroPlaceholder: String
+
+    public init(zeroPlaceholder: String = "00:00") {
+        self.zeroPlaceholder = zeroPlaceholder
+    }
+}
+
 /// 将秒数格式化为时间字符串
 public enum TimeFormatter: Sendable {
+    public static let defaultConfiguration = TimeFormatConfiguration()
+
     /// 将秒数格式化为 "mm:ss" 或 "HH:mm:ss"
-    public static func string(from seconds: Int) -> String {
-        guard seconds > 0 else { return "00:00" }
+    public static func string(
+        from seconds: Int,
+        configuration: TimeFormatConfiguration = defaultConfiguration
+    ) -> String {
+        guard seconds > 0 else { return configuration.zeroPlaceholder }
         if seconds < 3600 {
             return String(format: "%02d:%02d", seconds / 60, seconds % 60)
         } else {

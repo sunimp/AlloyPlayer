@@ -144,25 +144,27 @@
 
         override public func layoutSubviews() {
             super.layoutSubviews()
-            let trackY = (bounds.height - trackHeight) / 2
-            let horizontalInset = isThumbHidden ? 0 : thumbSize.width / 2
-            let trackWidth = max(0, bounds.width - horizontalInset * 2)
+            performWithoutImplicitLayoutAnimations {
+                let trackY = (bounds.height - trackHeight) / 2
+                let horizontalInset = isThumbHidden ? 0 : thumbSize.width / 2
+                let trackWidth = max(0, bounds.width - horizontalInset * 2)
 
-            bgTrack.frame = CGRect(x: horizontalInset, y: trackY, width: trackWidth, height: trackHeight)
-            bgTrack.layer.cornerRadius = trackCornerRadius
+                bgTrack.frame = CGRect(x: horizontalInset, y: trackY, width: trackWidth, height: trackHeight)
+                bgTrack.layer.cornerRadius = trackCornerRadius
 
-            let bufferWidth = trackWidth * CGFloat(min(max(bufferValue, 0), 1))
-            bufferTrack.frame = CGRect(x: bgTrack.frame.minX, y: trackY, width: bufferWidth, height: trackHeight)
-            bufferTrack.layer.cornerRadius = trackCornerRadius
+                let bufferWidth = trackWidth * CGFloat(min(max(bufferValue, 0), 1))
+                bufferTrack.frame = CGRect(x: bgTrack.frame.minX, y: trackY, width: bufferWidth, height: trackHeight)
+                bufferTrack.layer.cornerRadius = trackCornerRadius
 
-            let clampedValue = CGFloat(min(max(value, 0), 1))
-            let progressWidth = trackWidth * clampedValue
-            progressTrack.frame = CGRect(x: bgTrack.frame.minX, y: trackY, width: progressWidth, height: trackHeight)
-            progressTrack.layer.cornerRadius = trackCornerRadius
+                let clampedValue = CGFloat(min(max(value, 0), 1))
+                let progressWidth = trackWidth * clampedValue
+                progressTrack.frame = CGRect(x: bgTrack.frame.minX, y: trackY, width: progressWidth, height: trackHeight)
+                progressTrack.layer.cornerRadius = trackCornerRadius
 
-            let thumbX = bgTrack.frame.minX + progressWidth - thumbSize.width / 2
-            let thumbY = (bounds.height - thumbSize.height) / 2
-            thumbButton.frame = CGRect(x: thumbX, y: thumbY, width: thumbSize.width, height: thumbSize.height)
+                let thumbX = bgTrack.frame.minX + progressWidth - thumbSize.width / 2
+                let thumbY = (bounds.height - thumbSize.height) / 2
+                thumbButton.frame = CGRect(x: thumbX, y: thumbY, width: thumbSize.width, height: thumbSize.height)
+            }
         }
 
         override public func point(inside point: CGPoint, with _: UIEvent?) -> Bool {
@@ -280,6 +282,15 @@
             guard trackWidth > 0 else { return value }
             let rawValue = (point.x - bgTrack.frame.minX) / trackWidth
             return Float(min(max(rawValue, 0), 1))
+        }
+
+        private func performWithoutImplicitLayoutAnimations(_ updates: () -> Void) {
+            UIView.performWithoutAnimation {
+                CATransaction.begin()
+                CATransaction.setDisableActions(true)
+                updates()
+                CATransaction.commit()
+            }
         }
     }
 

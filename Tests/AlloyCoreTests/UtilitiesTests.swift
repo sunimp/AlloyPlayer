@@ -27,4 +27,12 @@ struct UtilitiesTests {
     @Test func timeFormatterNegative() {
         #expect(TimeFormatter.string(from: -1) == "00:00")
     }
+
+    @Test func timeFormatterUsesCustomZeroPlaceholder() {
+        let configuration = TimeFormatConfiguration(zeroPlaceholder: "--:--")
+
+        #expect(TimeFormatter.string(from: 0, configuration: configuration) == "--:--")
+        #expect(TimeFormatter.string(from: -1, configuration: configuration) == "--:--")
+        #expect(TimeFormatter.string(from: 61, configuration: configuration) == "01:01")
+    }
 }

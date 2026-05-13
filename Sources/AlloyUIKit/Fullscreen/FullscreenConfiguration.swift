@@ -23,15 +23,18 @@
         public var mode: FullscreenMode
         public var portraitMode: PortraitFullscreenMode
         public var statusBarStyle: UIStatusBarStyle
+        public var isDeviceOrientationFullscreenEnabled: Bool
 
         public init(
             mode: FullscreenMode = .automatic,
             portraitMode: PortraitFullscreenMode = .scaleAspectFit,
-            statusBarStyle: UIStatusBarStyle = .lightContent
+            statusBarStyle: UIStatusBarStyle = .lightContent,
+            isDeviceOrientationFullscreenEnabled: Bool = true
         ) {
             self.mode = mode
             self.portraitMode = portraitMode
             self.statusBarStyle = statusBarStyle
+            self.isDeviceOrientationFullscreenEnabled = isDeviceOrientationFullscreenEnabled
         }
     }
 #endif

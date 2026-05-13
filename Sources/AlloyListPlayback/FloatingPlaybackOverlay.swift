@@ -15,6 +15,11 @@
     final class FloatingPlaybackOverlay: UIView, UIKitControlOverlay {
         var actionHandler: ((PlaybackControlAction) -> Void)?
         var closeAction: (() -> Void)?
+        var timeFormatterConfiguration = TimeFormatter.defaultConfiguration {
+            didSet {
+                resetTimeLabel()
+            }
+        }
 
         private var latestState = PlaybackStateSnapshot(engine: PlaybackEngineSnapshot())
         private var isSeeking = false
@@ -36,9 +41,9 @@
 
         private let progressSlider: ProgressSlider = {
             let slider = ProgressSlider()
-            slider.trackHeight = 3
-            slider.trackCornerRadius = 1.5
-            slider.thumbSize = CGSize(width: 14, height: 14)
+            slider.trackHeight = 2
+            slider.trackCornerRadius = 1
+            slider.thumbSize = CGSize(width: 8, height: 8)
             slider.minimumTrackTintColor = .white
             slider.maximumTrackTintColor = UIColor(white: 1, alpha: 0.28)
             slider.bufferTrackTintColor = UIColor(white: 1, alpha: 0.45)
@@ -48,20 +53,21 @@
 
         private let timeLabel: UILabel = {
             let label = UILabel()
-            label.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular)
+            label.font = .monospacedDigitSystemFont(ofSize: 9, weight: .regular)
             label.textColor = .white
-            label.text = "00:00 / 00:00"
+            let placeholder = TimeFormatter.defaultConfiguration.zeroPlaceholder
+            label.text = "\(placeholder) / \(placeholder)"
             label.translatesAutoresizingMaskIntoConstraints = false
             return label
         }()
 
         private let closeButton: UIButton = {
             let button = UIButton(type: .custom)
-            let configuration = UIImage.SymbolConfiguration(pointSize: 17, weight: .semibold)
+            let configuration = UIImage.SymbolConfiguration(pointSize: 11, weight: .semibold)
             button.setImage(UIImage(systemName: "xmark", withConfiguration: configuration), for: .normal)
             button.tintColor = .white
             button.backgroundColor = UIColor.black.withAlphaComponent(0.48)
-            button.layer.cornerRadius = 15
+            button.layer.cornerRadius = 11
             button.translatesAutoresizingMaskIntoConstraints = false
             return button
         }()
@@ -82,7 +88,7 @@
             latestState = PlaybackStateSnapshot(engine: PlaybackEngineSnapshot())
             progressSlider.value = 0
             progressSlider.bufferValue = 0
-            timeLabel.text = "00:00 / 00:00"
+            resetTimeLabel()
             updatePlayButton(isPlaying: false)
         }
 
@@ -142,23 +148,23 @@
                 overlayView.trailingAnchor.constraint(equalTo: trailingAnchor),
                 overlayView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-                closeButton.topAnchor.constraint(equalTo: topAnchor, constant: 8),
-                closeButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
-                closeButton.widthAnchor.constraint(equalToConstant: 30),
-                closeButton.heightAnchor.constraint(equalToConstant: 30),
+                closeButton.topAnchor.constraint(equalTo: topAnchor, constant: 6),
+                closeButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6),
+                closeButton.widthAnchor.constraint(equalToConstant: 22),
+                closeButton.heightAnchor.constraint(equalToConstant: 22),
 
                 playPauseButton.centerXAnchor.constraint(equalTo: centerXAnchor),
                 playPauseButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-                playPauseButton.widthAnchor.constraint(equalToConstant: 58),
-                playPauseButton.heightAnchor.constraint(equalToConstant: 58),
+                playPauseButton.widthAnchor.constraint(equalToConstant: 38),
+                playPauseButton.heightAnchor.constraint(equalToConstant: 38),
 
-                progressSlider.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
-                progressSlider.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-                progressSlider.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8),
-                progressSlider.heightAnchor.constraint(equalToConstant: 30),
+                progressSlider.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
+                progressSlider.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+                progressSlider.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -5),
+                progressSlider.heightAnchor.constraint(equalToConstant: 18),
 
                 timeLabel.leadingAnchor.constraint(equalTo: progressSlider.leadingAnchor),
-                timeLabel.bottomAnchor.constraint(equalTo: progressSlider.topAnchor, constant: -2),
+                timeLabel.bottomAnchor.constraint(equalTo: progressSlider.topAnchor),
             ])
         }
 
@@ -189,8 +195,8 @@
         }
 
         private func renderTime(currentTime: TimeInterval, duration: TimeInterval) {
-            let current = TimeFormatter.string(from: Int(currentTime))
-            let total = TimeFormatter.string(from: Int(duration))
+            let current = TimeFormatter.string(from: Int(currentTime), configuration: timeFormatterConfiguration)
+            let total = TimeFormatter.string(from: Int(duration), configuration: timeFormatterConfiguration)
             timeLabel.text = "\(current) / \(total)"
         }
 
@@ -208,9 +214,6 @@
             let duration = latestState.engine.duration
             guard duration > 0 else { return }
             actionHandler?(.seek(duration * TimeInterval(value)))
-            if latestState.engine.playbackState == .playing {
-                actionHandler?(.play)
-            }
         }
 
         private func updatePlayButton(isPlaying: Bool) {
@@ -218,8 +221,13 @@
         }
 
         private func updatePlayButton(imageName: String) {
-            let configuration = UIImage.SymbolConfiguration(pointSize: 42, weight: .regular)
+            let configuration = UIImage.SymbolConfiguration(pointSize: 24, weight: .regular)
             playPauseButton.setImage(UIImage(systemName: imageName, withConfiguration: configuration), for: .normal)
+        }
+
+        private func resetTimeLabel() {
+            let placeholder = timeFormatterConfiguration.zeroPlaceholder
+            timeLabel.text = "\(placeholder) / \(placeholder)"
         }
 
         @objc private func closeButtonTapped() {

@@ -67,6 +67,48 @@
     }
 
     @MainActor
+    @Test func floatingPlaybackOverlayUsesCompactControlsForSmallWindow() {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        let parentView = UIView(frame: CGRect(x: 0, y: 0, width: 320, height: 240))
+        window.addSubview(parentView)
+        let session = PlaybackSession(engine: FloatingPlaybackMockEngine())
+        let renderView = AlloyUIKit.AlloyPlayerRenderView(session: session)
+        let coordinator = FloatingPlaybackCoordinator(session: session, renderView: renderView)
+
+        coordinator.show(in: parentView, frame: CGRect(x: 10, y: 20, width: 200, height: 112))
+        window.layoutIfNeeded()
+
+        let floatingView = try? #require(renderView.superview as? FloatingPlaybackView)
+        let buttons = floatingView?.allButtons() ?? []
+        let closeButton = try? #require(buttons.first { $0.frame.width <= 24 && $0.frame.height <= 24 })
+        let playButton = try? #require(buttons.first { $0.frame.width > 24 && $0.frame.height > 24 })
+        let timeLabel = try? #require(floatingView?.allLabels().first { $0.text == "00:00 / 00:00" })
+        let slider = try? #require(floatingView?.allProgressSliders().first)
+
+        #expect(closeButton?.bounds.size == CGSize(width: 22, height: 22))
+        #expect(playButton?.bounds.size == CGSize(width: 38, height: 38))
+        #expect(timeLabel?.font.pointSize == 9)
+        #expect(slider?.bounds.height == 18)
+        #expect(slider?.thumbSize == CGSize(width: 8, height: 8))
+    }
+
+    @MainActor
+    @Test func floatingPlaybackSeekDoesNotResumePlayback() throws {
+        let overlay = FloatingPlaybackOverlay(frame: CGRect(x: 0, y: 0, width: 200, height: 112))
+        var actions: [PlaybackControlAction] = []
+        overlay.actionHandler = { actions.append($0) }
+        overlay.render(state: PlaybackStateSnapshot(
+            engine: PlaybackEngineSnapshot(playbackState: .playing, currentTime: 10, duration: 100)
+        ))
+
+        let slider = try #require(overlay.allProgressSliders().first)
+        slider.beginTrackInteraction(at: CGPoint(x: 100, y: 9))
+        slider.endTrackInteraction(at: CGPoint(x: 100, y: 9))
+
+        #expect(actions == [.seek(50)])
+    }
+
+    @MainActor
     private final class FloatingPlaybackMockEngine: PlaybackEngine {
         private let snapshotSubject = CurrentValueSubject<PlaybackEngineSnapshot, Never>(PlaybackEngineSnapshot())
         var pauseCount = 0
@@ -105,6 +147,22 @@
                 let nestedLabels = view.allLabels()
                 guard let label = view as? UILabel else { return nestedLabels }
                 return [label] + nestedLabels
+            }
+        }
+
+        func allButtons() -> [UIButton] {
+            subviews.flatMap { view -> [UIButton] in
+                let nestedButtons = view.allButtons()
+                guard let button = view as? UIButton else { return nestedButtons }
+                return [button] + nestedButtons
+            }
+        }
+
+        func allProgressSliders() -> [ProgressSlider] {
+            subviews.flatMap { view -> [ProgressSlider] in
+                let nestedSliders = view.allProgressSliders()
+                guard let slider = view as? ProgressSlider else { return nestedSliders }
+                return [slider] + nestedSliders
             }
         }
     }

@@ -50,6 +50,7 @@ final class PlaybackSettingsViewController: UIViewController {
     private var isMuted = false
     private var pauseWhenAppResignActive = true
     private var exitFullScreenWhenStop = true
+    private var isDeviceOrientationFullscreenEnabled = true
     private var currentSamples: [VideoItem] {
         selectedSampleGroup.samples
     }
@@ -132,6 +133,7 @@ final class PlaybackSettingsViewController: UIViewController {
         playerView.gestureController?.configuration.disabledTypes = disabledGestureTypes
         playerView.gestureController?.configuration.disabledPanDirections = disabledPanMovingDirection
         fullscreenCoordinator.configuration.mode = selectedFullScreenMode
+        fullscreenCoordinator.configuration.isDeviceOrientationFullscreenEnabled = isDeviceOrientationFullscreenEnabled
         controlOverlay.fullScreenMode = selectedFullScreenMode
     }
 
@@ -226,6 +228,11 @@ final class PlaybackSettingsViewController: UIViewController {
         applyPlaybackConfiguration()
     }
 
+    @objc private func deviceOrientationFullscreenToggled(_ sender: UISwitch) {
+        isDeviceOrientationFullscreenEnabled = sender.isOn
+        applyPlaybackConfiguration()
+    }
+
     private func toggleGesture(_ type: GestureType, enabled: Bool) {
         if enabled {
             disabledGestureTypes.remove(type)
@@ -274,7 +281,7 @@ private enum SettingsSection: Int, CaseIterable {
         case .rate, .scalingMode, .fullScreenMode: return 1
         case .gestures: return 5
         case .panDirection: return 2
-        case .other: return 3
+        case .other: return 4
         }
     }
 }
@@ -396,6 +403,10 @@ extension PlaybackSettingsViewController: UITableViewDataSource {
                 config.text = "停止时退出全屏"
                 cell.contentConfiguration = config
                 cell.accessoryView = makeSwitch(isOn: exitFullScreenWhenStop, action: #selector(exitFullScreenOnStopToggled(_:)))
+            case 3:
+                config.text = "设备方向进出全屏"
+                cell.contentConfiguration = config
+                cell.accessoryView = makeSwitch(isOn: isDeviceOrientationFullscreenEnabled, action: #selector(deviceOrientationFullscreenToggled(_:)))
             default:
                 cell.contentConfiguration = config
             }

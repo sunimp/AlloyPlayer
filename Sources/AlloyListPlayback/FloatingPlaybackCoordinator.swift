@@ -15,6 +15,11 @@
         public let session: PlaybackSession
         public let renderView: AlloyUIKit.AlloyPlayerRenderView
         public private(set) var isVisible = false
+        public var timeFormatterConfiguration = TimeFormatter.defaultConfiguration {
+            didSet {
+                floatingOverlay.timeFormatterConfiguration = timeFormatterConfiguration
+            }
+        }
 
         private var floatingView: FloatingPlaybackView?
         private let floatingOverlay = FloatingPlaybackOverlay()
