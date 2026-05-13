@@ -22,6 +22,23 @@ let session = PlaybackSession(engine: CustomPlaybackEngine())
 let playerView = AlloyUIKit.AlloyPlayerView(session: session)
 ```
 
+## API 对照
+
+| 旧 API / 概念 | 2.0 API / 概念 |
+|---------------|----------------|
+| `Player` | `PlaybackSession` + `AlloyUIKit.AlloyPlayerView` |
+| `AVPlayerManager` | `AVPlaybackEngine` |
+| `assetURL` | `load(PlaybackSource(url:headers:))` |
+| `ControlOverlay` | `UIKitControlOverlay` |
+| `FullScreenMode` | `FullscreenMode` |
+| ScrollView 扩展和自动选择方法 | `ListPlaybackCoordinator` + `ListPlaybackCandidate` |
+| 浮窗视图公开操作 | `FloatingPlaybackCoordinator` |
+| `SwiftUIControlOverlayState` | `AlloyPlayerController` |
+| `SwiftUIControlOverlay` | `AlloySwiftUIPlayerView` 的自定义 controls 闭包 |
+| HTTPMediaCache 直接改写播放器 URL | `AlloyHTTPMediaCacheSupport.proxySource(for:configuration:)` |
+
+2.0 不保留兼容别名。调用方应迁移到新的模块入口，避免继续依赖旧类型名或旧回调协议。
+
 ## 状态订阅
 
 播放状态统一来自 session 快照和事件：
@@ -45,6 +62,9 @@ session.eventPublisher
 UIKit 自定义控制层实现 `UIKitControlOverlay`：
 
 ```swift
+import AlloyPlayer
+import UIKit
+
 final class CustomOverlay: UIView, UIKitControlOverlay {
     var actionHandler: ((PlaybackControlAction) -> Void)?
 

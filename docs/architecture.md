@@ -28,11 +28,27 @@ flowchart LR
 |------|------|
 | `AlloyCore` | `PlaybackSource`、`PlaybackEngine`、`PlaybackSession`、状态快照、播放事件和基础工具 |
 | `AlloyAVPlayer` | AVFoundation 引擎实现、状态机、观察逻辑和渲染 surface |
-| `AlloyUIKit` | 播放器视图、渲染挂载、默认控制层、手势控制和全屏协调 |
+| `AlloyUIKit` | 播放器视图、默认控制层、手势控制和全屏协调 |
 | `AlloySwiftUI` | SwiftUI 播放视图、控制器和默认 SwiftUI 控制层 |
-| `AlloyListPlayback` | 列表候选选择、播放器视图挂载和浮动播放 |
+| `AlloyListPlayback` | 列表候选选择、播放器视图挂载和浮动播放协调 |
 | `AlloyHTTPMediaCacheSupport` | 把原始 `PlaybackSource` 转换为 HTTPMediaCache 代理播放源 |
 | `AlloyPlayer` | Umbrella 重新导出和默认 AVFoundation session 工厂 |
+
+## 公开入口
+
+| 场景 | 入口 |
+|------|------|
+| 默认 AVFoundation 播放 | `AlloyPlayerFactory.makeDefaultSession()` |
+| 自定义播放引擎 | `PlaybackEngine` + `PlaybackSession(engine:)` |
+| UIKit 播放视图 | `AlloyUIKit.AlloyPlayerView` |
+| UIKit 默认控制层 | `DefaultControlOverlay` |
+| UIKit 自定义控制层 | `UIKitControlOverlay` + `PlaybackControlAction` |
+| SwiftUI 播放视图 | `AlloyPlayerController` + `AlloySwiftUIPlayerView` |
+| 列表播放 | `ListPlaybackCoordinator` + `ListPlaybackCandidate` |
+| 浮动播放 | `FloatingPlaybackCoordinator` |
+| HTTPMediaCache | `AlloyHTTPMediaCacheSupport.proxySource(for:configuration:)` |
+
+`RenderHostView`、`FloatingPlaybackView`、`VisibilityEvaluator`、`KVOManager` 和内部 logger 不是公开扩展点。业务侧应通过上表入口接入。
 
 ## 主路径
 

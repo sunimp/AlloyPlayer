@@ -219,6 +219,7 @@ TableView / CollectionView 场景使用 `AlloyListPlayback` 选择最适合播�
 
 ```swift
 import AlloyPlayer
+import UIKit
 
 final class ListPlayerViewController: UIViewController, UITableViewDelegate {
     private let session = AlloyPlayerFactory.makeDefaultSession()
@@ -303,11 +304,11 @@ flowchart LR
 |------|------|
 | `AlloyCore` | 平台无关的播放类型、引擎协议、状态快照、事件和 `PlaybackSession` |
 | `AlloyAVPlayer` | 基于 AVFoundation 的 `PlaybackEngine` 实现 |
-| `AlloyUIKit` | UIKit 播放视图、渲染承载、默认控制层、手势和全屏协调 |
+| `AlloyUIKit` | UIKit 播放视图、默认控制层、手势和全屏协调 |
 | `AlloySwiftUI` | SwiftUI 播放器视图、默认 SwiftUI 控制层和外部控制句柄 |
-| `AlloyListPlayback` | 列表播放协调器、可见性计算和浮动播放视图 |
+| `AlloyListPlayback` | 列表播放协调器和浮动播放协调器 |
 | `AlloyHTTPMediaCacheSupport` | HTTPMediaCache 可选支持，负责代理播放源生成 |
-| `AlloyPlayer` | Umbrella 模块，重新导出核心播放能力和默认控制层 |
+| `AlloyPlayer` | Umbrella 模块，重新导出 Core、AV、UIKit、SwiftUI 和 ListPlayback 能力 |
 
 ## 截图
 
