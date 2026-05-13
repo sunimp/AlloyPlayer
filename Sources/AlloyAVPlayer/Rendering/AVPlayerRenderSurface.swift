@@ -11,10 +11,10 @@ import CoreGraphics
 import QuartzCore
 
 /// AVPlayerLayer 渲染承载面。
-public final class AVPlayerRenderSurface: LayerBackedRenderSurface {
-    public let playerLayer: AVPlayerLayer
-    public var presentationSize: CGSize
-    public var layer: CALayer {
+final class AVPlayerRenderSurface: LayerBackedRenderSurface {
+    let playerLayer: AVPlayerLayer
+    var presentationSize: CGSize
+    var layer: CALayer {
         playerLayer
     }
 

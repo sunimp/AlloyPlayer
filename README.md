@@ -7,18 +7,19 @@
 [![SPM](https://img.shields.io/badge/SPM-compatible-brightgreen.svg)](Package.swift)
 [![License](https://img.shields.io/github/license/sunimp/AlloyPlayer)](LICENSE)
 
-AlloyPlayer 是一个 Swift-only 的现代视频播放器框架。它基于 AVFoundation、Combine、UIKit 和 SwiftUI 构建，提供可插拔播放引擎、控制层协议、列表播放、全屏转换、手势控制和可选 [HTTPMediaCache](https://github.com/sunimp/HTTPMediaCache) 代理缓存支持。
+AlloyPlayer 是一个 Swift-only 的现代视频播放器框架。2.0 架构围绕纯播放核心、显式 `PlaybackSession` 状态机、UIKit 播放视图、SwiftUI 桥接、列表播放协调和可选 [HTTPMediaCache](https://github.com/sunimp/HTTPMediaCache) 代理缓存支持构建。
 
 ## 特性
 
 - 纯 Swift Package Manager 分发，核心模块可按需组合。
 - 内置 AVFoundation 播放引擎，也可以自行实现 `PlaybackEngine`。
-- 内置 UIKit 控制层和 SwiftUI 播放器视图，也可以自行实现 `ControlOverlay`。
+- 使用 `PlaybackSession` 统一驱动播放状态、事件和用户控制命令。
+- 内置 UIKit 播放视图和控制层，也可以自行实现 `UIKitControlOverlay`。
 - 支持竖屏全屏、横屏全屏、自动旋转、锁定方向和自定义转场。
 - 支持单击、双击、拖动、捏合、长按等播放器手势。
 - 支持 ScrollView、TableView、CollectionView 列表播放和浮动画中画窗口。
-- 播放状态、加载状态、播放时间、缓冲时间、错误和尺寸变化均提供 Combine 发布者。
-- 支持网络可达性监控、缓冲提示、音量/亮度 HUD、网速显示和自定义状态栏。
+- 播放状态、加载状态、播放时间、缓冲时间、错误和尺寸变化均通过快照与事件发布。
+- 支持缓冲提示、音量/亮度 HUD、网速显示和自定义状态栏。
 - 可选接入 `AlloyHTTPMediaCacheSupport`，通过 [HTTPMediaCache](https://github.com/sunimp/HTTPMediaCache) 本地代理实现边播边缓存。
 - 支持 iOS 播放场景，并提供 macOS Swift Package 测试宿主。
 
@@ -34,7 +35,7 @@ AlloyPlayer 是一个 Swift-only 的现代视频播放器框架。它基于 AVFo
 在 `Package.swift` 中添加依赖：
 
 ```swift
-.package(url: "https://github.com/sunimp/AlloyPlayer.git", from: "0.3.1")
+.package(url: "https://github.com/sunimp/AlloyPlayer.git", branch: "main")
 ```
 
 完整播放器能力可以直接添加 `AlloyPlayer`：
@@ -80,38 +81,32 @@ AlloyPlayer 是一个 Swift-only 的现代视频播放器框架。它基于 AVFo
 
 ## 快速开始
 
-创建播放器、绑定容器视图，并设置视频 URL：
+创建 session、播放器视图，并加载视频源：
 
 ```swift
 import AlloyPlayer
 import UIKit
 
 final class PlayerViewController: UIViewController {
-    private var player: Player!
+    private let session = AlloyPlayerFactory.makeDefaultSession()
+    private lazy var playerView = AlloyUIKit.AlloyPlayerView(session: session)
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        let containerView = UIView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 220))
-        view.addSubview(containerView)
+        playerView.controlOverlay = DefaultControlOverlay()
+        playerView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(playerView)
 
-        let engine = AVPlaybackEngine()
-        engine.shouldAutoPlay = true
+        NSLayoutConstraint.activate([
+            playerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            playerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            playerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            playerView.heightAnchor.constraint(equalTo: playerView.widthAnchor, multiplier: 9.0 / 16.0),
+        ])
 
-        player = Player(engine: engine, containerView: containerView)
-        player.controlOverlay = DefaultControlOverlay()
-        player.addDeviceOrientationObserver()
-        player.assetURL = URL(string: "https://example.com/video.mp4")
-    }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        player.isViewControllerDisappear = true
-    }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        player.isViewControllerDisappear = false
+        let source = PlaybackSource(url: URL(string: "https://example.com/video.mp4")!)
+        playerView.load(source)
     }
 }
 ```
@@ -119,15 +114,16 @@ final class PlayerViewController: UIViewController {
 监听播放状态：
 
 ```swift
-player.playbackStatePublisher
-    .sink { state in
-        print("playback state:", state)
+session.statePublisher
+    .sink { snapshot in
+        print("playback state:", snapshot.engine.playbackState)
+        print("current:", snapshot.engine.currentTime, "total:", snapshot.engine.duration)
     }
     .store(in: &cancellables)
 
-player.playTimePublisher
-    .sink { time in
-        print("current:", time.current, "total:", time.total)
+session.eventPublisher
+    .sink { event in
+        print("playback event:", event)
     }
     .store(in: &cancellables)
 ```
@@ -147,43 +143,46 @@ let configuration = AlloyHTTPMediaCacheConfiguration(
     ]
 )
 
-let proxyURL = try await AlloyHTTPMediaCacheSupport.prepare(
-    player: player,
-    originalURL: originalURL,
+let source = PlaybackSource(url: originalURL)
+let proxySource = try await AlloyHTTPMediaCacheSupport.proxySource(
+    for: source,
     configuration: configuration
 )
-print("proxy URL:", proxyURL)
+playerView.load(proxySource)
 ```
 
-如果业务只需要代理 URL，也可以自行赋值：
+如果业务只需要代理 URL，也可以从代理播放源中读取：
 
 ```swift
-let proxyURL = try await AlloyHTTPMediaCacheSupport.proxyURL(
-    for: originalURL,
+let proxySource = try await AlloyHTTPMediaCacheSupport.proxySource(
+    for: PlaybackSource(url: originalURL),
     configuration: .default
 )
-player.assetURL = proxyURL
+print("proxy URL:", proxySource.url)
 ```
 
 AVPlayer 访问的是本地代理 URL，源站请求由 HTTPMediaCache 发出。鉴权、追踪等源站请求头应通过 `AlloyHTTPMediaCacheConfiguration.requestHeaders` 显式下发到下载链路。
 
 ## SwiftUI
 
-`AlloyPlayerView` 提供开箱即用的 SwiftUI 播放器视图：
+`AlloySwiftUIPlayerView` 提供开箱即用的 SwiftUI 播放器视图：
 
 ```swift
 import AlloyPlayer
 import SwiftUI
 
 struct PlayerScreen: View {
+    @StateObject private var controller = AlloyPlayerController(
+        session: AlloyPlayerFactory.makeDefaultSession()
+    )
     let url: URL
 
     var body: some View {
-        AlloyPlayerView(url: url)
-            .autoPlay(true)
-            .scalingMode(.aspectFit)
-            .controlAutoHideInterval(2.5)
+        AlloySwiftUIPlayerView(controller: controller)
             .aspectRatio(16.0 / 9.0, contentMode: .fit)
+            .task {
+                controller.load(PlaybackSource(url: url))
+            }
     }
 }
 ```
@@ -192,18 +191,23 @@ struct PlayerScreen: View {
 
 ```swift
 struct CustomPlayerScreen: View {
-    @StateObject private var controller = AlloyPlayerController()
+    @StateObject private var controller = AlloyPlayerController(
+        session: AlloyPlayerFactory.makeDefaultSession()
+    )
     let url: URL
 
     var body: some View {
-        AlloyPlayerView(url: url, controller: controller) { state in
-            Button(state.isPlaying ? "暂停" : "播放") {
-                state.playOrPause()
+        AlloySwiftUIPlayerView(controller: controller) { controller in
+            Button(controller.state.engine.playbackState == .playing ? "暂停" : "播放") {
+                if controller.state.engine.playbackState == .playing {
+                    controller.pause()
+                } else {
+                    controller.play()
+                }
             }
         }
-        .disabledGestures([.pinch])
-        .configurePlayer { player in
-            player.isAllowOrientationRotation = true
+        .task {
+            controller.load(PlaybackSource(url: url))
         }
     }
 }
@@ -211,34 +215,37 @@ struct CustomPlayerScreen: View {
 
 ## 列表播放
 
-TableView / CollectionView 场景使用 `AlloyListPlayback` 选择最适合播放的可见项，再驱动 `Player` 播放：
+TableView / CollectionView 场景使用 `AlloyListPlayback` 选择最适合播放的可见项，再驱动 `AlloyUIKit.AlloyPlayerView` 播放：
 
 ```swift
 import AlloyPlayer
 
 final class ListPlayerViewController: UIViewController, UITableViewDelegate {
-    private var player: Player!
+    private let session = AlloyPlayerFactory.makeDefaultSession()
+    private lazy var playerView = AlloyUIKit.AlloyPlayerView(session: session)
     private var listPlayback: ListPlaybackCoordinator!
     @IBOutlet private var tableView: UITableView!
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        let engine = AVPlaybackEngine()
-        player = Player(engine: engine, containerView: UIView())
-        player.controlOverlay = DefaultControlOverlay()
-        listPlayback = ListPlaybackCoordinator(player: player)
+        playerView.controlOverlay = DefaultControlOverlay()
+        listPlayback = ListPlaybackCoordinator(playerView: playerView)
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         guard let cell = tableView.cellForRow(at: indexPath) else { return }
         let url = URL(string: "https://example.com/video\(indexPath.row).mp4")!
         let candidate = ListPlaybackCandidate(
-            indexPath: indexPath,
+            id: indexPath.description,
             frame: cell.frame,
-            assetURL: url
+            source: PlaybackSource(url: url)
         )
-        listPlayback.play(candidate, in: cell.contentView)
+        _ = listPlayback.update(
+            candidates: [candidate],
+            viewport: tableView.bounds,
+            containerProvider: { _ in cell.contentView }
+        )
     }
 
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
@@ -247,16 +254,16 @@ final class ListPlayerViewController: UIViewController, UITableViewDelegate {
             let frame = tableView.convert(cell.frame, to: tableView.superview)
             let url = URL(string: "https://example.com/video\(indexPath.row).mp4")!
             return (
-                ListPlaybackCandidate(indexPath: indexPath, frame: frame, assetURL: url),
+                ListPlaybackCandidate(id: indexPath.description, frame: frame, source: PlaybackSource(url: url)),
                 cell.contentView
             )
         } ?? []
 
         let viewport = tableView.convert(tableView.bounds, to: tableView.superview)
-        listPlayback.playBestCandidate(
-            in: visibleItems.map { $0.0 },
+        listPlayback.configuration.minimumVisiblePercent = 0.5
+        _ = listPlayback.update(
+            candidates: visibleItems.map { $0.0 },
             viewport: viewport,
-            minimumVisiblePercent: 0.5,
             containerProvider: { selected in
                 visibleItems.first(where: { $0.0 == selected })?.1
             }
@@ -281,7 +288,9 @@ flowchart LR
     AV --> Core
     UIKitControls --> Core
     SwiftUIControls --> Core
+    SwiftUIControls --> UIKitControls
     ListPlayback --> Core
+    ListPlayback --> UIKitControls
 
     CacheSupport[AlloyHTTPMediaCacheSupport] --> Core
     CacheSupport --> HTTPMediaCache[HTTPMediaCache]
@@ -292,12 +301,12 @@ flowchart LR
 
 | 模块 | 描述 |
 |------|------|
-| `AlloyCore` | 协议、枚举、`Player` 控制器、手势、方向、列表播放和基础工具 |
+| `AlloyCore` | 平台无关的播放类型、引擎协议、状态快照、事件和 `PlaybackSession` |
 | `AlloyAVPlayer` | 基于 AVFoundation 的 `PlaybackEngine` 实现 |
-| `AlloyUIKit` | 默认 UIKit 控制层、进度条、缓冲视图、音量/亮度 HUD 等 |
-| `AlloySwiftUI` | SwiftUI 播放器视图、控制层桥接和外部控制句柄；只依赖 `AlloyCore`，自定义引擎通过 `engineFactory` 注入 |
-| `AlloyListPlayback` | 列表播放协调器和可见性计算，供 TableView、CollectionView、ScrollView 场景复用 |
-| `AlloyHTTPMediaCacheSupport` | HTTPMediaCache 可选支持，负责代理 URL 生成和播放器准备 |
+| `AlloyUIKit` | UIKit 播放视图、渲染承载、默认控制层、手势和全屏协调 |
+| `AlloySwiftUI` | SwiftUI 播放器视图、默认 SwiftUI 控制层和外部控制句柄 |
+| `AlloyListPlayback` | 列表播放协调器、可见性计算和浮动播放视图 |
+| `AlloyHTTPMediaCacheSupport` | HTTPMediaCache 可选支持，负责代理播放源生成 |
 | `AlloyPlayer` | Umbrella 模块，重新导出核心播放能力和默认控制层 |
 
 ## 截图

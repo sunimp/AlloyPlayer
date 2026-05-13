@@ -7,6 +7,16 @@
 
 ## [Unreleased]
 
+### 破坏性调整
+
+- 重建 2.0 架构：`AlloyCore` 收敛为平台无关的播放类型、引擎协议、快照、事件和 `PlaybackSession`。
+- `AlloyAVPlayer` 改为提供 `AVPlaybackEngine`，通过 `PlaybackSource`、`PlaybackEngineSnapshot` 和 `PlaybackEngineEvent` 与核心层交互。
+- `AlloyUIKit` 接管播放器视图、渲染承载、默认控制层、手势和全屏协调；UIKit 控制层改为 `UIKitControlOverlay`。
+- `AlloySwiftUI` 改为围绕 `AlloyPlayerController(session:)` 与 `AlloySwiftUIPlayerView` 构建。
+- `AlloyListPlayback` 改为驱动 `AlloyUIKit.AlloyPlayerView`，不再依赖旧 ScrollView 扩展。
+- `AlloyHTTPMediaCacheSupport` 改为生成代理 `PlaybackSource`，由调用方显式加载。
+- 删除旧 Core 中的 UIKit 控制器、手势、方向、浮窗、事件 sink 和兼容渲染视图。
+
 ## [0.3.1] - 2026-05-12
 
 ### 调整
@@ -23,17 +33,17 @@
 
 - 新增 `PlayerState` / `PlayerEvent` 统一状态与事件输出。
 - 新增 `AlloyListPlayback` 模块，承接列表播放可见性计算与播放协调。
-- 新增 `FloatingPlaybackCoordinator`，将浮动播放窗口从 `Player` 职责中迁出。
+- 新增 `FloatingPlaybackCoordinator`，将浮动播放窗口从核心控制职责中迁出。
 - 新增 `PlaybackRenderSurface`，为自定义播放引擎提供更稳定的渲染承载抽象。
 
 ### 调整
 
-- `ControlOverlay` 拆分为播放、手势、方向和列表播放事件 sink 组合，降低自定义控制层接入成本。
-- `AlloySwiftUIControls` 不再依赖 `AlloyAVPlayer`；默认 AVPlayer 便利入口由 `AlloyPlayer` umbrella 模块提供。
+- 控制层拆分为播放、手势、方向和列表播放事件 sink 组合，降低自定义控制层接入成本。
+- 旧 SwiftUI 控制模块不再依赖 `AlloyAVPlayer`；默认 AVFoundation 便利入口由 `AlloyPlayer` umbrella 模块提供。
 - `AlloyHTTPMediaCacheSupport` 移除拆散参数重载，统一通过 `AlloyHTTPMediaCacheConfiguration` 承载进阶配置。
-- `Player` 新增 `attach(to:)` 通用挂载入口，列表播放协调器不再依赖旧 ScrollView 扩展挂载方法。
+- 核心控制器新增 `attach(to:)` 通用挂载入口，列表播放协调器不再依赖旧 ScrollView 扩展挂载方法。
 - 全屏模式选择迁移到 `FullScreenModeResolver`，横屏 scene 缺失时不再触发 `fatalError`。
-- App 生命周期订阅迁移到 `PlayerLifecycleCoordinator`，减少 `Player` 内部职责。
+- App 生命周期订阅迁移到独立生命周期协调器，减少核心控制器内部职责。
 
 ## [0.2.0] - 2026-05-12
 
@@ -85,18 +95,18 @@
 
 - AlloyPlayer 首次发布。
 - **AlloyCore**：`PlaybackEngine` 协议，定义标准视频播放引擎接口。
-- **AlloyCore**：`ControlOverlay` 协议，定义控制层 UI 接口。
-- **AlloyCore**：`Player` 主控制器，协调引擎、控制层、手势和方向。
-- **AlloyCore**：`GestureManager`，支持单击、双击、拖动、捏合和长按。
-- **AlloyCore**：`OrientationManager`，横屏和竖屏全屏转换。
-- **AlloyCore**：`FloatingView`，列表播放的可拖动画中画窗口。
+- **AlloyCore**：控制层协议，定义控制层 UI 接口。
+- **AlloyCore**：主控制器，协调引擎、控制层、手势和方向。
+- **AlloyCore**：手势管理，支持单击、双击、拖动、捏合和长按。
+- **AlloyCore**：方向管理，横屏和竖屏全屏转换。
+- **AlloyCore**：列表播放的可拖动画中画窗口。
 - **AlloyCore**：`ReachabilityMonitor`，网络状态监控（WiFi/2G/3G/4G/5G）。
-- **AlloyCore**：`RenderView`、`KVOManager`、`SystemEventObserver` 工具类。
+- **AlloyCore**：渲染视图、KVO 与系统事件工具类。
 - **AlloyCore**：完整的枚举/OptionSet 集合：`PlaybackState`、`LoadState`、`ScalingMode`、`FullScreenMode`、`GestureType`、`PanDirection`、`ReachabilityStatus` 等。
-- **AlloyAVPlayer**：`AVPlayerManager` — 基于 AVFoundation 的 `PlaybackEngine` 实现。
-- **AlloyUIKitControls**：`DefaultControlOverlay`，包含 `PortraitControlPanel`、`LandscapeControlPanel` 和 `FloatingControlPanel`。
-- **AlloyUIKitControls**：`ProgressSlider`、`BufferingIndicator`、`LoadingIndicator`、`VolumeAndBrightnessHUD`、`NetworkSpeedMonitor`、`CustomStatusBar`。
-- **AlloySwiftUIControls**：`AlloyPlayerView`、`AlloyPlayerController`、`DefaultSwiftUIControlOverlayView`、`SwiftUIControlOverlay` 和 `SwiftUIControlOverlayState`，提供开箱即用和自定义 SwiftUI 控制层能力。
+- **AlloyAVPlayer**：基于 AVFoundation 的 `PlaybackEngine` 实现。
+- **AlloyUIKit**：`DefaultControlOverlay`，包含 `PortraitControlPanel`、`LandscapeControlPanel` 和 `FloatingControlPanel`。
+- **AlloyUIKit**：`ProgressSlider`、`BufferingIndicator`、`LoadingIndicator`、`VolumeAndBrightnessHUD`、`NetworkSpeedMonitor`、`CustomStatusBar`。
+- **AlloySwiftUI**：SwiftUI 播放器视图、控制器和默认控制层，提供开箱即用和自定义 SwiftUI 控制层能力。
 - 所有播放状态、时间更新、缓冲进度、错误和方向变化均提供 Combine 发布者。
 - ScrollView/TableView/CollectionView 列表播放，滚动时自动播放/暂停。
 - SwiftPM 5.10 支持，UI 相关类型使用 `@MainActor` 隔离。

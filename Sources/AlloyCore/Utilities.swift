@@ -7,9 +7,6 @@
 
 import Foundation
 import os
-#if canImport(UIKit)
-    import UIKit
-#endif
 
 // MARK: - 时间格式化
 
@@ -25,23 +22,6 @@ public enum TimeFormatter: Sendable {
         }
     }
 }
-
-// MARK: - 图片生成
-
-#if canImport(UIKit)
-    /// 纯色图片生成工具
-    public enum ImageGenerator: Sendable {
-        /// 生成指定颜色和尺寸的纯色图片
-        @MainActor
-        public static func image(color: UIColor, size: CGSize) -> UIImage {
-            let renderer = UIGraphicsImageRenderer(size: size)
-            return renderer.image { context in
-                color.setFill()
-                context.fill(CGRect(origin: .zero, size: size))
-            }
-        }
-    }
-#endif
 
 // MARK: - 日志
 

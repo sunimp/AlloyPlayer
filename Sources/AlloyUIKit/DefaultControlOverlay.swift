@@ -13,19 +13,10 @@
     /// 默认控制层
     ///
     /// 组装竖屏面板、横屏面板、缓冲指示器、进度条等所有子组件，
-    /// 实现 ControlOverlay 协议的完整控制逻辑。
+    /// 实现 UIKitControlOverlay 协议的完整控制逻辑。
     @MainActor
-    public final class DefaultControlOverlay: UIView, ControlOverlay, UIKitControlOverlay {
-        // MARK: - ControlOverlay
-
+    public final class DefaultControlOverlay: UIView, UIKitControlOverlay {
         public var actionHandler: ((PlaybackControlAction) -> Void)?
-
-        public weak var player: Player? {
-            didSet {
-                portraitPanel.player = player
-                landscapePanel.player = player
-            }
-        }
 
         // MARK: - 子视图
 
@@ -123,6 +114,8 @@
         private var seekingSliderValue: Float = 0
         private var sumTime: TimeInterval = 0
         private var latestState = PlaybackStateSnapshot(engine: PlaybackEngineSnapshot())
+        private var isFullscreen = false
+        private var isScreenLocked = false
         private var autoHideWorkItem: DispatchWorkItem?
         private var cancellables = Set<AnyCancellable>()
         private var volumeBrightnessHUD = VolumeAndBrightnessHUD()
@@ -214,13 +207,23 @@
         }
 
         private func setupBindings() {
+            portraitPanel.playPauseAction = { [weak self] in
+                self?.togglePlayPause()
+            }
+            portraitPanel.fullscreenAction = { [weak self] in
+                self?.actionHandler?(.toggleFullscreen)
+            }
+            landscapePanel.playPauseAction = { [weak self] in
+                self?.togglePlayPause()
+            }
+            landscapePanel.lockToggleAction = { [weak self] isLocked in
+                self?.isScreenLocked = isLocked
+            }
+
             // 横屏返回按钮
             landscapePanel.backButtonTapPublisher.sink { [weak self] in
                 guard let self else { return }
                 self.actionHandler?(.toggleFullscreen)
-                if let player = self.player {
-                    Task { await player.enterFullScreen(false, animated: true) }
-                }
                 self._backButtonTap.send()
             }.store(in: &cancellables)
 
@@ -228,9 +231,6 @@
             portraitPanel.backButtonTapPublisher.sink { [weak self] in
                 guard let self else { return }
                 self.actionHandler?(.toggleFullscreen)
-                if let player = self.player {
-                    Task { await player.enterFullScreen(false, animated: true) }
-                }
                 self._backButtonTap.send()
             }.store(in: &cancellables)
 
@@ -267,15 +267,11 @@
                 self?.handleSliderInteractionEnded(value: CGFloat(value))
             }.store(in: &cancellables)
 
-            portraitPanel.playPauseButton.addTarget(self, action: #selector(controlPlayPauseTapped), for: .touchUpInside)
-            portraitPanel.fullScreenButton.addTarget(self, action: #selector(controlFullscreenTapped), for: .touchUpInside)
-            landscapePanel.playPauseButton.addTarget(self, action: #selector(controlPlayPauseTapped), for: .touchUpInside)
-
             failButton.addTarget(self, action: #selector(failButtonTapped), for: .touchUpInside)
         }
 
         private func handleBottomProgressChanging(value: CGFloat) {
-            let totalTime = player?.totalTime ?? latestState.engine.duration
+            let totalTime = latestState.engine.duration
             guard totalTime > 0 else { return }
             let currentTime = totalTime * TimeInterval(value)
             let currentTimeString = TimeFormatter.string(from: Int(currentTime))
@@ -297,7 +293,7 @@
 
         /// 处理 slider 拖动/点击结束后的 seek
         private func handleSliderSeek(value: CGFloat) {
-            let totalTime = player?.totalTime ?? latestState.engine.duration
+            let totalTime = latestState.engine.duration
             guard totalTime > 0 else { return }
             let seekTime = totalTime * TimeInterval(value)
 
@@ -305,29 +301,9 @@
             isSeeking = true
             seekingSliderValue = Float(value)
 
-            if actionHandler != nil {
-                actionHandler?(.seek(seekTime))
-                if shouldSeekToPlay { actionHandler?(.play) }
-                isSeeking = false
-                return
-            }
-
-            Task {
-                guard let player = self.player else { return }
-                let success = await player.seek(to: seekTime)
-                isSeeking = false
-                if success {
-                    if shouldSeekToPlay {
-                        player.engine.play()
-                    }
-                } else {
-                    // seek 失败，slider 恢复到当前实际播放位置
-                    let currentValue = player.totalTime > 0 ? Float(player.currentTime / player.totalTime) : 0
-                    portraitPanel.slider.value = currentValue
-                    landscapePanel.slider.value = currentValue
-                    bottomProgress.value = currentValue
-                }
-            }
+            actionHandler?(.seek(seekTime))
+            if shouldSeekToPlay { actionHandler?(.play) }
+            isSeeking = false
         }
 
         @objc private func failButtonTapped() {
@@ -336,17 +312,12 @@
 
         func retryPlayback() {
             actionHandler?(.replay)
-            player?.engine.reloadPlayer()
         }
 
-        @objc private func controlPlayPauseTapped() {
+        private func togglePlayPause() {
             latestState.engine.playbackState == .playing
                 ? actionHandler?(.pause)
                 : actionHandler?(.play)
-        }
-
-        @objc private func controlFullscreenTapped() {
-            actionHandler?(.toggleFullscreen)
         }
 
         // MARK: - 公开方法
@@ -388,7 +359,17 @@
             render(currentTime: engine.currentTime, totalTime: engine.duration)
             if engine.duration > 0 {
                 bottomProgress.bufferValue = Float(engine.bufferedTime / engine.duration)
+                portraitPanel.updateBufferTime(engine.bufferedTime, total: engine.duration)
+                landscapePanel.updateBufferTime(engine.bufferedTime, total: engine.duration)
             }
+        }
+
+        public func render(fullscreenState: FullscreenState) {
+            isFullscreen = fullscreenState == .fullscreen
+            let isLandscape = isFullscreen && fullScreenMode != .portrait
+            portraitPanel.isHidden = isLandscape
+            landscapePanel.isHidden = !isLandscape
+            portraitPanel.updateFullScreenState(isFullScreen: isFullscreen)
         }
 
         public func handle(event: PlaybackEvent) {
@@ -457,7 +438,7 @@
             isShowing = true
             _controlVisibility.send(true)
             bottomProgress.isHidden = true
-            if player?.isFullScreen == true {
+            if isFullscreen {
                 landscapePanel.showControlView()
             } else {
                 portraitPanel.showControlView()
@@ -486,158 +467,91 @@
             autoHideWorkItem = nil
         }
 
-        // MARK: - ControlOverlay 回调
+        // MARK: - 手势回调
 
-        public func player(_: Player, didChangePlaybackState state: PlaybackState) {
-            portraitPanel.updatePlayButtonState(isPlaying: state == .playing)
-            landscapePanel.updatePlayButtonState(isPlaying: state == .playing)
-
-            switch state {
-            case .playing:
-                restoreControlPanels()
-                bufferingIndicator.stopAnimating()
-            case .paused:
-                restoreControlPanels()
-            case .failed:
-                showFailureView()
-                bufferingIndicator.stopAnimating()
-            default:
+        public func handle(gesture: GestureEvent) {
+            guard !isScreenLocked else { return }
+            switch gesture {
+            case .singleTap:
+                handleSingleTapGesture()
+            case .doubleTap:
+                handleDoubleTapGesture()
+            case let .panBegan(direction, _):
+                handlePanBegan(direction: direction)
+            case let .panChanged(direction, location, velocity):
+                handlePanChanged(direction: direction, location: location, velocity: velocity)
+            case let .panEnded(direction, _):
+                handlePanEnded(direction: direction)
+            case let .pinch(scale):
+                actionHandler?(.setScalingMode(scale > 1 ? .aspectFill : .aspectFit))
+            case .longPress:
                 break
             }
         }
 
-        public func player(_ player: Player, didChangeLoadState state: LoadState) {
-            if state.contains(.playthroughOK) || state.contains(.playable) {
-                restoreControlPanels()
-                coverImageView.isHidden = true
-                bufferingIndicator.stopAnimating()
-                bottomProgress.stopLoading()
+        public func shouldReceiveGesture(_ type: GestureType, recognizer _: UIGestureRecognizer, touch: UITouch) -> Bool {
+            let point = touch.location(in: self)
+            if isFullscreen {
+                return landscapePanel.shouldRespondToGesture(at: point, type: type, touch: touch)
             }
-            if state.contains(.stalled), player.engine.isPlaying {
-                bufferingIndicator.startAnimating()
-                bottomProgress.startLoading()
-            }
-            if state.contains(.preparing) {
-                restoreControlPanels()
-                if shouldShowLoadingOnPrepare { bufferingIndicator.startAnimating() }
-                bottomProgress.startLoading()
-                if shouldShowControlOnPrepare { showControlView() }
-            }
+            return portraitPanel.shouldRespondToGesture(at: point, type: type, touch: touch)
         }
 
-        public func player(_: Player, didUpdateTime currentTime: TimeInterval, totalTime: TimeInterval) {
-            // seek 期间保持 slider 在用户拖动的位置，不被旧的 currentTime 覆盖
-            if isSeeking {
-                return
-            }
-            portraitPanel.updateTime(current: currentTime, total: totalTime)
-            landscapePanel.updateTime(current: currentTime, total: totalTime)
-            if !portraitPanel.slider.isDragging, !bottomProgress.isDragging, totalTime > 0 {
-                bottomProgress.value = Float(currentTime / totalTime)
-            }
-        }
-
-        public func player(_ player: Player, didUpdateBufferTime bufferTime: TimeInterval) {
-            portraitPanel.updateBufferTime(bufferTime)
-            landscapePanel.updateBufferTime(bufferTime)
-            if player.totalTime > 0 {
-                bottomProgress.bufferValue = Float(bufferTime / player.totalTime)
-            }
-        }
-
-        public func playerDidPlayToEnd(_: Player) {
-            // 播放结束后，将两个面板的播放按钮切换为重播图标
-            portraitPanel.markPlayEnded()
-            landscapePanel.markPlayEnded()
-            // 结束时把控制层展示出来，方便用户看到重播按钮
-            showControlView()
-        }
-
-        public func player(_: Player, willChangeOrientation _: OrientationManager) {
-            // 提前切换面板
-        }
-
-        public func player(_ player: Player, didChangeOrientation _: OrientationManager) {
-            let isLandscape = player.isFullScreen && fullScreenMode != .portrait
-            portraitPanel.isHidden = isLandscape
-            landscapePanel.isHidden = !isLandscape
-            // 竖屏全屏时显示返回按钮
-            portraitPanel.updateFullScreenState(isFullScreen: player.isFullScreen)
-        }
-
-        // MARK: - 手势回调
-
-        public func gestureSingleTapped(_: GestureManager) {
+        private func handleSingleTapGesture() {
             if isShowing { hideControlView() } else { showControlView() }
         }
 
-        public func gestureDoubleTapped(_: GestureManager) {
-            if player?.isFullScreen == true {
+        private func handleDoubleTapGesture() {
+            if isFullscreen {
                 landscapePanel.playOrPause()
             } else {
                 portraitPanel.playOrPause()
             }
         }
 
-        public func gestureBeganPan(_: GestureManager, direction: AlloyCore.PanDirection, location _: AlloyCore.PanLocation) {
+        private func handlePanBegan(direction: PanDirection) {
             if direction == .horizontal {
-                sumTime = player?.currentTime ?? 0
+                sumTime = latestState.engine.currentTime
             }
         }
 
-        public func gestureChangedPan(_: GestureManager, direction: AlloyCore.PanDirection, location: AlloyCore.PanLocation, velocity: CGPoint) {
-            guard let player else { return }
+        private func handlePanChanged(direction: PanDirection, location: PanLocation, velocity: CGPoint) {
             switch direction {
             case .horizontal:
                 sumTime += TimeInterval(velocity.x) / 200
-                sumTime = max(0, min(sumTime, player.totalTime))
-                let progress = player.totalTime > 0 ? CGFloat(sumTime / player.totalTime) : 0
+                sumTime = max(0, min(sumTime, latestState.engine.duration))
+                let progress = latestState.engine.duration > 0 ? CGFloat(sumTime / latestState.engine.duration) : 0
                 let timeString = TimeFormatter.string(from: Int(sumTime))
                 portraitPanel.updateSlider(value: progress, currentTimeString: timeString)
                 landscapePanel.updateSlider(value: progress, currentTimeString: timeString)
             case .vertical:
                 if location == .left {
-                    player.brightness -= Float(velocity.y) / 10000
-                    volumeBrightnessHUD.update(progress: CGFloat(player.brightness), type: .brightness)
+                    let brightness = max(0, min(1, UIScreen.main.brightness - CGFloat(velocity.y) / 10000))
+                    UIScreen.main.brightness = brightness
+                    volumeBrightnessHUD.update(progress: brightness, type: .brightness)
                 } else {
-                    player.volume -= Float(velocity.y) / 10000
-                    volumeBrightnessHUD.update(progress: CGFloat(player.volume), type: .volume)
+                    let volume = max(0, min(1, latestState.engine.volume - Float(velocity.y) / 10000))
+                    actionHandler?(.setVolume(volume))
+                    volumeBrightnessHUD.update(progress: CGFloat(volume), type: .volume)
                 }
             default: break
             }
         }
 
-        public func gestureEndedPan(_: GestureManager, direction: AlloyCore.PanDirection, location _: AlloyCore.PanLocation) {
-            guard direction == .horizontal, let player else { return }
+        private func handlePanEnded(direction: PanDirection) {
+            guard direction == .horizontal else { return }
 
             // 锁定 slider 位置
             isSeeking = true
-            if player.totalTime > 0 {
-                seekingSliderValue = Float(sumTime / player.totalTime)
+            if latestState.engine.duration > 0 {
+                seekingSliderValue = Float(sumTime / latestState.engine.duration)
             }
 
-            Task {
-                let success = await player.seek(to: sumTime)
-                isSeeking = false
-                if success, shouldSeekToPlay {
-                    player.engine.play()
-                }
-                portraitPanel.sliderDidEndChanging()
-                landscapePanel.sliderDidEndChanging()
-            }
-        }
-
-        public func gesturePinched(_: GestureManager, scale: Float) {
-            actionHandler?(.setScalingMode(scale > 1 ? .aspectFill : .aspectFit))
-            player?.engine.scalingMode = scale > 1 ? .aspectFill : .aspectFit
-        }
-
-        public func gestureTriggerCondition(_: GestureManager, type: AlloyCore.GestureType, recognizer _: UIGestureRecognizer, touch: UITouch) -> Bool {
-            let point = touch.location(in: self)
-            if player?.isFullScreen == true {
-                return landscapePanel.shouldRespondToGesture(at: point, type: type, touch: touch)
-            }
-            return portraitPanel.shouldRespondToGesture(at: point, type: type, touch: touch)
+            actionHandler?(.seek(sumTime))
+            if shouldSeekToPlay { actionHandler?(.play) }
+            isSeeking = false
+            portraitPanel.sliderDidEndChanging()
+            landscapePanel.sliderDidEndChanging()
         }
 
         private func showFailureView() {
@@ -654,7 +568,7 @@
 
         private func restoreControlPanels() {
             failButton.isHidden = true
-            let isLandscape = player?.isFullScreen == true && fullScreenMode != .portrait
+            let isLandscape = isFullscreen && fullScreenMode != .portrait
             portraitPanel.isHidden = isLandscape
             landscapePanel.isHidden = !isLandscape
         }

@@ -9,10 +9,10 @@
     import AlloyCore
 
     /// SwiftUI 展示层播放状态。
-    public struct SwiftUIPlaybackState: Equatable, Sendable {
-        public var snapshot: PlaybackStateSnapshot
+    struct SwiftUIPlaybackState: Equatable {
+        var snapshot: PlaybackStateSnapshot
 
-        public init(snapshot: PlaybackStateSnapshot) {
+        init(snapshot: PlaybackStateSnapshot) {
             self.snapshot = snapshot
         }
     }

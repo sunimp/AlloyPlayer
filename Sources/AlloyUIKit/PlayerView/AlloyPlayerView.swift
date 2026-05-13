@@ -7,6 +7,7 @@
 
 #if canImport(UIKit)
     import AlloyCore
+    import Combine
     import UIKit
 
     /// UIKit 播放器视图。
@@ -15,13 +16,22 @@
         public let session: PlaybackSession
         public let renderHostView: RenderHostView
         public var configuration: AlloyPlayerViewConfiguration
-        public var fullscreenCoordinator: FullscreenCoordinating?
+        public var fullscreenCoordinator: FullscreenCoordinating? {
+            didSet { bindFullscreenCoordinator() }
+        }
+
+        public var gestureController: GestureController? {
+            didSet { installGestureController() }
+        }
+
         public var controlOverlay: (UIView & UIKitControlOverlay)? {
             didSet { installControlOverlay() }
         }
 
         private let binder = PlaybackSessionBinder()
         private var overlayConstraints: [NSLayoutConstraint] = []
+        private var fullscreenCancellable: AnyCancellable?
+        private var gestureCancellable: AnyCancellable?
 
         public init(
             session: PlaybackSession,
@@ -30,9 +40,11 @@
             self.session = session
             self.configuration = configuration
             renderHostView = RenderHostView()
+            gestureController = GestureController()
             super.init(frame: .zero)
             setupViews()
             binder.bind(session: session, playerView: self)
+            installGestureController()
         }
 
         @available(*, unavailable)
@@ -93,6 +105,32 @@
             ]
             NSLayoutConstraint.activate(overlayConstraints)
             controlOverlay.render(state: session.state)
+            controlOverlay.render(fullscreenState: fullscreenCoordinator?.state ?? .inline)
+        }
+
+        private func installGestureController() {
+            gestureCancellable = nil
+            gestureController?.detach()
+            guard let gestureController else { return }
+            gestureController.shouldReceiveTouch = { [weak self] type, recognizer, touch in
+                self?.controlOverlay?.shouldReceiveGesture(type, recognizer: recognizer, touch: touch) ?? true
+            }
+            gestureCancellable = gestureController.eventPublisher.sink { [weak self] event in
+                self?.controlOverlay?.handle(gesture: event)
+            }
+            gestureController.attach(to: self)
+        }
+
+        private func bindFullscreenCoordinator() {
+            fullscreenCancellable = nil
+            guard let fullscreenCoordinator else {
+                controlOverlay?.render(fullscreenState: .inline)
+                return
+            }
+            controlOverlay?.render(fullscreenState: fullscreenCoordinator.state)
+            fullscreenCancellable = fullscreenCoordinator.statePublisher.sink { [weak self] state in
+                self?.controlOverlay?.render(fullscreenState: state)
+            }
         }
 
         private func handleControlAction(_ action: PlaybackControlAction) {

@@ -1,111 +1,113 @@
 # AlloyPlayer 迁移指南
 
-本文档记录架构重构后的主要破坏性变更和迁移方式。目标是让调用方选择更少、入口更清晰，同时把可维护性问题收敛到模块边界内。
+本文档记录 2.0 架构重构后的主要破坏性变更和迁移方式。2.0 不保留兼容别名，调用方需要迁移到 `PlaybackSession`、`AlloyUIKit.AlloyPlayerView` 和 `PlaybackSource`。
 
-## SwiftUI 播放器入口
+## 播放入口
 
-使用 umbrella 模块时，默认 AVPlayer 体验不变：
+旧入口以核心控制器直接绑定容器视图。新入口先创建 session，再交给 UIKit 或 SwiftUI 播放视图承载：
 
 ```swift
 import AlloyPlayer
 
-AlloyPlayerView(url: url)
+let session = AlloyPlayerFactory.makeDefaultSession()
+let playerView = AlloyUIKit.AlloyPlayerView(session: session)
+playerView.controlOverlay = DefaultControlOverlay()
+playerView.load(PlaybackSource(url: videoURL))
 ```
 
-`AlloySwiftUIControls` 不再依赖 `AlloyAVPlayer`。如果调用方只引入该模块，需要显式提供播放引擎：
+自定义播放引擎时直接创建 `PlaybackSession`：
 
 ```swift
-import AlloySwiftUIControls
-
-AlloyPlayerView(
-    url: url,
-    engineFactory: { CustomPlaybackEngine() }
-)
+let session = PlaybackSession(engine: CustomPlaybackEngine())
+let playerView = AlloyUIKit.AlloyPlayerView(session: session)
 ```
 
-## 播放状态订阅
+## 状态订阅
 
-推荐主路径是统一状态流和事件流：
+播放状态统一来自 session 快照和事件：
 
 ```swift
-player.statePublisher
-    .sink { state in
-        render(state)
+session.statePublisher
+    .sink { snapshot in
+        render(snapshot.engine.playbackState)
     }
     .store(in: &cancellables)
 
-player.eventPublisher
+session.eventPublisher
     .sink { event in
         handle(event)
     }
     .store(in: &cancellables)
 ```
 
-## 控制层协议
+## 控制层
 
-`ControlOverlay` 被拆成更小的事件 sink 协议组合：
+UIKit 自定义控制层实现 `UIKitControlOverlay`：
 
-- `PlaybackEventSink`
-- `GestureEventSink`
-- `OrientationEventSink`
-- `ListPlaybackEventSink`
+```swift
+final class CustomOverlay: UIView, UIKitControlOverlay {
+    var actionHandler: ((PlaybackControlAction) -> Void)?
 
-自定义控制层如果只关心部分事件，可以直接实现对应的小协议；完整控制层继续实现 `ControlOverlay`。
+    func render(state: PlaybackStateSnapshot) {
+        // 根据快照刷新 UI。
+    }
+
+    func handle(event: PlaybackEvent) {
+        // 根据事件刷新一次性 UI。
+    }
+}
+```
+
+控制层通过 `actionHandler` 发出 `.play`、`.pause`、`.seek`、`.toggleFullscreen` 等动作，不直接持有播放引擎。
+
+## SwiftUI
+
+SwiftUI 入口改为外部控制句柄和播放器视图：
+
+```swift
+let controller = AlloyPlayerController(
+    session: AlloyPlayerFactory.makeDefaultSession()
+)
+
+AlloySwiftUIPlayerView(controller: controller)
+```
+
+加载视频源：
+
+```swift
+controller.load(PlaybackSource(url: videoURL))
+```
 
 ## 列表播放
 
-列表播放能力从 `Player` 的职责中迁出到 `AlloyListPlayback`：
+列表播放协调器现在驱动 `AlloyUIKit.AlloyPlayerView`，候选项使用稳定 `id` 和 `PlaybackSource`：
 
 ```swift
-import AlloyPlayer
+let coordinator = ListPlaybackCoordinator(playerView: playerView)
+coordinator.configuration.minimumVisiblePercent = 0.5
 
-let coordinator = ListPlaybackCoordinator(player: player)
-coordinator.playBestCandidate(
-    in: candidates,
+let selected = coordinator.update(
+    candidates: candidates,
     viewport: collectionView.bounds,
-    minimumVisiblePercent: 0.5,
     containerProvider: { candidate in
-        containerView(for: candidate.indexPath)
+        containerView(for: candidate.id)
     }
 )
 ```
 
-浮动小窗也由列表播放模块协调：
-
-```swift
-let floatingPlayback = FloatingPlaybackCoordinator(
-    player: player,
-    parentView: view
-)
-floatingPlayback.show()
-floatingPlayback.hide()
-```
-
 ## HTTPMediaCache
 
-进阶配置统一使用 `AlloyHTTPMediaCacheConfiguration`，不再提供拆散的 `port`、`bindToLocalhost`、`requestHeaders` 重载：
+缓存支持层生成代理播放源，调用方再把播放源加载到播放器视图：
 
 ```swift
-let configuration = AlloyHTTPMediaCacheConfiguration(
-    port: 0,
-    bindToLocalhost: true,
-    requestHeaders: [
-        "Authorization": "Bearer token",
-    ]
+let proxySource = try await AlloyHTTPMediaCacheSupport.proxySource(
+    for: PlaybackSource(url: originalURL),
+    configuration: .default
 )
 
-let proxyURL = try await AlloyHTTPMediaCacheSupport.proxyURL(
-    for: originalURL,
-    configuration: configuration
-)
+playerView.load(proxySource)
 ```
 
-默认场景仍可直接调用：
+## 渲染承载
 
-```swift
-let proxyURL = try await AlloyHTTPMediaCacheSupport.proxyURL(for: originalURL)
-```
-
-## 渲染承载面
-
-`PlaybackEngine` 新增 `renderSurface` 默认入口。现有基于 `RenderView` 的引擎无需修改；自定义引擎可以逐步把更复杂的渲染承载能力收敛到 `PlaybackRenderSurface`。
+自定义播放引擎通过 `renderSurface` 暴露渲染承载。UIKit 层会把 `LayerBackedRenderSurface` 自动挂载到 `RenderHostView`。

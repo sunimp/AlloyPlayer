@@ -6,8 +6,13 @@
 //
 
 #if canImport(UIKit)
-    import AlloyCore
     import UIKit
+
+    /// 加载动画类型。
+    public enum LoadingType: Int, Sendable {
+        case keep
+        case fadeOut
+    }
 
     /// 加载动画指示器
     ///

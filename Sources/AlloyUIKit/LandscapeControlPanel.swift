@@ -87,7 +87,8 @@
 
         // MARK: - 属性
 
-        public weak var player: Player?
+        public var playPauseAction: (() -> Void)?
+        public var lockToggleAction: ((Bool) -> Void)?
         public var shouldSeekToPlay = false
         public var shouldShowCustomStatusBar = false
         public var fullScreenMode: FullScreenMode = .automatic
@@ -112,6 +113,7 @@
         private var cancellables = Set<AnyCancellable>()
         private var isControlVisible = false
         private var isEnded = false
+        private var isLocked = false
 
         override public init(frame: CGRect) {
             super.init(frame: frame)
@@ -210,11 +212,11 @@
         }
 
         @objc private func lockTapped() {
-            guard let player else { return }
-            player.isScreenLocked.toggle()
+            isLocked.toggle()
             let config = UIImage.SymbolConfiguration(pointSize: 18)
-            let name = player.isScreenLocked ? "lock.fill" : "lock.open.fill"
+            let name = isLocked ? "lock.fill" : "lock.open.fill"
             lockButton.setImage(UIImage(systemName: name, withConfiguration: config), for: .normal)
+            lockToggleAction?(isLocked)
         }
 
         // MARK: - 公开方法（与 PortraitControlPanel 对称）
@@ -276,8 +278,12 @@
         }
 
         public func updateBufferTime(_ bufferTime: TimeInterval) {
-            guard let player, player.totalTime > 0 else { return }
-            slider.bufferValue = Float(bufferTime / player.totalTime)
+            updateBufferTime(bufferTime, total: 0)
+        }
+
+        public func updateBufferTime(_ bufferTime: TimeInterval, total: TimeInterval) {
+            guard total > 0 else { return }
+            slider.bufferValue = Float(bufferTime / total)
         }
 
         public func updateSlider(value: CGFloat, currentTimeString: String) {
@@ -286,16 +292,13 @@
         }
 
         public func playOrPause() {
-            guard let player else { return }
-            if player.engine.isPlaying { player.engine.pause() } else { player.engine.play() }
+            playPauseAction?()
         }
 
         public func sliderDidEndChanging() {}
 
         public func updatePresentationSize(_: CGSize) {}
-        public func updateOrientation(_: OrientationManager) {}
-
-        func shouldRespondToGesture(at point: CGPoint, type _: AlloyCore.GestureType, touch _: UITouch) -> Bool {
+        func shouldRespondToGesture(at point: CGPoint, type _: GestureType, touch _: UITouch) -> Bool {
             if isControlVisible, bottomToolBar.frame.contains(point) || topToolBar.frame.contains(point) { return false }
             return true
         }

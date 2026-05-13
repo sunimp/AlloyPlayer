@@ -86,7 +86,8 @@
 
         // MARK: - 属性
 
-        public weak var player: Player?
+        public var playPauseAction: (() -> Void)?
+        public var fullscreenAction: (() -> Void)?
         public var shouldSeekToPlay = false
         public var fullScreenMode: FullScreenMode = .automatic
 
@@ -231,8 +232,7 @@
         }
 
         @objc private func fullScreenTapped() {
-            guard let player else { return }
-            Task { await player.enterFullScreen(!player.isFullScreen, animated: true) }
+            fullscreenAction?()
         }
 
         @objc private func backTapped() {
@@ -313,8 +313,12 @@
         }
 
         public func updateBufferTime(_ bufferTime: TimeInterval) {
-            guard let player, player.totalTime > 0 else { return }
-            slider.bufferValue = Float(bufferTime / player.totalTime)
+            updateBufferTime(bufferTime, total: 0)
+        }
+
+        public func updateBufferTime(_ bufferTime: TimeInterval, total: TimeInterval) {
+            guard total > 0 else { return }
+            slider.bufferValue = Float(bufferTime / total)
         }
 
         public func updateSlider(value: CGFloat, currentTimeString: String) {
@@ -327,15 +331,10 @@
         }
 
         public func playOrPause() {
-            guard let player else { return }
-            if player.engine.isPlaying {
-                player.engine.pause()
-            } else {
-                player.engine.play()
-            }
+            playPauseAction?()
         }
 
-        func shouldRespondToGesture(at point: CGPoint, type _: AlloyCore.GestureType, touch _: UITouch) -> Bool {
+        func shouldRespondToGesture(at point: CGPoint, type _: GestureType, touch _: UITouch) -> Bool {
             let bottomRect = bottomToolBar.frame
             let topRect = topToolBar.frame
             // 工具栏区域内的触摸不响应播放器手势
