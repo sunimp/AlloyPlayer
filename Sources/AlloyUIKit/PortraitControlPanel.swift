@@ -89,7 +89,7 @@
         public var playPauseAction: (() -> Void)?
         public var fullscreenAction: (() -> Void)?
         public var shouldSeekToPlay = false
-        public var fullScreenMode: FullScreenMode = .automatic
+        public var fullScreenMode: FullscreenMode = .automatic
 
         // MARK: - Combine
 
@@ -265,7 +265,7 @@
             }
         }
 
-        public func show(title: String?, fullScreenMode: FullScreenMode) {
+        public func show(title: String?, fullScreenMode: FullscreenMode) {
             titleLabel.text = title
             self.fullScreenMode = fullScreenMode
         }

@@ -42,7 +42,7 @@
 - 旧 SwiftUI 控制模块不再依赖 `AlloyAVPlayer`；默认 AVFoundation 便利入口由 `AlloyPlayer` umbrella 模块提供。
 - `AlloyHTTPMediaCacheSupport` 移除拆散参数重载，统一通过 `AlloyHTTPMediaCacheConfiguration` 承载进阶配置。
 - 核心控制器新增 `attach(to:)` 通用挂载入口，列表播放协调器不再依赖旧 ScrollView 扩展挂载方法。
-- 全屏模式选择迁移到 `FullScreenModeResolver`，横屏 scene 缺失时不再触发 `fatalError`。
+- 全屏模式选择迁移到独立解析器，横屏 scene 缺失时不再触发 `fatalError`。
 - App 生命周期订阅迁移到独立生命周期协调器，减少核心控制器内部职责。
 
 ## [0.2.0] - 2026-05-12
@@ -102,7 +102,7 @@
 - **AlloyCore**：列表播放的可拖动画中画窗口。
 - **AlloyCore**：`ReachabilityMonitor`，网络状态监控（WiFi/2G/3G/4G/5G）。
 - **AlloyCore**：渲染视图、KVO 与系统事件工具类。
-- **AlloyCore**：完整的枚举/OptionSet 集合：`PlaybackState`、`LoadState`、`ScalingMode`、`FullScreenMode`、`GestureType`、`PanDirection`、`ReachabilityStatus` 等。
+- **AlloyCore**：完整的播放状态、加载状态、缩放模式、全屏模式、手势、滑动方向和网络状态类型。
 - **AlloyAVPlayer**：基于 AVFoundation 的 `PlaybackEngine` 实现。
 - **AlloyUIKit**：`DefaultControlOverlay`，包含 `PortraitControlPanel`、`LandscapeControlPanel` 和 `FloatingControlPanel`。
 - **AlloyUIKit**：`ProgressSlider`、`BufferingIndicator`、`LoadingIndicator`、`VolumeAndBrightnessHUD`、`NetworkSpeedMonitor`、`CustomStatusBar`。

@@ -71,10 +71,6 @@
         public var thumbSize = CGSize(width: 19, height: 19)
         var hitTestInsets: UIEdgeInsets = .zero
 
-        // MARK: - Delegate
-
-        public weak var delegate: ProgressSliderDelegate?
-
         // MARK: - Combine Subjects
 
         private let _touchBegan = PassthroughSubject<Float, Never>()
@@ -198,7 +194,6 @@
             let point = gesture.location(in: self)
             value = trackValue(at: point)
             _tapped.send(value)
-            delegate?.sliderTapped(self, value: value)
         }
 
         // MARK: - 公开方法
@@ -251,7 +246,6 @@
             isDragging = true
             updateValueFromTrackPoint(point)
             _touchBegan.send(value)
-            delegate?.sliderTouchBegan(self, value: value)
             UIView.animate(withDuration: 0.2) {
                 self.thumbButton.transform = CGAffineTransform(scaleX: 1.2, y: 1.2)
             }
@@ -261,7 +255,6 @@
             guard isDragging else { return }
             updateValueFromTrackPoint(point)
             _valueChanged.send(value)
-            delegate?.sliderValueChanged(self, value: value)
         }
 
         func endTrackInteraction(at point: CGPoint) {
@@ -270,7 +263,6 @@
             }
             isDragging = false
             _touchEnded.send(value)
-            delegate?.sliderTouchEnded(self, value: value)
             UIView.animate(withDuration: 0.2) {
                 self.thumbButton.transform = .identity
             }

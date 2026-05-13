@@ -91,7 +91,7 @@
         public var lockToggleAction: ((Bool) -> Void)?
         public var shouldSeekToPlay = false
         public var shouldShowCustomStatusBar = false
-        public var fullScreenMode: FullScreenMode = .automatic
+        public var fullScreenMode: FullscreenMode = .automatic
 
         // MARK: - Combine
 
@@ -246,7 +246,7 @@
             }
         }
 
-        public func show(title: String?, fullScreenMode: FullScreenMode) {
+        public func show(title: String?, fullScreenMode: FullscreenMode) {
             titleLabel.text = title
             self.fullScreenMode = fullScreenMode
         }

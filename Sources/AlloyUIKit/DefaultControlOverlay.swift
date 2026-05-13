@@ -93,7 +93,7 @@
         public var shouldShowLoadingOnPrepare = true
         public var isCustomDisablePanMovingDirection = false
         public var shouldShowCustomStatusBar = false
-        public var fullScreenMode: FullScreenMode = .automatic
+        public var fullScreenMode: FullscreenMode = .automatic
 
         // MARK: - Combine
 
@@ -322,7 +322,7 @@
 
         // MARK: - 公开方法
 
-        public func show(title: String?, coverURL _: URL? = nil, placeholderImage: UIImage? = nil, fullScreenMode: FullScreenMode) {
+        public func show(title: String?, coverURL _: URL? = nil, placeholderImage: UIImage? = nil, fullScreenMode: FullscreenMode) {
             self.fullScreenMode = fullScreenMode
             portraitPanel.show(title: title, fullScreenMode: fullScreenMode)
             landscapePanel.show(title: title, fullScreenMode: fullScreenMode)
@@ -330,7 +330,7 @@
             showControlView()
         }
 
-        public func show(title: String?, coverImage: UIImage?, fullScreenMode: FullScreenMode) {
+        public func show(title: String?, coverImage: UIImage?, fullScreenMode: FullscreenMode) {
             self.fullScreenMode = fullScreenMode
             portraitPanel.show(title: title, fullScreenMode: fullScreenMode)
             landscapePanel.show(title: title, fullScreenMode: fullScreenMode)
