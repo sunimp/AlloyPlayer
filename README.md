@@ -7,7 +7,7 @@
 [![SPM](https://img.shields.io/badge/SPM-compatible-brightgreen.svg)](Package.swift)
 [![License](https://img.shields.io/github/license/sunimp/AlloyPlayer)](LICENSE)
 
-AlloyPlayer 是一个 Swift-only 的现代视频播放器框架。它基于 AVFoundation、Combine、UIKit 和 SwiftUI 构建，提供可插拔播放引擎、控制层协议、列表播放、全屏转换、手势控制和可选 HTTPMediaCache 代理缓存支持。
+AlloyPlayer 是一个 Swift-only 的现代视频播放器框架。它基于 AVFoundation、Combine、UIKit 和 SwiftUI 构建，提供可插拔播放引擎、控制层协议、列表播放、全屏转换、手势控制和可选 [HTTPMediaCache](https://github.com/sunimp/HTTPMediaCache) 代理缓存支持。
 
 ## 特性
 
