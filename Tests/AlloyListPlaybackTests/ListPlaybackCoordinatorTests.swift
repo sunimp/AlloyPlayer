@@ -45,8 +45,9 @@ import Testing
     @MainActor
     @Test func listPlaybackCoordinatorLoadsSelectedCandidateInContainer() throws {
         let engine = ListPlaybackMockEngine()
-        let playerView = AlloyUIKit.AlloyPlayerView(session: PlaybackSession(engine: engine))
-        let coordinator = ListPlaybackCoordinator(playerView: playerView)
+        let session = PlaybackSession(engine: engine)
+        let renderView = AlloyUIKit.AlloyPlayerRenderView(session: session)
+        let coordinator = ListPlaybackCoordinator(session: session, renderView: renderView)
         let container = UIView()
         let source = try PlaybackSource(url: #require(URL(string: "https://example.com/best.mp4")))
         let viewport = CGRect(x: 0, y: 0, width: 100, height: 100)
@@ -61,14 +62,36 @@ import Testing
 
         #expect(selected?.id == "best")
         #expect(engine.loadedSource == source)
-        #expect(playerView.superview === container)
+        #expect(renderView.superview === container)
+    }
+
+    @MainActor
+    @Test func listPlaybackCoordinatorReattachesSameCandidateWhenPlayerMovedAway() throws {
+        let engine = ListPlaybackMockEngine()
+        let session = PlaybackSession(engine: engine)
+        let renderView = AlloyUIKit.AlloyPlayerRenderView(session: session)
+        let coordinator = ListPlaybackCoordinator(session: session, renderView: renderView)
+        let container = UIView()
+        let floatingContainer = UIView()
+        let source = try PlaybackSource(url: #require(URL(string: "https://example.com/best.mp4")))
+        let viewport = CGRect(x: 0, y: 0, width: 100, height: 100)
+        let candidate = ListPlaybackCandidate(id: "best", frame: CGRect(x: 0, y: 0, width: 100, height: 80), source: source)
+
+        _ = coordinator.update(candidates: [candidate], viewport: viewport) { _ in container }
+        renderView.removeFromSuperview()
+        floatingContainer.addSubview(renderView)
+        _ = coordinator.update(candidates: [candidate], viewport: viewport) { _ in container }
+
+        #expect(engine.loadCount == 1)
+        #expect(renderView.superview === container)
     }
 
     @MainActor
     @Test func listPlaybackCoordinatorStopsWhenNoCandidateVisible() {
         let engine = ListPlaybackMockEngine()
-        let playerView = AlloyUIKit.AlloyPlayerView(session: PlaybackSession(engine: engine))
-        let coordinator = ListPlaybackCoordinator(playerView: playerView)
+        let session = PlaybackSession(engine: engine)
+        let renderView = AlloyUIKit.AlloyPlayerRenderView(session: session)
+        let coordinator = ListPlaybackCoordinator(session: session, renderView: renderView)
 
         let selected = coordinator.update(candidates: [], viewport: .zero) { _ in nil }
 
@@ -80,6 +103,7 @@ import Testing
     private final class ListPlaybackMockEngine: PlaybackEngine {
         private let snapshotSubject = CurrentValueSubject<PlaybackEngineSnapshot, Never>(PlaybackEngineSnapshot())
         var loadedSource: PlaybackSource?
+        var loadCount = 0
         var stopCount = 0
 
         var snapshot: PlaybackEngineSnapshot {
@@ -91,6 +115,7 @@ import Testing
         }
 
         func load(_ source: PlaybackSource) {
+            loadCount += 1
             loadedSource = source
             var snapshot = self.snapshot
             snapshot.source = source

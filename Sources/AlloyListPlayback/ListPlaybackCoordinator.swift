@@ -41,21 +41,35 @@ public struct ListPlaybackCandidate: Equatable, Sendable {
 @MainActor
 public final class ListPlaybackCoordinator {
     #if canImport(UIKit)
-        public let playerView: AlloyUIKit.AlloyPlayerView
+        public let session: PlaybackSession
+        public let renderView: AlloyUIKit.AlloyPlayerRenderView
     #endif
 
     public var configuration = ListPlaybackConfiguration()
     private var selectedID: String?
 
     #if canImport(UIKit)
-        private var playerViewConstraints: [NSLayoutConstraint] = []
+        private var renderViewConstraints: [NSLayoutConstraint] = []
 
         public init(
+            session: PlaybackSession,
+            renderView: AlloyUIKit.AlloyPlayerRenderView,
+            configuration: ListPlaybackConfiguration = .init()
+        ) {
+            self.session = session
+            self.renderView = renderView
+            self.configuration = configuration
+        }
+
+        public convenience init(
             playerView: AlloyUIKit.AlloyPlayerView,
             configuration: ListPlaybackConfiguration = .init()
         ) {
-            self.playerView = playerView
-            self.configuration = configuration
+            self.init(
+                session: playerView.session,
+                renderView: AlloyUIKit.AlloyPlayerRenderView(session: playerView.session),
+                configuration: configuration
+            )
         }
 
         @discardableResult
@@ -71,38 +85,48 @@ public final class ListPlaybackCoordinator {
             ) else {
                 selectedID = nil
                 if configuration.stopsWhenNoCandidateVisible {
-                    playerView.stop()
+                    session.stop()
                 }
                 return nil
             }
 
-            guard selectedID != selected.id else { return selected }
+            let container = containerProvider(selected)
+            guard selectedID != selected.id else {
+                if let container, renderView.superview !== container {
+                    attachRenderView(to: container)
+                }
+                return selected
+            }
 
             selectedID = selected.id
-            if let container = containerProvider(selected) {
-                attachPlayerView(to: container)
+            if let container {
+                attachRenderView(to: container)
             }
-            playerView.load(selected.source)
+            session.load(selected.source)
             return selected
         }
 
-        private func attachPlayerView(to container: UIView) {
-            NSLayoutConstraint.deactivate(playerViewConstraints)
-            playerViewConstraints.removeAll()
+        private func attachRenderView(to container: UIView) {
+            UIView.performWithoutAnimation {
+                NSLayoutConstraint.deactivate(renderViewConstraints)
+                renderViewConstraints.removeAll()
 
-            if playerView.superview !== container {
-                playerView.removeFromSuperview()
-                container.addSubview(playerView)
+                if renderView.superview !== container {
+                    renderView.removeFromSuperview()
+                    container.addSubview(renderView)
+                }
+
+                renderView.translatesAutoresizingMaskIntoConstraints = false
+                renderViewConstraints = [
+                    renderView.topAnchor.constraint(equalTo: container.topAnchor),
+                    renderView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                    renderView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                    renderView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+                ]
+                NSLayoutConstraint.activate(renderViewConstraints)
+                renderView.activateRenderSurface()
+                container.layoutIfNeeded()
             }
-
-            playerView.translatesAutoresizingMaskIntoConstraints = false
-            playerViewConstraints = [
-                playerView.topAnchor.constraint(equalTo: container.topAnchor),
-                playerView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-                playerView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-                playerView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            ]
-            NSLayoutConstraint.activate(playerViewConstraints)
         }
     #endif
 

@@ -6,25 +6,20 @@
 //
 
 #if canImport(UIKit)
+    import AlloyUIKit
     import UIKit
 
     @MainActor
-    final class FloatingPlaybackView: UIView {
+    final class FloatingPlaybackView: UIView, UIGestureRecognizerDelegate {
         var closeAction: (() -> Void)?
         weak var contentView: UIView?
         private var contentConstraints: [NSLayoutConstraint] = []
         private var panStartCenter = CGPoint.zero
 
-        private lazy var closeButton: UIButton = {
-            let button = UIButton(type: .system)
-            let configuration = UIImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
-            button.setImage(UIImage(systemName: "xmark.circle.fill", withConfiguration: configuration), for: .normal)
-            button.tintColor = .white
-            button.backgroundColor = UIColor.black.withAlphaComponent(0.35)
-            button.layer.cornerRadius = 15
-            button.addTarget(self, action: #selector(closeButtonTapped), for: .touchUpInside)
-            button.translatesAutoresizingMaskIntoConstraints = false
-            return button
+        private lazy var panGesture: UIPanGestureRecognizer = {
+            let gesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+            gesture.delegate = self
+            return gesture
         }()
 
         override init(frame: CGRect) {
@@ -38,46 +33,47 @@
         }
 
         func attach(_ view: UIView) {
-            detach()
-            contentView = view
-            view.removeFromSuperview()
-            view.translatesAutoresizingMaskIntoConstraints = false
-            insertSubview(view, at: 0)
-            contentConstraints = [
-                view.topAnchor.constraint(equalTo: topAnchor),
-                view.leadingAnchor.constraint(equalTo: leadingAnchor),
-                view.trailingAnchor.constraint(equalTo: trailingAnchor),
-                view.bottomAnchor.constraint(equalTo: bottomAnchor),
-            ]
-            NSLayoutConstraint.activate(contentConstraints)
+            UIView.performWithoutAnimation {
+                detach()
+                contentView = view
+                deactivateSuperviewConstraints(for: view)
+                view.removeFromSuperview()
+                view.translatesAutoresizingMaskIntoConstraints = false
+                insertSubview(view, at: 0)
+                contentConstraints = [
+                    view.topAnchor.constraint(equalTo: topAnchor),
+                    view.leadingAnchor.constraint(equalTo: leadingAnchor),
+                    view.trailingAnchor.constraint(equalTo: trailingAnchor),
+                    view.bottomAnchor.constraint(equalTo: bottomAnchor),
+                ]
+                NSLayoutConstraint.activate(contentConstraints)
+                layoutIfNeeded()
+            }
         }
 
         func detach() {
-            NSLayoutConstraint.deactivate(contentConstraints)
-            contentConstraints.removeAll()
-            contentView?.removeFromSuperview()
-            contentView = nil
+            UIView.performWithoutAnimation {
+                NSLayoutConstraint.deactivate(contentConstraints)
+                contentConstraints.removeAll()
+                contentView?.removeFromSuperview()
+                contentView = nil
+                layoutIfNeeded()
+            }
         }
 
         private func configureView() {
             backgroundColor = .black
             layer.cornerRadius = 8
             layer.masksToBounds = true
-
-            let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
             addGestureRecognizer(panGesture)
-
-            addSubview(closeButton)
-            NSLayoutConstraint.activate([
-                closeButton.topAnchor.constraint(equalTo: topAnchor, constant: 6),
-                closeButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6),
-                closeButton.widthAnchor.constraint(equalToConstant: 30),
-                closeButton.heightAnchor.constraint(equalToConstant: 30),
-            ])
         }
 
-        @objc private func closeButtonTapped() {
-            closeAction?()
+        private func deactivateSuperviewConstraints(for view: UIView) {
+            guard let superview = view.superview else { return }
+            let constraints = superview.constraints.filter { constraint in
+                constraint.firstItem === view || constraint.secondItem === view
+            }
+            NSLayoutConstraint.deactivate(constraints)
         }
 
         @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
@@ -91,6 +87,8 @@
                     CGPoint(x: panStartCenter.x + translation.x, y: panStartCenter.y + translation.y),
                     in: superview
                 )
+                panStartCenter = center
+                gesture.setTranslation(.zero, in: superview)
             default:
                 break
             }
@@ -112,6 +110,25 @@
                 x: min(max(proposedCenter.x, minX), maxX),
                 y: min(max(proposedCenter.y, minY), maxY)
             )
+        }
+
+        func gestureRecognizer(_: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+            !isControlTouch(touch)
+        }
+
+        func gestureRecognizer(_: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith _: UIGestureRecognizer) -> Bool {
+            true
+        }
+
+        private func isControlTouch(_ touch: UITouch) -> Bool {
+            var touchedView = touch.view
+            while let view = touchedView, view !== self {
+                if view is UIControl || view is ProgressSlider {
+                    return true
+                }
+                touchedView = view.superview
+            }
+            return false
         }
     }
 #endif
