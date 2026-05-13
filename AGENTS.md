@@ -97,6 +97,7 @@ AlloyPlayer (umbrella)
 2. **每次提交对应一个逻辑单元**的变更
 3. **未经维护者明确许可不得执行 `git push`**
 4. **不得执行破坏性 git 操作**（`reset --hard`、`clean -f`、`rebase`、`commit --amend`），除非明确要求
+5. **发布版本号与 Git tag 不使用 `v` 前缀**：统一使用 `1.0.0` 这类纯 SemVer 格式，禁止写成 `v1.0.0`
 
 ## 测试策略
 
