@@ -32,8 +32,8 @@ jobs:
           set -euo pipefail
 
           tag="${TAG_NAME}"
-          if [[ ! "${tag}" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Skip non-semver tag: ${tag}"
+          if [[ ! "${tag}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Skip non-semver tag or v-prefixed tag: ${tag}"
             exit 0
           fi
 
@@ -43,7 +43,7 @@ jobs:
             exit 1
           fi
 
-          version="${tag#v}"
+          version="${tag}"
           notes_file="$(mktemp)"
           awk -v version="${version}" '
             BEGIN { in_section = 0 }
