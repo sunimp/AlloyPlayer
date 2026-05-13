@@ -8,8 +8,8 @@
 import CoreGraphics
 
 /// 计算列表元素在视口中的可见比例。
-public enum VisibilityEvaluator {
-    public static func visiblePercent(of itemFrame: CGRect, in viewport: CGRect) -> CGFloat {
+enum VisibilityEvaluator {
+    static func visiblePercent(of itemFrame: CGRect, in viewport: CGRect) -> CGFloat {
         guard itemFrame.width > 0, itemFrame.height > 0, viewport.width > 0, viewport.height > 0 else {
             return 0
         }

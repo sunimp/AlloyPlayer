@@ -11,10 +11,10 @@ import Foundation
 ///
 /// 基于 Swift 强类型 KeyPath API，自动在 deinit 时移除所有观察。
 @MainActor
-public final class KVOManager {
+final class KVOManager {
     private var observations: [NSKeyValueObservation] = []
 
-    public init() {}
+    init() {}
 
     /// 添加 KVO 观察
     /// - Parameters:
@@ -22,7 +22,7 @@ public final class KVOManager {
     ///   - keyPath: 观察的 KeyPath
     ///   - options: 观察选项
     ///   - handler: 变化回调
-    public func observe<Object: NSObject, Value>(
+    func observe<Object: NSObject, Value>(
         _ object: Object,
         keyPath: KeyPath<Object, Value>,
         options: NSKeyValueObservingOptions = [.new],
@@ -33,7 +33,7 @@ public final class KVOManager {
     }
 
     /// 移除所有观察
-    public func invalidate() {
+    func invalidate() {
         observations.forEach { $0.invalidate() }
         observations.removeAll()
     }

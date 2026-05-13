@@ -11,10 +11,10 @@
 
     /// 播放渲染宿主视图。
     @MainActor
-    public final class RenderHostView: UIView, RenderSurfaceHosting {
+    final class RenderHostView: UIView, RenderSurfaceHosting {
         private weak var hostedLayer: CALayer?
 
-        public func attach(surface: PlaybackRenderSurface?) {
+        func attach(surface: PlaybackRenderSurface?) {
             detachSurface()
             guard let layerBackedSurface = surface as? LayerBackedRenderSurface else { return }
             hostedLayer = layerBackedSurface.layer
@@ -22,12 +22,12 @@
             setNeedsLayout()
         }
 
-        public func detachSurface() {
+        func detachSurface() {
             hostedLayer?.removeFromSuperlayer()
             hostedLayer = nil
         }
 
-        override public func layoutSubviews() {
+        override func layoutSubviews() {
             super.layoutSubviews()
             hostedLayer?.frame = bounds
         }

@@ -110,4 +110,4 @@ playerView.load(proxySource)
 
 ## 渲染承载
 
-自定义播放引擎通过 `renderSurface` 暴露渲染承载。UIKit 层会把 `LayerBackedRenderSurface` 自动挂载到 `RenderHostView`。
+自定义播放引擎通过 `renderSurface` 暴露渲染承载。UIKit 层会通过内部渲染宿主自动挂载 `LayerBackedRenderSurface`。

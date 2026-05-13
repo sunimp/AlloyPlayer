@@ -9,11 +9,11 @@
     import UIKit
 
     @MainActor
-    public final class FloatingPlaybackView: UIView {
-        public weak var contentView: UIView?
+    final class FloatingPlaybackView: UIView {
+        weak var contentView: UIView?
         private var contentConstraints: [NSLayoutConstraint] = []
 
-        public func attach(_ view: UIView) {
+        func attach(_ view: UIView) {
             detach()
             contentView = view
             view.removeFromSuperview()
@@ -28,7 +28,7 @@
             NSLayoutConstraint.activate(contentConstraints)
         }
 
-        public func detach() {
+        func detach() {
             NSLayoutConstraint.deactivate(contentConstraints)
             contentConstraints.removeAll()
             contentView?.removeFromSuperview()

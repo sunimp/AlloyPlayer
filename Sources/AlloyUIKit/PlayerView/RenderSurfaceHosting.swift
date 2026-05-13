@@ -10,7 +10,7 @@
 
     /// 渲染承载面宿主。
     @MainActor
-    public protocol RenderSurfaceHosting: AnyObject {
+    protocol RenderSurfaceHosting: AnyObject {
         func attach(surface: PlaybackRenderSurface?)
         func detachSurface()
     }

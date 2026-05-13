@@ -14,7 +14,6 @@
     @MainActor
     public final class AlloyPlayerView: UIView {
         public let session: PlaybackSession
-        public let renderHostView: RenderHostView
         public var configuration: AlloyPlayerViewConfiguration
         public var fullscreenCoordinator: FullscreenCoordinating? {
             didSet { bindFullscreenCoordinator() }
@@ -28,6 +27,7 @@
             didSet { installControlOverlay() }
         }
 
+        let renderHostView: RenderHostView
         private let binder = PlaybackSessionBinder()
         private var overlayConstraints: [NSLayoutConstraint] = []
         private var fullscreenCancellable: AnyCancellable?

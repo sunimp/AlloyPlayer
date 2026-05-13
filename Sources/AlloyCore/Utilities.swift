@@ -26,4 +26,4 @@ public enum TimeFormatter: Sendable {
 // MARK: - 日志
 
 /// AlloyPlayer 统一日志
-public let alloyLogger = Logger(subsystem: "com.sunimp.alloyplayer", category: "AlloyPlayer")
+let alloyLogger = Logger(subsystem: "com.sunimp.alloyplayer", category: "AlloyPlayer")
