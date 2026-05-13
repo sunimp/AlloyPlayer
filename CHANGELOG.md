@@ -7,9 +7,11 @@
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-13
+
 ### 破坏性调整
 
-- 重建 2.0 架构：`AlloyCore` 收敛为平台无关的播放类型、引擎协议、快照、事件和 `PlaybackSession`。
+- 重建 1.0.0 架构：`AlloyCore` 收敛为平台无关的播放类型、引擎协议、快照、事件和 `PlaybackSession`。
 - `AlloyAVPlayer` 改为提供 `AVPlaybackEngine`，通过 `PlaybackSource`、`PlaybackEngineSnapshot` 和 `PlaybackEngineEvent` 与核心层交互。
 - `AlloyUIKit` 接管播放器视图、渲染承载、默认控制层、手势和全屏协调；UIKit 控制层改为 `UIKitControlOverlay`。
 - `AlloySwiftUI` 改为围绕 `AlloyPlayerController(session:)` 与 `AlloySwiftUIPlayerView` 构建。

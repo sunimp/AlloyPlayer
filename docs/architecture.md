@@ -1,6 +1,6 @@
-# AlloyPlayer 2.0 架构
+# AlloyPlayer 1.0.0 架构
 
-AlloyPlayer 2.0 将播放能力拆成平台无关核心、具体播放引擎、UIKit 承载层、SwiftUI 桥接层、列表播放和可选缓存支持。模块之间只按单向依赖连接，核心层不依赖 UIKit、SwiftUI 或 AVFoundation。
+AlloyPlayer 1.0.0 将播放能力拆成平台无关核心、具体播放引擎、UIKit 承载层、SwiftUI 桥接层、列表播放和可选缓存支持。模块之间只按单向依赖连接，核心层不依赖 UIKit、SwiftUI 或 AVFoundation。
 
 ```mermaid
 flowchart LR

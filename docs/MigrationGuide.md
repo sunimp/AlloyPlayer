@@ -1,6 +1,6 @@
 # AlloyPlayer 迁移指南
 
-本文档记录 2.0 架构重构后的主要破坏性变更和迁移方式。2.0 不保留兼容别名，调用方需要迁移到 `PlaybackSession`、`AlloyUIKit.AlloyPlayerView` 和 `PlaybackSource`。
+本文档记录 1.0.0 架构重构后的主要破坏性变更和迁移方式。1.0.0 不保留兼容别名，调用方需要迁移到 `PlaybackSession`、`AlloyUIKit.AlloyPlayerView` 和 `PlaybackSource`。
 
 ## 播放入口
 
@@ -24,7 +24,7 @@ let playerView = AlloyUIKit.AlloyPlayerView(session: session)
 
 ## API 对照
 
-| 旧 API / 概念 | 2.0 API / 概念 |
+| 旧 API / 概念 | 1.0.0 API / 概念 |
 |---------------|----------------|
 | `Player` | `PlaybackSession` + `AlloyUIKit.AlloyPlayerView` |
 | `AVPlayerManager` | `AVPlaybackEngine` |
@@ -37,7 +37,7 @@ let playerView = AlloyUIKit.AlloyPlayerView(session: session)
 | `SwiftUIControlOverlay` | `AlloySwiftUIPlayerView` 的自定义 controls 闭包 |
 | HTTPMediaCache 直接改写播放器 URL | `AlloyHTTPMediaCacheSupport.proxySource(for:configuration:)` |
 
-2.0 不保留兼容别名。调用方应迁移到新的模块入口，避免继续依赖旧类型名或旧回调协议。
+1.0.0 不保留兼容别名。调用方应迁移到新的模块入口，避免继续依赖旧类型名或旧回调协议。
 
 ## 状态订阅
 
