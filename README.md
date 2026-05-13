@@ -19,7 +19,7 @@ AlloyPlayer 是一个 Swift-only 的现代视频播放器框架。它基于 AVFo
 - 支持 ScrollView、TableView、CollectionView 列表播放和浮动画中画窗口。
 - 播放状态、加载状态、播放时间、缓冲时间、错误和尺寸变化均提供 Combine 发布者。
 - 支持网络可达性监控、缓冲提示、音量/亮度 HUD、网速显示和自定义状态栏。
-- 可选接入 `AlloyHTTPMediaCacheSupport`，通过 HTTPMediaCache 本地代理实现边播边缓存。
+- 可选接入 `AlloyHTTPMediaCacheSupport`，通过 [HTTPMediaCache](https://github.com/sunimp/HTTPMediaCache) 本地代理实现边播边缓存。
 - 支持 iOS 播放场景，并提供 macOS Swift Package 测试宿主。
 
 ## 环境要求
@@ -62,7 +62,7 @@ AlloyPlayer 是一个 Swift-only 的现代视频播放器框架。它基于 AVFo
 )
 ```
 
-需要 HTTPMediaCache 缓存播放时，再显式添加可选产品：
+需要 [HTTPMediaCache](https://github.com/sunimp/HTTPMediaCache) 缓存播放时，再显式添加可选产品：
 
 ```swift
 .target(
@@ -134,7 +134,7 @@ player.playTimePublisher
 
 ## HTTPMediaCache 缓存播放
 
-`AlloyHTTPMediaCacheSupport` 是独立可选产品。开启后，业务传入原始 URL，支持层会启动 HTTPMediaCache 本地代理、生成代理 URL，并交给播放器播放：
+`AlloyHTTPMediaCacheSupport` 是独立可选产品。开启后，业务传入原始 URL，支持层会启动 [HTTPMediaCache](https://github.com/sunimp/HTTPMediaCache) 本地代理、生成代理 URL，并交给播放器播放：
 
 ```swift
 import AlloyHTTPMediaCacheSupport
