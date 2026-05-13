@@ -16,7 +16,9 @@
 
     @MainActor
     @Test func floatingPlaybackCoordinatorShowsAndHidesPlayerView() {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
         let parentView = UIView(frame: CGRect(x: 0, y: 0, width: 320, height: 240))
+        window.addSubview(parentView)
         let playerView = AlloyUIKit.AlloyPlayerView(session: PlaybackSession(engine: FloatingPlaybackMockEngine()))
         let coordinator = FloatingPlaybackCoordinator(playerView: playerView)
 
@@ -24,9 +26,9 @@
 
         #expect(coordinator.isVisible)
         #expect(playerView.superview is FloatingPlaybackView)
-        #expect(playerView.superview?.superview === parentView)
+        #expect(playerView.superview?.superview === window)
 
-        coordinator.hide()
+        (playerView.superview as? FloatingPlaybackView)?.closeAction?()
 
         #expect(!coordinator.isVisible)
         #expect(playerView.superview == nil)

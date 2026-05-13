@@ -26,7 +26,7 @@ final class FloatingPlaybackDemoViewController: UIViewController {
         label.font = .preferredFont(forTextStyle: .body)
         label.textColor = .secondaryLabel
         label.numberOfLines = 0
-        label.text = "播放器先挂载在页面容器中。点击“显示小窗”后，FloatingPlaybackCoordinator 会把同一个播放器渲染面迁移到浮动窗口；点击“回到页面容器”会重新挂回当前页面。"
+        label.text = "播放器先挂载在页面容器中。点击“显示小窗”后，同一个播放视图会迁移到 window 级浮动小窗；小窗只保留拖动和关闭能力，不展示播放、暂停或全屏控制。"
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -34,16 +34,6 @@ final class FloatingPlaybackDemoViewController: UIViewController {
     private lazy var showFloatingButton: UIButton = makeActionButton(
         title: "显示小窗",
         action: #selector(showFloatingButtonTapped)
-    )
-
-    private lazy var hideFloatingButton: UIButton = makeActionButton(
-        title: "隐藏小窗",
-        action: #selector(hideFloatingButtonTapped)
-    )
-
-    private lazy var attachBackButton: UIButton = makeActionButton(
-        title: "回到页面容器",
-        action: #selector(attachBackButtonTapped)
     )
 
     private let statusLabel: UILabel = {
@@ -60,7 +50,6 @@ final class FloatingPlaybackDemoViewController: UIViewController {
     private let session = AlloyPlayerFactory.makeDefaultSession()
     private lazy var playerView = AlloyPlayerView(session: session)
     private var floatingPlayback: FloatingPlaybackCoordinator?
-    private let controlOverlay = DefaultControlOverlay()
     private var playbackTask: Task<Void, Never>?
     private var playerViewConstraints: [NSLayoutConstraint] = []
     private let video = VideoResource.mp4Samples[0]
@@ -86,11 +75,7 @@ final class FloatingPlaybackDemoViewController: UIViewController {
     // MARK: - 配置
 
     private func setupUI() {
-        let buttonStack = UIStackView(arrangedSubviews: [
-            showFloatingButton,
-            hideFloatingButton,
-            attachBackButton,
-        ])
+        let buttonStack = UIStackView(arrangedSubviews: [showFloatingButton])
         buttonStack.axis = .vertical
         buttonStack.spacing = 12
         buttonStack.translatesAutoresizingMaskIntoConstraints = false
@@ -121,10 +106,8 @@ final class FloatingPlaybackDemoViewController: UIViewController {
     }
 
     private func setupPlayer() {
-        playerView.controlOverlay = controlOverlay
         attachPlayerViewToPageContainer()
 
-        controlOverlay.show(title: video.title, coverImage: video.makeCoverImage(), fullScreenMode: .automatic)
         playbackTask = Task { @MainActor [weak playerView] in
             guard let playerView else { return }
             do {
@@ -135,6 +118,9 @@ final class FloatingPlaybackDemoViewController: UIViewController {
         }
 
         floatingPlayback = FloatingPlaybackCoordinator(playerView: playerView)
+        floatingPlayback?.setCloseHandler { [weak self] in
+            self?.updateStatus("小窗已关闭，播放器渲染面暂未挂载")
+        }
     }
 
     private func attachPlayerViewToPageContainer() {
@@ -171,17 +157,6 @@ final class FloatingPlaybackDemoViewController: UIViewController {
         NSLayoutConstraint.deactivate(playerViewConstraints)
         let frame = CGRect(x: view.bounds.width - 180, y: view.safeAreaInsets.top + 16, width: 160, height: 90)
         floatingPlayback?.show(in: view, frame: frame)
-        updateStatus("播放器已迁移到浮动小窗")
-    }
-
-    @objc private func hideFloatingButtonTapped() {
-        floatingPlayback?.hide()
-        updateStatus("小窗已隐藏，播放器渲染面暂未挂载")
-    }
-
-    @objc private func attachBackButtonTapped() {
-        floatingPlayback?.hide()
-        attachPlayerViewToPageContainer()
-        updateStatus("播放器已回到页面容器")
+        updateStatus("播放器已迁移到 window 级浮动小窗，可拖动或点击关闭")
     }
 }

@@ -20,6 +20,10 @@
 - 删除旧 Core 中的 UIKit 控制器、手势、方向、浮窗、事件 sink、兼容渲染视图和 KVO/logging 辅助公开面。
 - 收窄内部渲染宿主、列表可见性计算和浮动播放容器等实现细节；公开入口保留为 `AlloyPlayerView`、`ListPlaybackCoordinator` 与 `FloatingPlaybackCoordinator`。
 
+### 修复
+
+- 修复浮动小窗只挂载在当前页面的问题；小窗现在挂载到 window 层级，支持拖动和关闭，Example 中不再展示播放、暂停或全屏控制。
+
 ## [0.3.1] - 2026-05-12
 
 ### 调整
