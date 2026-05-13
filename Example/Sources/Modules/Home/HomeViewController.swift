@@ -46,18 +46,13 @@ final class HomeViewController: UITableViewController {
         ),
         DemoItem(
             title: "TableView 列表播放",
-            subtitle: "Feed 流场景的列表播放演示",
+            subtitle: "Feed 流列表播放与自动浮动小窗",
             viewControllerFactory: { TableViewPlaybackViewController() }
         ),
         DemoItem(
             title: "CollectionView 列表播放",
-            subtitle: "瀑布流布局的列表播放演示",
+            subtitle: "瀑布流列表播放与自动浮动小窗",
             viewControllerFactory: { CollectionViewPlaybackViewController() }
-        ),
-        DemoItem(
-            title: "浮动小窗",
-            subtitle: "播放器渲染面在页面容器与小窗之间迁移",
-            viewControllerFactory: { FloatingPlaybackDemoViewController() }
         ),
         DemoItem(
             title: "全屏模式",

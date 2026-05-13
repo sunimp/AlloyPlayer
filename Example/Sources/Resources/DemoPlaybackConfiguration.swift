@@ -18,7 +18,7 @@ final class DemoPlaybackConfiguration {
 
     static let didChangeNotification = Notification.Name("DemoPlaybackConfigurationDidChangeNotification")
 
-    var isHTTPMediaCacheEnabled = false {
+    var isHTTPMediaCacheEnabled = true {
         didSet {
             guard isHTTPMediaCacheEnabled != oldValue else { return }
             NotificationCenter.default.post(name: Self.didChangeNotification, object: self)
